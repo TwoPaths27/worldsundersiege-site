@@ -486,7 +486,11 @@
       const selectedType = typeFilter.value;
 
       return cards.filter(card => {
-        const typeMatches = selectedType === "All" || card.type === selectedType;
+       const typeMatches =
+selectedType === "All" ||
+(Array.isArray(card.type)
+  ? card.type.includes(selectedType)
+  : card.type === selectedType);
         const searchMatches = matchesSearch(card, searchTerm);
         return typeMatches && searchMatches;
       });
