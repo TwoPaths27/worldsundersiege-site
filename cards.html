@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cards - Worlds Under Siege</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: white;
+    }
+
+    .topbar {
+      background: #111827;
+      padding: 18px 24px;
+      border-bottom: 2px solid #1f2937;
+    }
+
+    .topbar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .site-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .nav {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: white;
+      background: rgba(255,255,255,0.08);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .nav a:hover {
+      background: #22c55e;
+    }
+
+    .page-header {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px 10px;
+    }
+
+    .page-header h1 {
+      margin: 0 0 10px;
+      font-size: 36px;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: #cbd5e1;
+    }
+
+    .controls {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls input,
+    .controls select {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    .controls input {
+      min-width: 260px;
+      flex: 1 1 320px;
+    }
+
+    .controls select {
+      min-width: 210px;
+      background: white;
+    }
+
+    .results-count {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 18px;
+      color: #cbd5e1;
+    }
+
+    .card-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .card-image-wrap {
+      background: #0f172a;
+      aspect-ratio: 63 / 88;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .card-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-body {
+      padding: 12px;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .card-type {
+      display: inline-block;
+      font-size: 12px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .flip-note {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .empty-state {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 24px 60px;
+      color: #cbd5e1;
+      display: none;
+    }
+
+    @media (max-width: 1200px) {
+      .card-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .card-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .site-title {
+        font-size: 24px;
+      }
+
+      .page-header h1 {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="site-title">Worlds Under Siege</div>
+      <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="cards.html">Cards</a>
+        <a href="#">Rules</a>
+        <a href="#">News</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <h1>Card Library</h1>
+    <p>Browse all cards, search by name, and filter by card type.</p>
+  </section>
+
+  <section class="controls">
+    <input type="text" id="searchInput" placeholder="Search by card name..." />
+    <select id="typeFilter">
+      <option value="All">All Types</option>
+      <option value="Character">Character</option>
+      <option value="Animal">Animal</option>
+      <option value="Construct">Construct</option>
+      <option value="Action">Action</option>
+      <option value="Item">Item</option>
+      <option value="Event">Event</option>
+      <option value="Stronghold">Stronghold</option>
+      <option value="Army">Army</option>
+    </select>
+  </section>
+
+  <div class="results-count" id="resultsCount"></div>
+  <main class="card-grid" id="cardGrid"></main>
+  <div class="empty-state" id="emptyState">No cards match your search.</div>
+
+  <script>
+    const cards = [
+      { name: "King Arthur", type: "Character", image: "cards/BOA-001 King Arthur.jpg" },
+      { name: "Merlin", type: "Character", image: "cards/BOA-002 Merlin.jpg" },
+      { name: "Sir Lancelot", type: "Character", image: "cards/BOA-003 Sir Lancelot.jpg" },
+      { name: "Sir Yvain", type: "Character", image: "cards/BOA-004 Sir Yvain.jpg" },
+      { name: "Sir Galahad", type: "Character", image: "cards/BOA-005 Sir Galahad.jpg" },
+      { name: "Sir Kay", type: "Character", image: "cards/BOA-006 Sir Kay.jpg" },
+      { name: "Sir Lucan", type: "Character", image: "cards/BOA-007 Sir Lucan.jpg" },
+      { name: "Sir Gawain", type: "Character", image: "cards/BOA-008 Sir Gawain.jpg" },
+      { name: "Sir Bedivere", type: "Character", image: "cards/BOA-009 Sir Bedivere.jpg" },
+      { name: "Sir Sagremore", type: "Character", image: "cards/BOA-010 Sir Sagremore.jpg" },
+      { name: "Lady of the Lake", type: "Character", image: "cards/BOA-011 Lady of the Lake.jpg" },
+      { name: "Queen Guinevere", type: "Character", image: "cards/BOA-012 Queen Guinevere.jpg" },
+      { name: "Mordred", type: "Character", image: "cards/BOA-013 Mordred.jpg" },
+      { name: "Sir Percival", type: "Character", image: "cards/BOA-014 Sir Percival.jpg" },
+      { name: "Sir Bors", type: "Character", image: "cards/BOA-015 Sir Bors.jpg" },
+      { name: "Sir Tristan", type: "Character", image: "cards/BOA-016 Sir Tristan.jpg" },
+      { name: "Sir Gareth", type: "Character", image: "cards/BOA-017 Sir Gareth.jpg" },
+      { name: "Sir Argavain", type: "Character", image: "cards/BOA-018 Sir Argavain.jpg" },
+      { name: "Sir Gaheris", type: "Character", image: "cards/BOA-019 Sir Gaheris.jpg" },
+      { name: "Dracula", type: "Character", image: "cards/BOA-020 Dracula.jpg" },
+      { name: "Frankenstein's Monster", type: "Character", image: "cards/BOA-021 Frankenstein's Monster.jpg" },
+      { name: "Yeti", type: "Character", image: "cards/BOA-022 Yeti.jpg" },
+      { name: "Bertrand Cailliet", type: "Character", image: "cards/BOA-023 Bertrand Cailliet.jpg" },
+      { name: "Headless Horseman", type: "Character", image: "cards/BOA-024 Headless Horseman.jpg" },
+      { name: "Big Foot", type: "Character", image: "cards/BOA-025 Big Foot.jpg" },
+      { name: "Nosferatu", type: "Character", image: "cards/BOA-026 Nosferatu.jpg" },
+      { name: "Van Helsing", type: "Character", image: "cards/BOA-027 Van Helsing.jpg" },
+      { name: "Swamp Monster", type: "Character", image: "cards/BOA-028 Swamp Monster.jpg" },
+      { name: "Boogeyman", type: "Character", image: "cards/BOA-029 Boogeyman.jpg" },
+      { name: "Nelly Butler", type: "Character", image: "cards/BOA-030 Nelly Butler.jpg" },
+      { name: "Invisible Man", type: "Character", image: "cards/BOA-031 Invisible Man.jpg" },
+      { name: "Undead Widow", type: "Character", image: "cards/BOA-032 Undead Widow.jpg" },
+      {
+        name: "Dr Jekyl / Mr Hyde",
+        type: "Character",
+        image: "cards/BOA-033 Dr Jekyl.jpg",
+        backImage: "cards/BOA-033 Mr Hyde.jpg",
+        searchNames: ["Dr Jekyl", "Mr Hyde", "Jekyl", "Hyde"]
+      },
+      { name: "Dr Frankenstein", type: "Character", image: "cards/BOA-034 Dr Frankenstein.jpg" },
+      { name: "The Phantom", type: "Character", image: "cards/BOA-035 The Phantom.jpg" },
+      { name: "Strigoi", type: "Character", image: "cards/BOA-036 Strigoi.jpg" },
+      { name: "Baba Yaga", type: "Character", image: "cards/BOA-037 Baba Yaga.jpg" },
+      { name: "Leshy", type: "Character", image: "cards/BOA-038 Leshy.jpg" },
+      { name: "Tarzan", type: "Character", image: "cards/BOA-039 Tarzan.jpg" },
+      { name: "Mbonga", type: "Character", image: "cards/BOA-040 Mbonga.jpg" },
+      { name: "Jane Porter", type: "Character", image: "cards/BOA-041 Jane Porter.jpg" },
+      { name: "Professor Porter", type: "Character", image: "cards/BOA-042 Professor Porter.jpg" },
+      { name: "William Clayton", type: "Character", image: "cards/BOA-043 William Clayton.jpg" },
+      { name: "Rockoff", type: "Character", image: "cards/BOA-044 Rockoff.jpg" },
+      { name: "Robin Hood", type: "Character", image: "cards/BOA-045 Robin Hood.jpg" },
+      { name: "Little John", type: "Character", image: "cards/BOA-046 Little John.jpg" },
+      { name: "The Monk", type: "Character", image: "cards/BOA-047 The Monk.jpg" },
+      { name: "Guy of Gisborne", type: "Character", image: "cards/BOA-048 Guy of Gisborne.jpg" },
+      { name: "Sheriff of Nottingham", type: "Character", image: "cards/BOA-049 Sheriff of Nottingham.jpg" },
+      { name: "King Leonidas", type: "Character", image: "cards/BOA-050 King Leonidas.jpg" },
+      { name: "Queen Gorgo", type: "Character", image: "cards/BOA-051 Queen Gorgo.jpg" },
+      { name: "Dienkes", type: "Character", image: "cards/BOA-052 Dienkes.jpg" },
+      { name: "Demophilus", type: "Character", image: "cards/BOA-053 Demophilus.jpg" },
+      { name: "Captain Ahab", type: "Character", image: "cards/BOA-054 Captain Ahab.jpg" },
+      { name: "Ishmael", type: "Character", image: "cards/BOA-055 Ishmael.jpg" },
+      { name: "King Richard I", type: "Character", image: "cards/BOA-056 King Richard I.jpg" },
+      { name: "William Marshal", type: "Character", image: "cards/BOA-057 William Marshal.jpg" },
+      { name: "King Henry II", type: "Character", image: "cards/BOA-058 King Henry II.jpg" },
+      { name: "Henry the Young", type: "Character", image: "cards/BOA-059 Henry the Young.jpg" },
+      { name: "King John", type: "Character", image: "cards/BOA-060 King John.jpg" },
+      { name: "Prince Louis VIII", type: "Character", image: "cards/BOA-061 Prince Louis VIII.jpg" },
+      { name: "Alexander the Great", type: "Character", image: "cards/BOA-062 Alexander the Great.jpg" },
+      { name: "Aristotle", type: "Character", image: "cards/BOA-063 Aristotle.jpg" },
+      { name: "Phillip II of Macedonia", type: "Character", image: "cards/BOA-064 Phillip II of Macedonia.jpg" },
+      { name: "Olympias of Epirus", type: "Character", image: "cards/BOA-065 Olympias of Epirus (1).jpg" },
+      { name: "Hephasteon", type: "Character", image: "cards/BOA-066 Hephasteon.jpg" },
+      { name: "Perdiccas", type: "Character", image: "cards/BOA-067 Perdiccas.jpg" },
+      { name: "Cleitus the Black", type: "Character", image: "cards/BOA-068 Cleitus the Black.jpg" },
+      { name: "Arminius", type: "Character", image: "cards/BOA-069 Arminius.jpg" },
+      { name: "Sun Tzu", type: "Character", image: "cards/BOA-070 Sun Tzu.jpg" },
+      { name: "Attila the Hun", type: "Character", image: "cards/BOA-071 Attila the Hun.jpg" },
+      { name: "Boudica", type: "Character", image: "cards/BOA-072 Boudica.jpg" },
+      { name: "Leonardo Da Vinci", type: "Character", image: "cards/BOA-073 Leonardo Da Vinci.jpg" },
+      { name: "King Cyrus", type: "Character", image: "cards/BOA-074 King Cyrus.jpg" },
+      { name: "King Xerxes I", type: "Character", image: "cards/BOA-075 King Xerxes I.jpg" },
+      { name: "King Darius III", type: "Character", image: "cards/BOA-076 King Darius III.jpg" },
+      { name: "Joan of Arc", type: "Character", image: "cards/BOA-077 Joan of Arc.jpg" },
+      { name: "King Charles VI", type: "Character", image: "cards/BOA-078 King Charles VI.jpg" },
+      { name: "Jean De Dunois", type: "Character", image: "cards/BOA-079 Jean De Dunois.jpg" },
+      { name: "John Talbot", type: "Character", image: "cards/BOA-080 John Talbot.jpg" },
+      { name: "Cafall", type: "Animal", image: "cards/BOA-081 Cafall.jpg" },
+      { name: "Adar Cilgwri", type: "Animal", image: "cards/BOA-082 Adar Cilgwri.jpg" },
+
+      { name: "Horse", type: "Animal", image: "cards/BOA-083 Horse.jpg" },
+      { name: "Armored Horse", type: "Animal", image: "cards/BOA-084 Armored Horse.jpg" },
+      { name: "Dragon", type: "Animal", image: "cards/BOA-085 Dragon.jpg" },
+      { name: "Lion", type: "Animal", image: "cards/BOA-086 Lion.jpg" },
+      { name: "Ziz", type: "Animal", image: "cards/BOA-087 Ziz.jpg" },
+      { name: "Leviathan", type: "Animal", image: "cards/BOA-088 Leviathan.jpg" },
+      { name: "Behemoth", type: "Animal", image: "cards/BOA-089 Behemoth.jpg" },
+      { name: "Loch Ness Monster", type: "Animal", image: "cards/BOA-090 Loch Ness Monster.jpg" },
+      { name: "Daredevil", type: "Animal", image: "cards/BOA-091 Daredevil.jpg" },
+      { name: "Moby Dick", type: "Animal", image: "cards/BOA-092 Moby Dick.jpg" },
+      { name: "Kerchak", type: "Animal", image: "cards/BOA-093 Kerchak.jpg" },
+      { name: "Kala", type: "Animal", image: "cards/BOA-094 Kala.jpg" },
+      { name: "Gorilla", type: "Animal", image: "cards/BOA-095 Gorilla.jpg" },
+      { name: "Tantor", type: "Animal", image: "cards/BOA-096 Tantor.jpg" },
+      { name: "Jad-Bal-ja", type: "Animal", image: "cards/BOA-097 Jad-Bal-ja.jpg" },
+      { name: "Sabor", type: "Animal", image: "cards/BOA-098 Sabor.jpg" },
+      { name: "Gryf", type: "Animal", image: "cards/BOA-099 Gryf.jpg" },
+      { name: "Mahar", type: "Animal", image: "cards/BOA-100 Mahar.jpg" },
+
+      { name: "Battering Ram", type: "Construct", image: "cards/BOA-101 Battering Ram.jpg" },
+      { name: "Catapult", type: "Construct", image: "cards/BOA-102 Catapult.jpg" },
+      { name: "Ballista", type: "Construct", image: "cards/BOA-103 Ballista.jpg" },
+      { name: "Fortified Walls", type: "Construct", image: "cards/BOA-104 - Fortified Walls.jpg" },
+      { name: "Outpost", type: "Construct", image: "cards/BOA-105 Outpost.jpg" },
+      { name: "Siege Tower", type: "Construct", image: "cards/BOA-106 Siege Tower.jpg" },
+      { name: "Watch Tower", type: "Construct", image: "cards/BOA-107 Watch Tower.jpg" },
+      { name: "Gargoyle", type: "Construct", image: "cards/BOA-108 Gargoyle.jpg" },
+      { name: "Arcane Barrier", type: "Construct", image: "cards/BOA-109 Arcane Barrier.jpg" },
+      { name: "Militia Camp", type: "Construct", image: "cards/BOA-110 Militia Camp.jpg" },
+      { name: "Triremes Boat", type: "Construct", image: "cards/BOA-111 Triremes Boat.jpg" },
+      { name: "Ornithopter", type: "Construct", image: "cards/BOA-112 Ornithopter.jpg" },
+      { name: "Trebuchet", type: "Construct", image: "cards/BOA-113 Trebuchet.jpg" },
+      { name: "Mantlet Shield", type: "Construct", image: "cards/BOA-114 Mantlet Shield.jpg" },
+
+      { name: "Prison Caravan", type: "Construct", image: "cards/BOA-115 Prison Caravan.jpg" },
+      { name: "Grail's Blessing", type: "Action", image: "cards/BOA-116 Grail's Blessing.jpg" },
+      { name: "Last Stand", type: "Action", image: "cards/BOA-117 Last Stand.jpg" },
+      { name: "Charge!", type: "Action", image: "cards/BOA-118 Charge!.jpg" },
+      { name: "Call to Arms", type: "Action", image: "cards/BOA-119 Call to Arms.jpg" },
+      { name: "Gift of the Lady", type: "Action", image: "cards/BOA-120 Gift of the Lady.jpg" },
+      { name: "Merlin's Prophecy", type: "Action", image: "cards/BOA-121 Merlin's Prophecy.jpg" },
+      { name: "Enchant Weapon", type: "Action", image: "cards/BOA-122 Enchant Weapon.jpg" },
+      { name: "Slay the Beast", type: "Action", image: "cards/BOA-123 Slay the Beast.jpg" },
+      { name: "Divine Cleansing", type: "Action", image: "cards/BOA-124 Divine Cleansing.jpg" },
+      { name: "Explosion!", type: "Action", image: "cards/BOA-125 Explosion!.jpg" },
+      { name: "Reconstruct", type: "Action", image: "cards/BOA-126 Reconstruct.jpg" },
+      { name: "Call of the Night", type: "Action", image: "cards/BOA-127 Call of the Night.jpg" },
+      { name: "Drink of Blood", type: "Action", image: "cards/BOA-128 Drink of Blood.jpg" },
+      { name: "Stake the Undead", type: "Action", image: "cards/BOA-129 Stake the Undead.jpg" },
+      { name: "Hidden in Mist", type: "Action", image: "cards/BOA-130 Hidden in Mist.jpg" },
+      { name: "Invasion of Night", type: "Action", image: "cards/BOA-131 Invasion of Night.jpg" },
+      { name: "Absorb Soul", type: "Action", image: "cards/BOA-132 Absorb Soul.jpg" },
+      { name: "Raise the Dead", type: "Action", image: "cards/BOA-133 Raise the Dead.jpg" },
+      { name: "Zombie Plague", type: "Action", image: "cards/BOA-134 Zombie Plague.jpg" },
+      { name: "It's Alive!", type: "Action", image: "cards/BOA-135 It's Alive!.jpg" },
+      { name: "Stitch Together", type: "Action", image: "cards/BOA-136 Stitch Together.jpg" },
+      { name: "Duality", type: "Action", image: "cards/BOA-137 Duality.jpg" },
+      { name: "Split", type: "Action", image: "cards/BOA-138 Split.jpg" },
+      { name: "Harsh Storm", type: "Action", image: "cards/BOA-139 Harsh Storm.jpg" },
+      { name: "Navigator's Insight", type: "Action", image: "cards/BOA-140 Navigator's Insight.jpg" },
+      { name: "Stand Your Ground", type: "Action", image: "cards/BOA-141 Stand Your Ground.jpg" },
+      { name: "Aristotle's Philosophy", type: "Action", image: "cards/BOA-142 Aristotle's Philosophy.jpg" },
+      { name: "Stealth Attack", type: "Action", image: "cards/BOA-143 Stealth Attack.jpg" },
+      { name: "Cunning Thievery", type: "Action", image: "cards/BOA-144 Cunning Thievery.jpg" },
+      { name: "Vine Swing", type: "Action", image: "cards/BOA-145 Vine Swing (1).jpg" },
+      { name: "Taking Aim", type: "Action", image: "cards/BOA-146 Taking Aim.jpg" },
+      { name: "Stampede!", type: "Action", image: "cards/BOA-147 Stampede!.jpg" },
+      { name: "Emperor's Greed", type: "Action", image: "cards/BOA-148 Emperor's Greed.jpg" },
+      { name: "Construction Plans", type: "Action", image: "cards/BOA-149 Construction Plans.jpg" },
+      { name: "Martyr", type: "Action", image: "cards/BOA-150 Martyr.jpg" },
+
+      { name: "Excalibur", type: "Item", image: "cards/BOA-151 Excalibur.jpg" },
+      { name: "The Holy Grail", type: "Item", image: "cards/BOA-152 The Holy Grail.jpg" },
+      { name: "Pridewin Shield", type: "Item", image: "cards/BOA-153 Pridewin Shield.jpg" },
+      { name: "Spear of Longinus", type: "Item", image: "cards/BOA-154 Spear of Longinus.jpg" },
+      { name: "Lance of Lancelot", type: "Item", image: "cards/BOA-155 Lance of Lancelot.jpg" },
+      { name: "Coffin Bed", type: "Item", image: "cards/BOA-156 Coffin Bed.jpg" },
+      { name: "Elixir of Madness", type: "Item", image: "cards/BOA-157 Elixir of Madness.jpg" },
+      { name: "Mummy's Tomb", type: "Item", image: "cards/BOA-158 Mummy's Tomb.jpg" },
+      { name: "Yew Longbow", type: "Item", image: "cards/BOA-159 Yew Longbow.jpg" },
+      { name: "Sherwood Cloak", type: "Item", image: "cards/BOA-160 Sherwood Cloak.jpg" },
+      { name: "Adventure Journal", type: "Item", image: "cards/BOA-161 Adventure Journal.jpg" },
+      { name: "Harpoon Gun", type: "Item", image: "cards/BOA-162 Harpoon Gun.jpg" },
+      { name: "Hoplon Shield", type: "Item", image: "cards/BOA-163 Hoplon Shield.jpg" },
+      { name: "Saddle", type: "Item", image: "cards/BOA-164 Saddle.jpg" },
+      { name: "Crown of the King", type: "Item", image: "cards/BOA-165 Crown of the King.jpg" },
+      { name: "Quest for the Grail", type: "Event", image: "cards/BOA-166 Quest for the Grail.jpg" },
+      { name: "Blood Moon Rises", type: "Event", image: "cards/BOA-167 Blood Moon Rises.jpg" },
+      { name: "Tournament of Champions", type: "Event", image: "cards/BOA-168 Tournament of Champions.jpg" },
+      { name: "Storm at Sea", type: "Event", image: "cards/BOA-169 Storm at Sea.jpg" },
+      { name: "Call of the Wild", type: "Event", image: "cards/BOA-170 Call of the Wild.jpg" },
+      { name: "Army March", type: "Event", image: "cards/BOA-171 Army March.jpg" },
+      { name: "End the War", type: "Event", image: "cards/BOA-172 End the War.jpg" },
+      { name: "Dimension Portal", type: "Event", image: "cards/BOA-173 Dimension Portal.jpg" },
+      { name: "Battle of Thermopylae", type: "Event", image: "cards/BOA-174 Battle of Thermopylae.jpg" },
+      { name: "Battle of Naissus", type: "Event", image: "cards/BOA-175 Battle of Naissus.jpg" },
+
+      { name: "Camelot", type: "Stronghold", image: "cards/BOA-176 Camelot.jpg" },
+      { name: "Dracula's Castle", type: "Stronghold", image: "cards/BOA-177 Dracula's Castle.jpg" },
+      { name: "Frankenstein's Castle", type: "Stronghold", image: "cards/BOA-178 Frankenstein's Castle.jpg" },
+      { name: "Merlin's Sanctum", type: "Stronghold", image: "cards/BOA-179 Merlin's Sanctum.jpg" },
+      { name: "Haunted Manor", type: "Stronghold", image: "cards/BOA-180 Haunted Manor.jpg" },
+      { name: "Graveyard", type: "Stronghold", image: "cards/BOA-181 Graveyard.jpg" },
+      { name: "Baba Yaga's Hut", type: "Stronghold", image: "cards/BOA-182 Baba Yaga's Hut.jpg" },
+      { name: "African Jungle", type: "Stronghold", image: "cards/BOA-183 African Jungle.jpg" },
+      { name: "Babylon", type: "Stronghold", image: "cards/BOA-184 Babylon.jpg" },
+      { name: "Persepolis", type: "Stronghold", image: "cards/BOA-185 Persepolis.jpg" },
+      { name: "Sparta", type: "Stronghold", image: "cards/BOA-186 Sparta.jpg" },
+      { name: "Pembroke Castle", type: "Stronghold", image: "cards/BOA-187 Pembroke Castle.jpg" },
+      { name: "Sherwood Forest", type: "Stronghold", image: "cards/BOA-188 Sherwood Forest.jpg" },
+      { name: "Nottingham Castle", type: "Stronghold", image: "cards/BOA-189 Nottingham Castle.jpg" },
+      { name: "Davinci's Workshop", type: "Stronghold", image: "cards/BOA-190 Davinci's Workshop.jpg" },
+
+      { name: "Camelot Soldier", type: "Army", image: "cards/BOA-191 Camelot Soldier.jpg" },
+      { name: "Camelot Spearman", type: "Army", image: "cards/BOA-192 Camelot Spearman.jpg" },
+      { name: "Camelot Archer", type: "Army", image: "cards/BOA-193 Camelot Archer.jpg" },
+      { name: "Zombie", type: "Army", image: "cards/BOA-194 Zombie.jpg" },
+      { name: "Mummy", type: "Army", image: "cards/BOA-195 Mummy.jpg" },
+      { name: "Vampire Bats", type: "Army", image: "cards/BOA-196 Vampire Bats.jpg" },
+      { name: "Spartan Soldier", type: "Army", image: "cards/BOA-197 Spartan Soldier.jpg" },
+      { name: "Kulonga Warrior", type: "Army", image: "cards/BOA-198 Kulonga Warrior.jpg" },
+      { name: "Skeleton", type: "Army", image: "cards/BOA-199 Skeleton.jpg" },
+      { name: "Persian Immortal", type: "Army", image: "cards/BOA-200 Persian Immortal.jpg" }
+    ];
+
+    const grid = document.getElementById("cardGrid");
+    const searchInput = document.getElementById("searchInput");
+    const typeFilter = document.getElementById("typeFilter");
+    const resultsCount = document.getElementById("resultsCount");
+    const emptyState = document.getElementById("emptyState");
+
+    function encodePath(path) {
+      return encodeURI(path);
+    }
+
+    function matchesSearch(card, searchTerm) {
+      const text = searchTerm.trim().toLowerCase();
+      if (!text) return true;
+
+      const namesToSearch = [card.name, ...(card.searchNames || [])];
+      return namesToSearch.some(name => name.toLowerCase().includes(text));
+    }
+
+    function getFilteredCards() {
+      const searchTerm = searchInput.value;
+      const selectedType = typeFilter.value;
+
+      return cards.filter(card => {
+        const typeMatches = selectedType === "All" || card.type === selectedType;
+        const searchMatches = matchesSearch(card, searchTerm);
+        return typeMatches && searchMatches;
+      });
+    }
+
+    function renderCards() {
+      const filtered = getFilteredCards();
+      grid.innerHTML = "";
+
+      resultsCount.textContent = `${filtered.length} card${filtered.length === 1 ? "" : "s"} found`;
+
+      if (filtered.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      } else {
+        emptyState.style.display = "none";
+      }
+
+      filtered.forEach((card, index) => {
+        const wrapper = document.createElement("article");
+        wrapper.className = "card";
+
+        const flipNote = card.backImage
+          ? `<div class="flip-note">Click image to flip</div>`
+          : "";
+
+        wrapper.innerHTML = `
+          <div class="card-image-wrap" data-index="${index}">
+            <img src="${encodePath(card.image)}" alt="${card.name}" data-front="${encodePath(card.image)}" ${card.backImage ? `data-back="${encodePath(card.backImage)}" data-side="front"` : ""}>
+          </div>
+          <div class="card-body">
+            <div class="card-name">${card.name}</div>
+            <div class="card-type">${card.type}</div>
+            ${flipNote}
+          </div>
+        `;
+
+        grid.appendChild(wrapper);
+      });
+
+      document.querySelectorAll(".card-image-wrap img[data-back]").forEach(img => {
+        img.addEventListener("click", () => {
+          const side = img.getAttribute("data-side");
+          if (side === "front") {
+            img.src = img.getAttribute("data-back");
+            img.setAttribute("data-side", "back");
+          } else {
+            img.src = img.getAttribute("data-front");
+            img.setAttribute("data-side", "front");
+          }
+        });
+      });
+    }
+
+    searchInput.addEventListener("input", renderCards);
+    typeFilter.addEventListener("change", renderCards);
+
+    renderCards();
+  </script>
+</body>
+</html>
