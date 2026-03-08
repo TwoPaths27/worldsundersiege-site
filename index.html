@@ -1,145 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Worlds Under Siege</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worlds Under Siege</title>
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: white;
-    }
+<style>
 
-    .top-banner {
-      width: 100%;
-      height: 500px;
-      background: url("banner.jpg") center/cover no-repeat;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-bottom: 3px solid #22c55e;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .banner-content h1 {
-      font-size: 3rem;
-      margin-bottom: 10px;
-      color: #f8fafc;
-      letter-spacing: 2px;
-    }
-
-    .banner-content p {
-      font-size: 1.1rem;
-      color: #cbd5e1;
-    }
-
-    .logo-section {
-      text-align: center;
-      padding: 30px 20px 10px;
-    }
-
-  .logo{
-  width:140px;
-  height:auto;
-  display:block;
-  margin:0 auto 15px;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
 }
 
-    nav {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 25px 20px 40px;
-    }
+body{
+font-family:Arial, sans-serif;
+background:#0b1020;
+color:white;
+text-align:center;
+}
 
-    nav a {
-      text-decoration: none;
-      color: white;
-      background: #22c55e;
-      padding: 14px 26px;
-      border-radius: 10px;
-      font-weight: bold;
-      transition: 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    }
+/* BANNER */
 
-    nav a:hover {
-      background: #16a34a;
-      transform: translateY(-2px);
-    }
+.top-banner{
+width:100%;
+height:440px;
+background:url("banner.jpg") center/cover no-repeat;
+position:relative;
+}
 
-    .content {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px 24px 60px;
-      text-align: center;
-    }
+/* MENU INSIDE BANNER */
 
-    .content h2 {
-      font-size: 2rem;
-      margin-bottom: 15px;
-      color: #f8fafc;
-    }
+.banner-menu{
+position:absolute;
+bottom:25px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:25px;
+}
 
-    .content p {
-      font-size: 1.1rem;
-      color: #cbd5e1;
-      line-height: 1.6;
-    }
+.banner-menu a{
+text-decoration:none;
+color:white;
+background:rgba(0,0,0,0.65);
+padding:12px 28px;
+border-radius:8px;
+font-weight:bold;
+letter-spacing:1px;
+transition:0.2s;
+}
 
-    @media (max-width: 700px) {
-      .banner-content h1 {
-        font-size: 2.2rem;
-      }
+.banner-menu a:hover{
+background:#22c55e;
+transform:translateY(-2px);
+}
 
-      .top-banner {
-        height: 180px;
-      }
+/* LOGO */
 
-      .logo {
-        width: 110px;
-        height: 110px;
-        font-size: 1rem;
-      }
+.logo-section{
+padding:30px 20px 10px;
+}
 
-      nav a {
-        width: 140px;
-        text-align: center;
-      }
-    }
-  </style>
+.logo{
+width:180px;
+height:auto;
+display:block;
+margin:0 auto;
+}
+
+/* CONTENT */
+
+.content{
+max-width:900px;
+margin:auto;
+padding:30px 20px 60px;
+}
+
+.content h2{
+font-size:32px;
+margin-bottom:15px;
+}
+
+.content p{
+font-size:18px;
+color:#cbd5e1;
+line-height:1.6;
+}
+
+</style>
+
 </head>
+
 <body>
+
 <header class="top-banner">
 
-  <nav class="banner-menu">
-    <a href="#">Home</a>
-    <a href="#">Cards</a>
-    <a href="#">Rules</a>
-    <a href="#">News</a>
-  </nav>
+<nav class="banner-menu">
+<a href="#">Home</a>
+<a href="#">Cards</a>
+<a href="#">Rules</a>
+<a href="#">News</a>
+</nav>
 
 </header>
 
 <section class="logo-section">
-  <img src="logo.png" class="logo">
+<img src="logo.png" class="logo">
 </section>
 
-  <main class="content">
-    <h2>Welcome to Worlds Under Siege</h2>
-    <p>
-      Explore the world of Worlds Under Siege, discover powerful cards,
-      learn the rules, and stay updated with the latest news.
-    </p>
-  </main>
+<main class="content">
+
+<h2>Welcome to Worlds Under Siege</h2>
+
+<p>
+Explore the world of Worlds Under Siege, discover powerful cards,
+learn the rules of battle, and stay updated with the latest news.
+</p>
+
+</main>
+
 </body>
 </html>
