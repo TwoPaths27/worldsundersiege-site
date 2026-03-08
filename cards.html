@@ -175,7 +175,14 @@
       color: #cbd5e1;
       display: none;
     }
+.stronghold-card .card-image-wrap{
+  aspect-ratio: 88 / 63;
+  background:#0b1020;
+}
 
+.stronghold-card .card-image-wrap img{
+  object-fit: contain;
+}
     @media (max-width: 1200px) {
       .card-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -325,7 +332,7 @@
       { name: "King Xerxes I", type: "Character", image: "cards/BOA-075 King Xerxes I.jpg" },
       { name: "King Darius III", type: "Character", image: "cards/BOA-076 King Darius III.jpg" },
       { name: "Joan of Arc", type: "Character", image: "cards/BOA-077 Joan of Arc.jpg" },
-      { name: "King Charles VI", type: "Character", image: "cards/BOA-078 King Charles VII.jpg" },
+      { name: "King Charles VII", type: "Character", image: "cards/BOA-078 King Charles VII.jpg" },
       { name: "Jean De Dunois", type: "Character", image: "cards/BOA-079 Jean De Dunois.jpg" },
       { name: "John Talbot", type: "Character", image: "cards/BOA-080 John Talbot.jpg" },
       { name: "Cafall", type: "Animal", image: "cards/BOA-081 Cafall.jpg" },
@@ -500,7 +507,7 @@
 
       filtered.forEach((card, index) => {
         const wrapper = document.createElement("article");
-        wrapper.className = "card";
+        wrapper.className = card.type === "Stronghold" ? "card stronghold-card" : "card";
 
         const flipNote = card.backImage
           ? `<div class="flip-note">Click image to flip</div>`
