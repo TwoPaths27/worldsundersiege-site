@@ -523,7 +523,7 @@ selectedType === "All" ||
           </div>
           <div class="card-body">
             <div class="card-name">${card.name}</div>
-            <div class="card-type">${card.type}</div>
+            <div class="card-type">${Array.isArray(card.type) ? card.type.join(" • ") : card.type}</div>
             ${flipNote}
           </div>
         `;
