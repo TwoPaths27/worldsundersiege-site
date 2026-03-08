@@ -163,9 +163,18 @@
       margin-bottom: 8px;
     }
 
-    .flip-note {
+    .card-hint {
       font-size: 12px;
       color: #cbd5e1;
+    }
+
+    .stronghold-card .card-image-wrap {
+      aspect-ratio: 88 / 63;
+      background: #0b1020;
+    }
+
+    .stronghold-card .card-image-wrap img {
+      object-fit: contain;
     }
 
     .empty-state {
@@ -175,14 +184,98 @@
       color: #cbd5e1;
       display: none;
     }
-.stronghold-card .card-image-wrap{
-  aspect-ratio: 88 / 63;
-  background:#0b1020;
-}
 
-.stronghold-card .card-image-wrap img{
-  object-fit: contain;
-}
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 9999;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      position: relative;
+      max-width: 1100px;
+      width: 100%;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border: none;
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    .modal-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .modal-single {
+      display: flex;
+      justify-content: center;
+    }
+
+    .modal-single img {
+      max-width: min(90vw, 420px);
+      max-height: 80vh;
+      width: auto;
+      height: auto;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .modal-double {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+
+    .modal-double-item {
+      text-align: center;
+    }
+
+    .modal-double-item h3 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .modal-double-item img {
+      max-width: 100%;
+      max-height: 75vh;
+      width: auto;
+      height: auto;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+    }
+
     @media (max-width: 1200px) {
       .card-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -192,6 +285,10 @@
     @media (max-width: 900px) {
       .card-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .modal-double {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -206,6 +303,15 @@
 
       .page-header h1 {
         font-size: 30px;
+      }
+
+      .modal-content {
+        padding: 18px;
+      }
+
+      .modal-title {
+        font-size: 22px;
+        padding-right: 34px;
       }
     }
   </style>
@@ -247,6 +353,14 @@
   <main class="card-grid" id="cardGrid"></main>
   <div class="empty-state" id="emptyState">No cards match your search.</div>
 
+  <div class="modal" id="cardModal">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">&times;</button>
+      <div class="modal-title" id="modalTitle"></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
   <script>
     const cards = [
       { name: "King Arthur", type: "Character", image: "cards/BOA-001 King Arthur.jpg" },
@@ -271,7 +385,7 @@
       { name: "Dracula", type: "Character", image: "cards/BOA-020 Dracula.jpg" },
       { name: "Frankenstein's Monster", type: "Character", image: "cards/BOA-021 Frankenstein's Monster.jpg" },
       { name: "Yeti", type: "Character", image: "cards/BOA-022 Yeti.jpg" },
-      { name: "Bertrand Cailliet", type: "Character", image: "cards/BOA-023 Bertrand Calliet.jpg" },
+      { name: "Bertrand Cailliet", type: "Character", image: "cards/BOA-023 Bertrand Cailliet.jpg" },
       { name: "Headless Horseman", type: "Character", image: "cards/BOA-024 Headless Horseman.jpg" },
       { name: "Big Foot", type: "Character", image: "cards/BOA-025 Big Foot.jpg" },
       { name: "Nosferatu", type: "Character", image: "cards/BOA-026 Nosferatu.jpg" },
@@ -332,7 +446,7 @@
       { name: "King Xerxes I", type: "Character", image: "cards/BOA-075 King Xerxes I.jpg" },
       { name: "King Darius III", type: "Character", image: "cards/BOA-076 King Darius III.jpg" },
       { name: "Joan of Arc", type: "Character", image: "cards/BOA-077 Joan of Arc.jpg" },
-      { name: "King Charles VII", type: "Character", image: "cards/BOA-078 King Charles VII.jpg" },
+      { name: "King Charles VI", type: "Character", image: "cards/BOA-078 King Charles VI.jpg" },
       { name: "Jean De Dunois", type: "Character", image: "cards/BOA-079 Jean De Dunois.jpg" },
       { name: "John Talbot", type: "Character", image: "cards/BOA-080 John Talbot.jpg" },
       { name: "Cafall", type: "Animal", image: "cards/BOA-081 Cafall.jpg" },
@@ -456,7 +570,7 @@
       { name: "Camelot Archer", type: "Army", image: "cards/BOA-193 Camelot Archer.jpg" },
       { name: "Zombie", type: "Army", image: "cards/BOA-194 Zombie.jpg" },
       { name: "Mummy", type: "Army", image: "cards/BOA-195 Mummy.jpg" },
-     { name: "Vampire Bats", type: ["Army","Animal"], image: "cards/BOA-196 Vampire Bats.jpg" },
+      { name: "Vampire Bats", type: ["Army", "Animal"], image: "cards/BOA-196 Vampire Bats.jpg" },
       { name: "Spartan Soldier", type: "Army", image: "cards/BOA-197 Spartan Soldier.jpg" },
       { name: "Kulonga Warrior", type: "Army", image: "cards/BOA-198 Kulonga Warrior.jpg" },
       { name: "Skeleton", type: "Army", image: "cards/BOA-199 Skeleton.jpg" },
@@ -468,6 +582,10 @@
     const typeFilter = document.getElementById("typeFilter");
     const resultsCount = document.getElementById("resultsCount");
     const emptyState = document.getElementById("emptyState");
+    const modal = document.getElementById("cardModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalBody = document.getElementById("modalBody");
+    const modalClose = document.getElementById("modalClose");
 
     function encodePath(path) {
       return encodeURI(path);
@@ -486,14 +604,47 @@
       const selectedType = typeFilter.value;
 
       return cards.filter(card => {
-       const typeMatches =
-selectedType === "All" ||
-(Array.isArray(card.type)
-  ? card.type.includes(selectedType)
-  : card.type === selectedType);
+        const typeMatches =
+          selectedType === "All" ||
+          (Array.isArray(card.type)
+            ? card.type.includes(selectedType)
+            : card.type === selectedType);
+
         const searchMatches = matchesSearch(card, searchTerm);
         return typeMatches && searchMatches;
       });
+    }
+
+    function openModal(card) {
+      modalTitle.textContent = card.name;
+
+      if (card.backImage) {
+        modalBody.innerHTML = `
+          <div class="modal-double">
+            <div class="modal-double-item">
+              <h3>Dr Jekyl</h3>
+              <img src="${encodePath(card.image)}" alt="Dr Jekyl">
+            </div>
+            <div class="modal-double-item">
+              <h3>Mr Hyde</h3>
+              <img src="${encodePath(card.backImage)}" alt="Mr Hyde">
+            </div>
+          </div>
+        `;
+      } else {
+        modalBody.innerHTML = `
+          <div class="modal-single">
+            <img src="${encodePath(card.image)}" alt="${card.name}">
+          </div>
+        `;
+      }
+
+      modal.classList.add("open");
+    }
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modalBody.innerHTML = "";
     }
 
     function renderCards() {
@@ -509,44 +660,44 @@ selectedType === "All" ||
         emptyState.style.display = "none";
       }
 
-      filtered.forEach((card, index) => {
+      filtered.forEach(card => {
         const wrapper = document.createElement("article");
         wrapper.className = card.type === "Stronghold" ? "card stronghold-card" : "card";
 
-        const flipNote = card.backImage
-          ? `<div class="flip-note">Click image to flip</div>`
-          : "";
+        const typeLabel = Array.isArray(card.type) ? card.type.join(" • ") : card.type;
+        const hint = card.backImage ? "Click to view both sides" : "Click to enlarge";
 
         wrapper.innerHTML = `
-          <div class="card-image-wrap" data-index="${index}">
-            <img src="${encodePath(card.image)}" alt="${card.name}" data-front="${encodePath(card.image)}" ${card.backImage ? `data-back="${encodePath(card.backImage)}" data-side="front"` : ""}>
+          <div class="card-image-wrap">
+            <img src="${encodePath(card.image)}" alt="${card.name}">
           </div>
           <div class="card-body">
             <div class="card-name">${card.name}</div>
-            <div class="card-type">${Array.isArray(card.type) ? card.type.join(" • ") : card.type}</div>
-            ${flipNote}
+            <div class="card-type">${typeLabel}</div>
+            <div class="card-hint">${hint}</div>
           </div>
         `;
 
+        wrapper.querySelector(".card-image-wrap").addEventListener("click", () => openModal(card));
         grid.appendChild(wrapper);
-      });
-
-      document.querySelectorAll(".card-image-wrap img[data-back]").forEach(img => {
-        img.addEventListener("click", () => {
-          const side = img.getAttribute("data-side");
-          if (side === "front") {
-            img.src = img.getAttribute("data-back");
-            img.setAttribute("data-side", "back");
-          } else {
-            img.src = img.getAttribute("data-front");
-            img.setAttribute("data-side", "front");
-          }
-        });
       });
     }
 
     searchInput.addEventListener("input", renderCards);
     typeFilter.addEventListener("change", renderCards);
+    modalClose.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", e => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        closeModal();
+      }
+    });
 
     renderCards();
   </script>
