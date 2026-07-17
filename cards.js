@@ -853,7 +853,7 @@ const cards = [
   {
     "id": "BOA-121",
     "name": "Merlin's Prophecy",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-121 Merlin's Prophecy.jpg",
     "set": "BOA"
   },
@@ -923,7 +923,7 @@ const cards = [
   {
     "id": "BOA-131",
     "name": "Invasion of Night",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-131 Invasion of Night.jpg",
     "set": "BOA"
   },
@@ -944,14 +944,14 @@ const cards = [
   {
     "id": "BOA-134",
     "name": "Zombie Plague",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-134 Zombie Plague.jpg",
     "set": "BOA"
   },
   {
     "id": "BOA-135",
     "name": "It's Alive!",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-135 It's Alive!.jpg",
     "set": "BOA"
   },
@@ -979,7 +979,7 @@ const cards = [
   {
     "id": "BOA-139",
     "name": "Harsh Storm",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-139 Harsh Storm.jpg",
     "set": "BOA"
   },
@@ -1042,7 +1042,7 @@ const cards = [
   {
     "id": "BOA-148",
     "name": "Emperor's Greed",
-    "type": "Event",
+    "type": "Action",
     "image": "cards/BOA-148 Emperor's Greed.jpg",
     "set": "BOA"
   },
@@ -1217,7 +1217,7 @@ const cards = [
   {
     "id": "BOA-173",
     "name": "Mummy's Tomb",
-    "type": "Stronghold",
+    "type": "Item",
     "image": "cards/BOA-173 Mummy's Tomb.jpg",
     "set": "BOA"
   },
