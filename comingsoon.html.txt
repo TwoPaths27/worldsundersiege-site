@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>Coming Soon - Worlds Under Siege</title>
+
+<style>
+
+body{
+    margin:0;
+    background:#1b1b1b;
+    color:white;
+    font-family:Arial, Helvetica, sans-serif;
+    text-align:center;
+}
+
+.container{
+    padding-top:40px;
+}
+
+img{
+    max-width:700px;
+    width:90%;
+}
+
+h1{
+    margin-top:25px;
+    font-size:42px;
+}
+
+p{
+    font-size:22px;
+    color:#ddd;
+}
+
+.button{
+    display:inline-block;
+    margin-top:30px;
+    padding:15px 35px;
+    background:#b8860b;
+    color:white;
+    text-decoration:none;
+    border-radius:8px;
+    font-size:20px;
+}
+
+.button:hover{
+    background:#d4a017;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<img src="coming-soon.png" alt="Coming Soon">
+
+<h1>Feature Under Development</h1>
+
+<p>
+This section of Worlds Under Siege is currently being developed.
+<br><br>
+Check back soon!
+</p>
+
+<a class="button" href="index.html">Return Home</a>
+
+</div>
+
+</body>
+
+</html>
