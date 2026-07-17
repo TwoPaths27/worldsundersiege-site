@@ -70,8 +70,8 @@
     <section class="section" aria-labelledby="set-title">
       <h2 class="section-title" id="set-title">Latest Set</h2>
       <div class="set-showcase">
-        <div class="set-art"><div class="set-placeholder"><strong>Battle of Ages</strong><span>Add your booster pack or set artwork here later.</span></div></div>
-        <div class="set-copy"><div class="eyebrow">Current Card Set</div><h3>Battle of Ages</h3><p>History, mythology, folklore and fiction clash in the first Worlds Under Siege card set. Discover legendary leaders, terrifying monsters, powerful actions and fortified strongholds.</p><div class="set-stats"><span class="stat-pill">225 Cards</span><span class="stat-pill">Set Code: BOA</span></div><a class="btn btn-gold" href="cards.html?set=BOA">View Battle of Ages</a></div>
+        <div class="set-art"><img src="battle-of-ages-set.png" alt="Worlds Under Siege: Battle of Ages booster display"></div>
+        <div class="set-copy"><div class="eyebrow">Current Card Set</div><h3>Battle of Ages</h3><p>The inaugural set of <em>Worlds Under Siege</em>, featuring legendary heroes, mythical creatures, historical figures, monsters, and ancient civilizations.</p><div class="set-stats"><span class="stat-pill">225 Cards</span><span class="stat-pill">Set Code: BOA</span></div><a class="btn btn-gold" href="cards.html?set=BOA">View Battle of Ages Cards</a></div>
       </div>
     </section>
 
@@ -103,7 +103,7 @@
     document.getElementById('featureShell').addEventListener('mouseenter',()=>clearInterval(featureTimer));document.getElementById('featureShell').addEventListener('mouseleave',restartTimer);
     renderFeature();restartTimer();
 
-    const typeConfig=[['Character','BOA-001'],['Animal','BOA-092'],['Action','BOA-124'],['Item','BOA-143'],['Construct','BOA-116'],['Army','BOA-194'],['Event','BOA-218'],['Stronghold','BOA-209']];
+    const typeConfig=[['Character','BOA-085'],['Animal','BOA-091'],['Action','BOA-130'],['Item','BOA-166'],['Construct','BOA-183'],['Army','BOA-193'],['Event','BOA-202'],['Stronghold','BOA-212']];
     const typesGrid=document.getElementById('typesGrid');
     typeConfig.forEach(([type,id])=>{let card=cards.find(c=>c.id===id);if(!card)card=cards.find(c=>Array.isArray(c.type)?c.type.includes(type):c.type===type);const link=document.createElement('a');link.className='type-card';link.href=`cards.html?type=${encodeURIComponent(type)}`;link.innerHTML=`<div class="type-image">${card?`<img src="${encodeURI(card.image)}" alt="${type} card" loading="lazy">`:''}</div><div class="type-label">${type}<small>View ${type} cards →</small></div>`;typesGrid.appendChild(link)});
   </script>
