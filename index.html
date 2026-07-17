@@ -1,125 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Worlds Under Siege</title>
-
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
-
-body{
-font-family:Arial, sans-serif;
-background:#0b1020;
-color:white;
-text-align:center;
-}
-
-/* BANNER */
-
-.top-banner{
-width:100%;
-height:440px;
-background:url("banner.jpg") center/cover no-repeat;
-position:relative;
-}
-
-/* MENU INSIDE BANNER */
-
-.banner-menu{
-position:absolute;
-bottom:25px;
-left:50%;
-transform:translateX(-50%);
-display:flex;
-gap:25px;
-}
-
-.banner-menu a{
-text-decoration:none;
-color:white;
-background:rgba(0,0,0,0.65);
-padding:12px 28px;
-border-radius:8px;
-font-weight:bold;
-letter-spacing:1px;
-transition:0.2s;
-}
-
-.banner-menu a:hover{
-background:#22c55e;
-transform:translateY(-2px);
-}
-
-/* LOGO */
-
-.logo-section{
-padding:30px 20px 10px;
-}
-
-.logo{
-width:180px;
-height:auto;
-display:block;
-margin:0 auto;
-}
-
-/* CONTENT */
-
-.content{
-max-width:900px;
-margin:auto;
-padding:30px 20px 60px;
-}
-
-.content h2{
-font-size:32px;
-margin-bottom:15px;
-}
-
-.content p{
-font-size:18px;
-color:#cbd5e1;
-line-height:1.6;
-}
-
-</style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Worlds Under Siege is a strategic trading card game where history, legend and mythology collide.">
+  <title>Worlds Under Siege</title>
+  <style>
+    :root{--bg:#080d18;--panel:#111827;--panel2:#172033;--text:#f8fafc;--muted:#b8c3d4;--green:#22c55e;--gold:#e4b95f;--line:rgba(255,255,255,.12)}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#15223b 0,#080d18 38%);color:var(--text)}
+    a{color:inherit} button{font:inherit}
+    .top-banner{min-height:430px;background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.72)),url("banner.jpg") center/cover no-repeat;position:relative;display:flex;flex-direction:column}
+    .account-bar{background:#000;padding:9px 5%;display:flex;justify-content:flex-end;gap:9px;font-size:14px}.account-bar a{text-decoration:none;color:#dbe5f4}.account-bar a:hover{color:#86efac}
+    .brand-row{flex:1;display:flex;align-items:center;justify-content:center;padding:30px}.hero-logo{width:min(330px,72vw);filter:drop-shadow(0 8px 18px #000)}
+    .main-nav{background:rgba(0,0,0,.88);display:flex;justify-content:center;gap:9px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid rgba(255,255,255,.14)}
+    .main-nav a{text-decoration:none;padding:10px 15px;border-radius:8px;font-weight:700;letter-spacing:.02em}.main-nav a:hover,.main-nav a.active{background:var(--green);color:#041208}
+    main{max-width:1240px;margin:auto;padding:54px 24px 70px}.section{margin-bottom:72px}.section-title{text-align:center;font-size:clamp(28px,4vw,42px);margin:0 0 10px}.section-subtitle{text-align:center;color:var(--muted);max-width:760px;margin:0 auto 28px;line-height:1.65}
+    .welcome{text-align:center;max-width:920px;margin:0 auto 72px}.welcome h1{font-size:clamp(34px,5vw,58px);margin:0 0 18px}.welcome p{font-size:19px;line-height:1.7;color:var(--muted)}
+    .cta-row{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-block;text-decoration:none;border:1px solid transparent;padding:13px 22px;border-radius:9px;font-weight:800;transition:.2s}.btn-primary{background:var(--green);color:#06130a}.btn-primary:hover{transform:translateY(-2px);background:#4ade80}.btn-secondary{background:rgba(255,255,255,.08);border-color:var(--line)}.btn-secondary:hover{background:rgba(255,255,255,.15)}.btn-gold{background:var(--gold);color:#211705}.btn-gold:hover{filter:brightness(1.08);transform:translateY(-2px)}
+    .feature-shell{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:14px}.slide-arrow{height:52px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:white;font-size:28px;cursor:pointer}.slide-arrow:hover{background:var(--green);color:#041208}
+    .feature-card{background:linear-gradient(135deg,#172033,#0d1526);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;grid-template-columns:minmax(220px,390px) 1fr;gap:32px;align-items:center;min-height:510px;box-shadow:0 22px 60px rgba(0,0,0,.28)}
+    .feature-image-wrap{text-align:center}.feature-image{width:100%;max-width:360px;max-height:520px;object-fit:contain;border-radius:14px;filter:drop-shadow(0 16px 22px rgba(0,0,0,.55));cursor:pointer}.feature-copy .eyebrow,.set-copy .eyebrow{color:#86efac;text-transform:uppercase;font-size:13px;font-weight:800;letter-spacing:.16em}.feature-copy h3{font-size:clamp(30px,4vw,50px);margin:10px 0}.feature-copy p{color:var(--muted);line-height:1.65}.dots{display:flex;justify-content:center;gap:7px;margin-top:18px}.dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:#64748b;cursor:pointer}.dot.active{background:var(--green);transform:scale(1.25)}
+    .news-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:24px}.news-main,.news-list,.set-showcase,.type-card{background:rgba(17,24,39,.92);border:1px solid var(--line);border-radius:16px}.news-main{padding:30px}.news-date{color:#86efac;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:.12em}.news-main h3{font-size:30px;margin:12px 0}.news-main p{color:var(--muted);line-height:1.65}.news-list{padding:12px}.news-item{padding:18px;border-bottom:1px solid var(--line)}.news-item:last-child{border-bottom:0}.news-item strong{display:block;margin-bottom:6px}.news-item span{font-size:13px;color:var(--muted)}
+    .set-showcase{display:grid;grid-template-columns:1fr 1fr;gap:38px;padding:38px;align-items:center;background:linear-gradient(135deg,#141d30,#271c12)}.set-art{min-height:360px;border:1px dashed rgba(228,185,95,.5);border-radius:16px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle,#3b2a16,#101827)}.set-art img{max-width:100%;max-height:390px;object-fit:contain}.set-placeholder{color:#d9c08b}.set-placeholder strong{display:block;font-size:26px;margin-bottom:8px}.set-copy h3{font-size:42px;margin:10px 0}.set-copy p{color:var(--muted);line-height:1.65}.set-stats{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}.stat-pill{background:rgba(255,255,255,.08);padding:10px 14px;border-radius:999px;font-weight:bold}
+    .types-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.type-card{text-decoration:none;overflow:hidden;transition:.2s}.type-card:hover{transform:translateY(-5px);border-color:#4ade80}.type-image{aspect-ratio:4/3;background:#0f172a;display:flex;align-items:center;justify-content:center;overflow:hidden}.type-image img{width:100%;height:100%;object-fit:cover;object-position:top}.type-label{padding:16px;text-align:center;font-weight:800;font-size:18px}.type-label small{display:block;color:var(--muted);font-size:12px;font-weight:normal;margin-top:5px}
+    footer{background:#02050b;border-top:1px solid var(--line);padding:34px 24px;text-align:center}.socials{display:flex;justify-content:center;gap:12px;margin-bottom:18px}.social{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#172033;text-decoration:none;font-weight:bold}.social:hover{background:var(--green);color:#051209}.footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;margin-bottom:18px}.footer-links a{text-decoration:none;color:#cbd5e1}.footer-links a:hover{color:#86efac}.copyright{font-size:13px;color:#7f8ca1;line-height:1.7}
+    @media(max-width:850px){.top-banner{min-height:340px}.feature-card,.set-showcase,.news-grid{grid-template-columns:1fr}.feature-card{text-align:center;min-height:0}.types-grid{grid-template-columns:repeat(2,1fr)}.feature-shell{grid-template-columns:40px minmax(0,1fr) 40px}.set-art{min-height:280px}}
+    @media(max-width:540px){main{padding:40px 14px 55px}.main-nav{gap:4px;padding:10px}.main-nav a{padding:9px 10px;font-size:13px}.account-bar{justify-content:center}.feature-shell{display:block}.slide-arrow{position:absolute;z-index:2;margin-top:220px;width:42px}.slide-arrow.next{right:18px}.slide-arrow.prev{left:18px}.feature-card{padding:18px}.types-grid{grid-template-columns:1fr 1fr}.set-showcase{padding:24px}.welcome p{font-size:17px}}
+  </style>
 </head>
-
 <body>
+  <header class="top-banner">
+    <div class="account-bar"><a href="login.html">Log In</a><span>|</span><a href="register.html">Register</a></div>
+    <div class="brand-row"><img src="logo.png" alt="Worlds Under Siege" class="hero-logo"></div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a class="active" href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a href="open-packs.html">Open Packs</a>
+    </nav>
+  </header>
 
-<header class="top-banner">
+  <main>
+    <section class="welcome">
+      <h1>Welcome to Worlds Under Siege</h1>
+      <p>Command heroes from history, champions of legend, fearsome creatures and mighty armies in a strategic trading card game where different ages and worlds collide.</p>
+      <div class="cta-row"><a class="btn btn-primary" href="cards.html">View Cards</a><a class="btn btn-secondary" href="rules.html">Learn the Rules</a><a class="btn btn-gold" href="play-online.html">Play Online</a></div>
+    </section>
 
-<nav class="banner-menu">
-<a href="index.html">Home</a>
-<a href="cards.html">Cards</a>
-<a href="#">Rules</a>
-<a href="#">News</a>
-</nav>
+    <section class="section" aria-labelledby="featured-title">
+      <h2 class="section-title" id="featured-title">Featured Cards</h2>
+      <p class="section-subtitle">Explore twelve iconic cards from the Battle of Ages set. Select a card to open it in the full card gallery.</p>
+      <div class="feature-shell" id="featureShell">
+        <button class="slide-arrow prev" id="prevCard" aria-label="Previous featured card">‹</button>
+        <article class="feature-card">
+          <div class="feature-image-wrap"><img id="featureImage" class="feature-image" alt="Featured card"></div>
+          <div class="feature-copy"><div class="eyebrow">Battle of Ages Spotlight</div><h3 id="featureName"></h3><p id="featureMeta"></p><p>Click the card to view its complete entry, including card details and available lore.</p><a id="featureLink" class="btn btn-primary" href="cards.html">View Card</a></div>
+        </article>
+        <button class="slide-arrow next" id="nextCard" aria-label="Next featured card">›</button>
+      </div>
+      <div class="dots" id="featureDots" aria-label="Featured card selection"></div>
+    </section>
 
-</header>
+    <section class="section" aria-labelledby="news-title">
+      <h2 class="section-title" id="news-title">Latest News</h2>
+      <p class="section-subtitle">Follow the development of the official website and the road toward online play.</p>
+      <div class="news-grid">
+        <article class="news-main"><div class="news-date">Website Update</div><h3>The official homepage is here</h3><p>The Worlds Under Siege website now has a complete home for cards, lore, rules, news and the future online game. More features will be added as development continues.</p><a class="btn btn-secondary" href="news.html">Read All News</a></article>
+        <aside class="news-list"><div class="news-item"><strong>Card lore expansion underway</strong><span>Encyclopedia-style histories are being added across the Battle of Ages set.</span></div><div class="news-item"><strong>Deck Builder planned</strong><span>Players will eventually be able to build and save decks online.</span></div><div class="news-item"><strong>Play Online in development</strong><span>The future browser game will include collections, packs and online matches.</span></div></aside>
+      </div>
+    </section>
 
-<section class="logo-section">
-<img src="logo.png" class="logo">
-</section>
+    <section class="section" aria-labelledby="set-title">
+      <h2 class="section-title" id="set-title">Latest Set</h2>
+      <div class="set-showcase">
+        <div class="set-art"><div class="set-placeholder"><strong>Battle of Ages</strong><span>Add your booster pack or set artwork here later.</span></div></div>
+        <div class="set-copy"><div class="eyebrow">Current Card Set</div><h3>Battle of Ages</h3><p>History, mythology, folklore and fiction clash in the first Worlds Under Siege card set. Discover legendary leaders, terrifying monsters, powerful actions and fortified strongholds.</p><div class="set-stats"><span class="stat-pill">225 Cards</span><span class="stat-pill">Set Code: BOA</span></div><a class="btn btn-gold" href="cards.html?set=BOA">View Battle of Ages</a></div>
+      </div>
+    </section>
 
-<main class="content">
+    <section class="section" aria-labelledby="types-title">
+      <h2 class="section-title" id="types-title">Explore Card Types</h2>
+      <p class="section-subtitle">Choose a card type to open the gallery with that filter already selected.</p>
+      <div class="types-grid" id="typesGrid"></div>
+    </section>
+  </main>
 
-<h2>Welcome to Worlds Under Siege</h2>
+  <footer>
+    <div class="socials" aria-label="Social links"><a class="social" href="#" aria-label="Discord">D</a><a class="social" href="#" aria-label="Facebook">f</a><a class="social" href="#" aria-label="YouTube">▶</a><a class="social" href="#" aria-label="Instagram">◎</a><a class="social" href="#" aria-label="X">X</a></div>
+    <div class="footer-links"><a href="contact.html">Contact</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a></div>
+    <div class="copyright">© 2026 Worlds Under Siege. All rights reserved.<br>Worlds Under Siege Website v1.0</div>
+  </footer>
 
-<p>
-Explore the world of Worlds Under Siege, discover powerful cards,
-learn the rules of battle, and stay updated with the latest news.
-</p>
+  <script src="cards.js"></script>
+  <script>
+    const featuredIds=["BOA-001","BOA-020","BOA-045","BOA-050","BOA-073","BOA-077","BOA-086","BOA-090","BOA-092","BOA-105","BOA-194","BOA-200"];
+    const featured=featuredIds.map(id=>cards.find(card=>card.id===id)).filter(Boolean);
+    let featureIndex=0, featureTimer;
+    const featureImage=document.getElementById('featureImage'),featureName=document.getElementById('featureName'),featureMeta=document.getElementById('featureMeta'),featureLink=document.getElementById('featureLink'),featureDots=document.getElementById('featureDots');
+    function cardType(card){return Array.isArray(card.type)?card.type.join(' • '):card.type}
+    function renderFeature(){const card=featured[featureIndex];if(!card)return;featureImage.src=encodeURI(card.image);featureImage.alt=card.name;featureName.textContent=card.name;featureMeta.textContent=`${card.id} • ${cardType(card)} • ${card.set}`;featureLink.href=`cards.html?card=${encodeURIComponent(card.id)}`;featureImage.onclick=()=>location.href=featureLink.href;[...featureDots.children].forEach((dot,i)=>dot.classList.toggle('active',i===featureIndex));}
+    function moveFeature(step){featureIndex=(featureIndex+step+featured.length)%featured.length;renderFeature();restartTimer()}
+    function restartTimer(){clearInterval(featureTimer);featureTimer=setInterval(()=>moveFeature(1),5000)}
+    featured.forEach((_,i)=>{const dot=document.createElement('button');dot.className='dot';dot.ariaLabel=`Show featured card ${i+1}`;dot.onclick=()=>{featureIndex=i;renderFeature();restartTimer()};featureDots.appendChild(dot)});
+    document.getElementById('prevCard').onclick=()=>moveFeature(-1);document.getElementById('nextCard').onclick=()=>moveFeature(1);
+    document.getElementById('featureShell').addEventListener('mouseenter',()=>clearInterval(featureTimer));document.getElementById('featureShell').addEventListener('mouseleave',restartTimer);
+    renderFeature();restartTimer();
 
-</main>
-
+    const typeConfig=[['Character','BOA-001'],['Animal','BOA-092'],['Action','BOA-124'],['Item','BOA-143'],['Construct','BOA-116'],['Army','BOA-194'],['Event','BOA-218'],['Stronghold','BOA-209']];
+    const typesGrid=document.getElementById('typesGrid');
+    typeConfig.forEach(([type,id])=>{let card=cards.find(c=>c.id===id);if(!card)card=cards.find(c=>Array.isArray(c.type)?c.type.includes(type):c.type===type);const link=document.createElement('a');link.className='type-card';link.href=`cards.html?type=${encodeURIComponent(type)}`;link.innerHTML=`<div class="type-image">${card?`<img src="${encodeURI(card.image)}" alt="${type} card" loading="lazy">`:''}</div><div class="type-label">${type}<small>View ${type} cards →</small></div>`;typesGrid.appendChild(link)});
+  </script>
 </body>
 </html>

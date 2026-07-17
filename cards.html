@@ -391,8 +391,11 @@
       <nav class="nav">
         <a href="index.html">Home</a>
         <a href="cards.html">Cards</a>
-        <a href="#">Rules</a>
-        <a href="#">News</a>
+        <a href="deck-builder.html">Deck Builder</a>
+        <a href="play-online.html">Play Online</a>
+        <a href="rules.html">Rules</a>
+        <a href="news.html">News</a>
+        <a href="open-packs.html">Open Packs</a>
       </nav>
     </div>
   </header>
@@ -655,7 +658,26 @@
       }
     });
 
+    // Apply homepage links such as cards.html?type=Animal, ?set=BOA, or ?card=BOA-001.
+    const pageParams = new URLSearchParams(window.location.search);
+    const requestedType = pageParams.get("type");
+    const requestedSet = pageParams.get("set");
+    const requestedCard = pageParams.get("card");
+
+    if (requestedType && [...typeFilter.options].some(option => option.value === requestedType)) {
+      typeFilter.value = requestedType;
+    }
+
+    if (requestedSet && [...setFilter.options].some(option => option.value === requestedSet)) {
+      setFilter.value = requestedSet;
+    }
+
     renderCards();
+
+    if (requestedCard) {
+      const selectedCard = cards.find(card => card.id === requestedCard);
+      if (selectedCard) openModal(selectedCard);
+    }
   </script>
 </body>
 </html>
