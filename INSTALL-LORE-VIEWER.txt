@@ -1,0 +1,29 @@
+Worlds Under Siege lore viewer update
+
+Replace/add these files in the repository root:
+- cards.html
+- lore.js
+
+Keep your current cards.js.
+
+In GitHub Desktop:
+1. Copy cards.html and lore.js beside index.html and cards.js.
+2. Commit to main.
+3. Push origin.
+4. Wait for the Pages deployment and refresh the Cards page.
+
+Adding history:
+Open lore.js and add entries inside the lore object:
+
+"BOA-001": `First paragraph.
+
+Second paragraph.`,
+
+Cards without an entry remain blank.
+
+The popup layout:
+- Card image(s) on the left
+- Card name, number, type, and set on the right
+- Scrollable History & Origins section
+- Dr Jekyl / Mr Hyde shows both images
+- Mobile view stacks the image above the history

@@ -225,43 +225,93 @@
     }
 
     .modal-close:hover { background: rgba(255,255,255,.2); }
-    .modal-title { font-size: 28px; font-weight: bold; margin-bottom: 18px; text-align: center; }
-
-    .modal-single {
-      display: flex;
-      justify-content: center;
+    .modal-title {
+      display: none;
     }
 
-    .modal-single img {
-      max-width: min(90vw, 450px);
-      max-height: 80vh;
-      width: auto;
-      height: auto;
-      border-radius: 12px;
-      display: block;
-    }
-
-    .modal-single.landscape img {
-      max-width: min(92vw, 900px);
-    }
-
-    .modal-double {
+    .card-detail {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 20px;
+      grid-template-columns: minmax(280px, 430px) minmax(0, 1fr);
+      gap: 28px;
       align-items: start;
     }
 
-    .modal-double-item { text-align: center; }
-    .modal-double-item h3 { margin: 0 0 12px; font-size: 20px; }
-    .modal-double-item img {
-      max-width: 100%;
-      max-height: 75vh;
-      width: auto;
-      height: auto;
+    .card-detail-images {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .card-detail-images img {
+      width: 100%;
+      max-width: 430px;
+      max-height: 78vh;
+      object-fit: contain;
       border-radius: 12px;
       display: block;
-      margin: 0 auto;
+    }
+
+    .card-detail-images.landscape img {
+      max-width: 700px;
+    }
+
+    .card-detail-double {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      width: 100%;
+    }
+
+    .card-detail-double figure {
+      margin: 0;
+      text-align: center;
+    }
+
+    .card-detail-double figcaption {
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #cbd5e1;
+    }
+
+    .card-detail-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      max-height: 78vh;
+    }
+
+    .card-detail-info h2 {
+      margin: 0 48px 8px 0;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+
+    .card-detail-meta {
+      color: #cbd5e1;
+      margin-bottom: 18px;
+      font-size: 15px;
+    }
+
+    .history-heading {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .history-scroll {
+      overflow-y: auto;
+      padding-right: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      min-height: 0;
+    }
+
+    .history-scroll p {
+      margin: 0 0 1em;
+    }
+
+    .history-scroll:empty {
+      min-height: 1px;
     }
 
     @media (max-width: 1200px) {
@@ -270,13 +320,31 @@
 
     @media (max-width: 900px) {
       .card-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
-      .modal-double { grid-template-columns: 1fr; }
+      .card-detail {
+        grid-template-columns: 1fr;
+      }
+
+      .card-detail-info {
+        max-height: none;
+      }
+
+      .history-scroll {
+        max-height: 45vh;
+      }
     }
 
     @media (max-width: 640px) {
       .card-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .page-header h1 { font-size: 30px; }
       .top-logo { height: 48px; }
+
+      .card-detail-double {
+        grid-template-columns: 1fr;
+      }
+
+      .card-detail-info h2 {
+        font-size: 28px;
+      }
     }
   </style>
 </head>
@@ -317,7 +385,7 @@
 
     <select id="setFilter">
       <option value="All">All Sets</option>
-      <option value="BOA">Battle of Ages</option>
+      <option value="BOA">BOA</option>
       <option value="SD1">Starter Deck 1</option>
     </select>
   </section>
@@ -335,6 +403,7 @@
   </div>
 
   <script src="cards.js"></script>
+  <script src="lore.js"></script>
 
   <script>
     const grid = document.getElementById("cardGrid");
@@ -384,30 +453,67 @@
       });
     }
 
+    function formatHistory(text) {
+      if (!text) return "";
+
+      return text
+        .split(/\n\s*\n/)
+        .map(paragraph => `<p>${paragraph.trim()}</p>`)
+        .join("");
+    }
+
     function openModal(card) {
-      modalTitle.textContent = `${card.id} — ${card.name}`;
+      const typeLabel = Array.isArray(card.type)
+        ? card.type.join(" • ")
+        : card.type;
+
+      const history = typeof lore !== "undefined" && lore[card.id]
+        ? lore[card.id]
+        : "";
+
+      let imageSection;
 
       if (card.backImage) {
-        modalBody.innerHTML = `
-          <div class="modal-double">
-            <div class="modal-double-item">
-              <h3>Dr Jekyl</h3>
-              <img src="${encodePath(card.image)}" alt="Dr Jekyl">
-            </div>
-            <div class="modal-double-item">
-              <h3>Mr Hyde</h3>
-              <img src="${encodePath(card.backImage)}" alt="Mr Hyde">
+        imageSection = `
+          <div class="card-detail-images">
+            <div class="card-detail-double">
+              <figure>
+                <figcaption>Dr Jekyl</figcaption>
+                <img src="${encodePath(card.image)}" alt="Dr Jekyl">
+              </figure>
+              <figure>
+                <figcaption>Mr Hyde</figcaption>
+                <img src="${encodePath(card.backImage)}" alt="Mr Hyde">
+              </figure>
             </div>
           </div>
         `;
       } else {
-        const isLandscape = card.type === "Stronghold";
-        modalBody.innerHTML = `
-          <div class="modal-single ${isLandscape ? "landscape" : ""}">
+        const isLandscape = Array.isArray(card.type)
+          ? card.type.includes("Stronghold")
+          : card.type === "Stronghold";
+
+        imageSection = `
+          <div class="card-detail-images ${isLandscape ? "landscape" : ""}">
             <img src="${encodePath(card.image)}" alt="${card.name}">
           </div>
         `;
       }
+
+      modalTitle.textContent = card.name;
+
+      modalBody.innerHTML = `
+        <div class="card-detail">
+          ${imageSection}
+
+          <section class="card-detail-info">
+            <h2>${card.name}</h2>
+            <div class="card-detail-meta">${card.id} • ${typeLabel} • ${card.set}</div>
+            <h3 class="history-heading">History & Origins</h3>
+            <div class="history-scroll">${formatHistory(history)}</div>
+          </section>
+        </div>
+      `;
 
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
