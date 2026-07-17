@@ -1,0 +1,22 @@
+Worlds Under Siege info-box lore update
+
+Replace/add these files in the repository root:
+- cards.html
+- lore.js
+
+Keep your existing cards.js.
+
+Then:
+1. Commit to main in GitHub Desktop.
+2. Push origin.
+3. Wait for Pages deployment.
+4. Refresh the Cards page.
+
+The popup now displays:
+- Card image on the left
+- Name, number, type, and set on the right
+- A styled information box
+- Scrollable History & Origins text
+
+King Arthur and Merlin are already included in lore.js.
+Cards without lore entries remain blank.

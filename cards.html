@@ -293,6 +293,36 @@
       font-size: 15px;
     }
 
+    .info-box {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .info-label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      display: block;
+      color: #f8fafc;
+      line-height: 1.4;
+    }
+
     .history-heading {
       margin: 0 0 10px;
       font-size: 20px;
@@ -344,6 +374,10 @@
 
       .card-detail-info h2 {
         font-size: 28px;
+      }
+
+      .info-box {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -462,14 +496,52 @@
         .join("");
     }
 
+    function formatHistory(text) {
+      if (!text) return "";
+
+      return text
+        .split(/\n\s*\n/)
+        .map(paragraph => `<p>${paragraph.trim()}</p>`)
+        .join("");
+    }
+
+    function buildInfoBox(entry) {
+      if (!entry || typeof entry !== "object") return "";
+
+      const fields = [
+        ["Status", entry.status],
+        ["Origin", entry.origin],
+        ["First Recorded", entry.first],
+        ["Time Period", entry.period],
+        ["Aliases", entry.aliases]
+      ].filter(([, value]) => value);
+
+      if (!fields.length) return "";
+
+      return `
+        <div class="info-box">
+          ${fields.map(([label, value]) => `
+            <div class="info-item">
+              <span class="info-label">${label}</span>
+              <span class="info-value">${value}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
     function openModal(card) {
       const typeLabel = Array.isArray(card.type)
         ? card.type.join(" • ")
         : card.type;
 
-      const history = typeof lore !== "undefined" && lore[card.id]
+      const loreEntry = typeof lore !== "undefined" && lore[card.id]
         ? lore[card.id]
-        : "";
+        : null;
+
+      const history = typeof loreEntry === "string"
+        ? loreEntry
+        : loreEntry?.history || "";
 
       let imageSection;
 
@@ -509,6 +581,7 @@
           <section class="card-detail-info">
             <h2>${card.name}</h2>
             <div class="card-detail-meta">${card.id} • ${typeLabel} • ${card.set}</div>
+            ${buildInfoBox(loreEntry)}
             <h3 class="history-heading">History & Origins</h3>
             <div class="history-scroll">${formatHistory(history)}</div>
           </section>
