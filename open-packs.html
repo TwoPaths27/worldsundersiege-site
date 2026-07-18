@@ -10,10 +10,11 @@
   <header class="site-header">
     <a href="index.html" class="brand"><img src="logo.png" alt="Worlds Under Siege"></a>
     <nav aria-label="Main navigation">
-      <a href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a class="active" href="open-packs.html">Open Packs</a>
+      <a href="index.html">Home</a><a href="cards.html">Cards</a><a href="collection.html">Collection</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a class="active" href="open-packs.html">Open Packs</a>
     </nav>
   </header>
 
+  <div class="player-wallet" aria-label="Player gold"><span>Gold</span><strong id="playerGold">0</strong></div>
   <main class="pack-app">
     <section id="introStage" class="stage intro-stage">
       <div class="intro-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display and booster pack"></div>
@@ -91,6 +92,7 @@
         </div>
         <p id="revealInstruction" class="instruction">Click any card to flip it. The final two cards are your Rare-or-higher slots.</p>
         <div id="cardGrid" class="card-grid"></div>
+        <div id="collectionResult" class="collection-result" hidden></div>
         <div class="pack-actions">
           <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
         </div>
@@ -145,6 +147,7 @@
   <script src="cards.js"></script>
   <script src="packdata.js"></script>
   <script src="asset-cache.js"></script>
+  <script src="collection-store.js"></script>
   <script src="open-packs.js"></script>
 </body>
 </html>

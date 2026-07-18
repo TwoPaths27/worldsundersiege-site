@@ -12,7 +12,7 @@
 
   const packCards = BOA_PACK_CARDS.map(card => {
     const siteCard = siteCardsById.get(card.id);
-    return { ...card, name: siteCard?.name || card.name, image: siteCard?.image || card.image };
+    return { ...card, name: siteCard?.name || card.name, image: siteCard?.image || card.image, type: siteCard?.type || card.type };
   });
 
   const groups = packCards.reduce((result, card) => {
@@ -60,6 +60,8 @@
   const backToSelectionButton = document.getElementById("backToSelectionButton");
   const bestPullSection = document.getElementById("bestPullSection");
   const bestPullCard = document.getElementById("bestPullCard");
+  const playerGold = document.getElementById("playerGold");
+  const collectionResult = document.getElementById("collectionResult");
 
   const assetStatus = document.getElementById("assetStatus");
   const downloadAssetsButton = document.getElementById("downloadAssetsButton");
@@ -84,9 +86,35 @@
   let openingMode = "single";
   let boxSession = createEmptyBoxSession();
   let selectedBoxPack = null;
+  let currentPackCollectionResult = null;
+  let currentPackSaved = false;
 
   function createEmptyBoxSession() {
-    return { openedPacks: 0, pulls: [], packs: [] };
+    return { openedPacks: 0, pulls: [], packs: [], collectionAdded: 0, duplicatesConverted: 0, goldEarned: 0 };
+  }
+
+  function refreshGold() {
+    if (playerGold && window.WUSCollection) playerGold.textContent = WUSCollection.load().gold.toLocaleString();
+  }
+
+  function saveCurrentPackToCollection() {
+    if (currentPackSaved || !window.WUSCollection) return currentPackCollectionResult;
+    currentPackCollectionResult = WUSCollection.addCards(currentPack);
+    currentPackSaved = true;
+    if (openingMode === "box") {
+      boxSession.collectionAdded += currentPackCollectionResult.added;
+      boxSession.duplicatesConverted += currentPackCollectionResult.converted;
+      boxSession.goldEarned += currentPackCollectionResult.goldEarned;
+    }
+    refreshGold();
+    return currentPackCollectionResult;
+  }
+
+  function renderCollectionResult(result) {
+    if (!collectionResult || !result) return;
+    collectionResult.hidden = false;
+    const goldText = result.goldEarned ? `<strong>+${result.goldEarned.toLocaleString()} Gold</strong> from ${result.converted} extra ${result.converted === 1 ? "copy" : "copies"}` : "No extra copies were converted.";
+    collectionResult.innerHTML = `<span><strong>${result.added}</strong> added to your collection</span><span>${goldText}</span>`;
   }
 
   const randomItem = items => items[Math.floor(Math.random() * items.length)];
@@ -236,6 +264,9 @@
     revealAllButton.hidden = false;
     revealAllButton.disabled = false;
     anotherButton.hidden = true;
+    currentPackSaved = false;
+    currentPackCollectionResult = null;
+    if (collectionResult) { collectionResult.hidden = true; collectionResult.replaceChildren(); }
     previewImage.src = "logo.png";
     previewName.textContent = "Reveal or hover over a card.";
     previewRarity.textContent = "";
@@ -262,6 +293,8 @@
       status.textContent = openingMode === "box" ? `Pack ${boxSession.openedPacks} complete!` : "Pack complete!";
       instruction.textContent = openingMode === "box" ? "Hover over any card to inspect it, then return to the remaining packs." : "Hover over any card to inspect it, or continue opening.";
       revealAllButton.hidden = true;
+      const collectionUpdate = saveCurrentPackToCollection();
+      renderCollectionResult(collectionUpdate);
       anotherButton.hidden = false;
       if (openingMode === "box") {
         anotherButton.textContent = boxSession.openedPacks >= BOX_PACK_COUNT
@@ -304,13 +337,16 @@
     const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
     boxSession.pulls.forEach(card => { counts[card.rarity] = (counts[card.rarity] || 0) + 1; });
+    const economyStat = document.createElement("div");
+    economyStat.className = "box-rarity-stat economy-stat";
+    economyStat.innerHTML = `<strong>+${boxSession.goldEarned.toLocaleString()}</strong><span>Gold from ${boxSession.duplicatesConverted} extras</span>`;
     boxRarityStats.replaceChildren(...order.map(rarity => {
       const item = document.createElement("div");
       item.className = "box-rarity-stat";
       item.dataset.rarity = rarity;
       item.innerHTML = `<strong>${counts[rarity] || 0}</strong><span>${rarity}</span>`;
       return item;
-    }));
+    }), economyStat);
 
     const premiums = boxSession.pulls
       .filter(card => rarityRank(card.rarity) >= rarityRank("Rare"))
@@ -508,6 +544,8 @@
   // so a future account/gold service can charge before startOpening() runs.
   void ECONOMY;
 
+  refreshGold();
+  window.addEventListener("wus-player-data-changed", refreshGold);
   refreshAssetStatus();
   initializeAssetGate();
 })();

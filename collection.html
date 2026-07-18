@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collection - Worlds Under Siege</title>
+  <link rel="stylesheet" href="collection.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html" class="brand"><img src="logo.png" alt="Worlds Under Siege"></a>
+    <nav aria-label="Main navigation">
+      <a href="index.html">Home</a><a href="cards.html">Cards</a><a class="active" href="collection.html">Collection</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a href="open-packs.html">Open Packs</a>
+    </nav>
+  </header>
+
+  <main class="collection-app">
+    <section class="collection-heading panel">
+      <div>
+        <p class="eyebrow">Player Inventory</p>
+        <h1>Card Collection</h1>
+        <p>Cards opened from boosters are stored on this device. Extra copies are automatically converted to gold.</p>
+      </div>
+      <div class="wallet"><span>Gold</span><strong id="goldTotal">0</strong></div>
+    </section>
+
+    <section class="progress-panel panel">
+      <div class="set-progress"><strong id="uniqueOwned">0 / 227</strong><span>Battle of Ages collected</span><div class="progress-track"><span id="progressFill"></span></div></div>
+      <div id="rarityProgress" class="rarity-progress"></div>
+    </section>
+
+    <section class="collection-layout">
+      <aside class="preview-panel panel">
+        <h2>Card Preview</h2>
+        <div class="preview-frame"><img id="previewImage" src="logo.png" alt="Card preview"></div>
+        <h3 id="previewName">Select a card</h3>
+        <p id="previewMeta"></p>
+        <p id="previewOwned"></p>
+      </aside>
+
+      <section class="cards-panel panel">
+        <div class="filters">
+          <input id="searchInput" type="search" placeholder="Search by card name or ID" aria-label="Search collection">
+          <select id="rarityFilter" aria-label="Filter by rarity"><option value="">All rarities</option></select>
+          <select id="typeFilter" aria-label="Filter by card type"><option value="">All types</option></select>
+          <select id="ownershipFilter" aria-label="Filter by ownership"><option value="all">All cards</option><option value="owned">Owned only</option><option value="missing">Missing only</option><option value="complete">At copy limit</option></select>
+        </div>
+        <p id="visibleCount" class="visible-count"></p>
+        <div id="collectionGrid" class="collection-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer>© 2026 Worlds Under Siege™ · Collection</footer>
+  <script src="cards.js"></script>
+  <script src="packdata.js"></script>
+  <script src="asset-cache.js"></script>
+  <script src="collection-store.js"></script>
+  <script src="collection.js"></script>
+</body>
+</html>
