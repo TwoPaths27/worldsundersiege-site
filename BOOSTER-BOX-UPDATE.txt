@@ -1,0 +1,13 @@
+BOOSTER BOX UPDATE
+
+Added:
+- Choice between one booster and a full 24-pack booster box.
+- Sequential box opening with pack progress.
+- Existing pack reveal experience for every pack.
+- End-of-box rarity totals.
+- Rare-or-higher pull gallery.
+- Optional view of all 288 cards opened.
+- Open another box and return-to-selection controls.
+- Gold-ready economy hooks; costs are disabled during development.
+
+No collection data or gold is saved/deducted yet. Those systems can be connected later.

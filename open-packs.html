@@ -19,8 +19,8 @@
       <div class="intro-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display and booster pack"></div>
       <div class="intro-copy panel">
         <p class="eyebrow">Battle of Ages</p>
-        <h1>Open a Booster Pack</h1>
-        <p class="lead">Reveal twelve cards from the inaugural set of <em>Worlds Under Siege</em>.</p>
+        <h1>Open Battle of Ages</h1>
+        <p class="lead">Open a single booster or break the seal on a full 24-pack booster box.</p>
         <div class="contents" aria-label="Pack contents">
           <span><strong>6</strong> Commons</span><span><strong>4</strong> Uncommons</span><span><strong>2</strong> Rare or Higher</span>
         </div>
@@ -39,15 +39,23 @@
           </div>
           <details id="assetErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetErrorList"></pre></details>
         </div>
-        <button id="beginButton" class="primary-button" type="button">Choose a Booster</button>
+        <div class="opening-choices">
+          <button id="beginButton" class="primary-button" type="button">Open One Booster</button>
+          <button id="beginBoxButton" class="secondary-button" type="button">Open Booster Box <span>24 Packs</span></button>
+        </div>
+        <p class="economy-note">Pack openings are free during development. Gold costs can be switched on later without rebuilding this feature.</p>
       </div>
     </section>
 
     <section id="boosterStage" class="stage booster-stage" hidden>
       <div class="booster-copy">
         <p class="eyebrow">Battle of Ages</p>
-        <h1>Your Booster Awaits</h1>
-        <p>Click the pack to break the seal.</p>
+        <h1 id="boosterHeading">Your Booster Awaits</h1>
+        <p id="boosterInstruction">Click the pack to break the seal.</p>
+        <div id="boxProgressBooster" class="box-progress" hidden>
+          <span id="boxProgressBoosterText">Pack 1 of 24</span>
+          <div class="box-progress-track"><span id="boxProgressBoosterFill"></span></div>
+        </div>
       </div>
       <button id="boosterButton" class="booster-button" type="button" aria-label="Open Battle of Ages booster pack">
         <span class="foil-tear" aria-hidden="true"></span>
@@ -66,13 +74,35 @@
 
       <section class="reveal-panel panel">
         <div class="reveal-heading">
-          <div><p class="eyebrow">Your Pack</p><h1 id="packStatus">The cards are face down</h1></div>
+          <div><p id="revealEyebrow" class="eyebrow">Your Pack</p><h1 id="packStatus">The cards are face down</h1><p id="boxProgressReveal" class="box-pack-label" hidden>Booster Box · Pack 1 of 24</p></div>
           <button id="revealAllButton" class="secondary-button" type="button">Reveal All</button>
         </div>
         <p id="revealInstruction" class="instruction">Click any card to flip it. The final two cards are your Rare-or-higher slots.</p>
         <div id="cardGrid" class="card-grid"></div>
         <div class="pack-actions">
           <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="boxSummaryStage" class="stage box-summary-stage" hidden>
+      <section class="box-summary-panel panel">
+        <p class="eyebrow">Battle of Ages Booster Box</p>
+        <h1>Box Complete!</h1>
+        <p class="lead">You opened 24 packs and revealed <strong id="boxTotalCards">288</strong> cards.</p>
+        <div id="boxRarityStats" class="box-rarity-stats" aria-label="Booster box rarity totals"></div>
+        <div class="box-summary-heading">
+          <div>
+            <h2>Rare-or-Higher Pulls</h2>
+            <p>Hover over a card to inspect the pull.</p>
+          </div>
+          <button id="boxRevealDetailsButton" class="secondary-button" type="button">Show All Pulls</button>
+        </div>
+        <div id="boxPremiumGrid" class="box-premium-grid"></div>
+        <div id="boxAllPulls" class="box-all-pulls" hidden></div>
+        <div class="box-summary-actions">
+          <button id="openAnotherBoxButton" class="primary-button" type="button">Open Another Box</button>
+          <button id="backToSelectionButton" class="secondary-button" type="button">Back to Pack Selection</button>
         </div>
       </section>
     </section>

@@ -1,6 +1,9 @@
 (() => {
   "use strict";
 
+  const BOX_PACK_COUNT = 24;
+  const ECONOMY = Object.freeze({ enabled: false, packCost: null, boxCost: null });
+
   const siteCardsById = new Map(
     (typeof cards !== "undefined" ? cards : [])
       .filter(card => card && card.id)
@@ -17,20 +20,40 @@
     return result;
   }, {});
 
-  const introStage = document.getElementById("introStage");
-  const boosterStage = document.getElementById("boosterStage");
-  const revealStage = document.getElementById("revealStage");
+  const stages = {
+    intro: document.getElementById("introStage"),
+    booster: document.getElementById("boosterStage"),
+    reveal: document.getElementById("revealStage"),
+    summary: document.getElementById("boxSummaryStage")
+  };
+
   const beginButton = document.getElementById("beginButton");
+  const beginBoxButton = document.getElementById("beginBoxButton");
   const boosterButton = document.getElementById("boosterButton");
   const anotherButton = document.getElementById("anotherPackButton");
   const revealAllButton = document.getElementById("revealAllButton");
   const grid = document.getElementById("cardGrid");
   const status = document.getElementById("packStatus");
   const instruction = document.getElementById("revealInstruction");
+  const revealEyebrow = document.getElementById("revealEyebrow");
   const previewImage = document.getElementById("previewImage");
   const previewName = document.getElementById("previewName");
   const previewRarity = document.getElementById("previewRarity");
   const clickHint = boosterButton.querySelector(".click-hint");
+  const boosterHeading = document.getElementById("boosterHeading");
+  const boosterInstruction = document.getElementById("boosterInstruction");
+  const boxProgressBooster = document.getElementById("boxProgressBooster");
+  const boxProgressBoosterText = document.getElementById("boxProgressBoosterText");
+  const boxProgressBoosterFill = document.getElementById("boxProgressBoosterFill");
+  const boxProgressReveal = document.getElementById("boxProgressReveal");
+
+  const boxTotalCards = document.getElementById("boxTotalCards");
+  const boxRarityStats = document.getElementById("boxRarityStats");
+  const boxPremiumGrid = document.getElementById("boxPremiumGrid");
+  const boxAllPulls = document.getElementById("boxAllPulls");
+  const boxRevealDetailsButton = document.getElementById("boxRevealDetailsButton");
+  const openAnotherBoxButton = document.getElementById("openAnotherBoxButton");
+  const backToSelectionButton = document.getElementById("backToSelectionButton");
 
   const assetStatus = document.getElementById("assetStatus");
   const downloadAssetsButton = document.getElementById("downloadAssetsButton");
@@ -52,6 +75,12 @@
 
   const allImagePaths = packCards.map(card => card.image);
   let currentPack = [];
+  let openingMode = "single";
+  let boxSession = createEmptyBoxSession();
+
+  function createEmptyBoxSession() {
+    return { openedPacks: 0, pulls: [], packs: [] };
+  }
 
   const randomItem = items => items[Math.floor(Math.random() * items.length)];
 
@@ -80,15 +109,38 @@
     for (let slot = 0; slot < BOA_PACK_CONFIG.premiumSlotsPerPack; slot++) {
       const rarity = rollPremiumRarity();
       let card = randomItem(groups[rarity]);
-      while (premiums.some(existing => existing.id === card.id) && groups[rarity].length > 1) card = randomItem(groups[rarity]);
+      while (premiums.some(existing => existing.id === card.id) && groups[rarity].length > 1) {
+        card = randomItem(groups[rarity]);
+      }
       premiums.push(card);
     }
     return [...commons, ...uncommons, ...premiums];
   }
 
   function showStage(stage) {
-    [introStage, boosterStage, revealStage].forEach(item => { item.hidden = item !== stage; });
+    Object.values(stages).forEach(item => { item.hidden = item !== stage; });
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function startOpening(mode) {
+    openingMode = mode;
+    if (mode === "box") boxSession = createEmptyBoxSession();
+    prepareBoosterStage();
+    showStage(stages.booster);
+  }
+
+  function prepareBoosterStage() {
+    const isBox = openingMode === "box";
+    boosterHeading.textContent = isBox ? "Break Open the Booster Box" : "Your Booster Awaits";
+    boosterInstruction.textContent = isBox
+      ? `Open pack ${Math.min(boxSession.openedPacks + 1, BOX_PACK_COUNT)} of ${BOX_PACK_COUNT}.`
+      : "Click the pack to break the seal.";
+    boxProgressBooster.hidden = !isBox;
+    if (isBox) {
+      const nextPack = Math.min(boxSession.openedPacks + 1, BOX_PACK_COUNT);
+      boxProgressBoosterText.textContent = `Pack ${nextPack} of ${BOX_PACK_COUNT}`;
+      boxProgressBoosterFill.style.width = `${(boxSession.openedPacks / BOX_PACK_COUNT) * 100}%`;
+    }
   }
 
   async function resolvedImage(card) {
@@ -109,7 +161,6 @@
   async function attachFrontImage(image, front, card) {
     front.classList.add("loading");
     try {
-      // Both the grid and preview use the exact same cached blob URL.
       image.src = await resolvedImage(card);
       image.hidden = false;
       front.classList.remove("image-error");
@@ -145,10 +196,16 @@
     status.textContent = "The cards are face down";
     instruction.textContent = "Click any card to flip it. The final two cards are your Rare-or-higher slots.";
     revealAllButton.hidden = false;
+    revealAllButton.disabled = false;
     anotherButton.hidden = true;
     previewImage.src = "logo.png";
     previewName.textContent = "Reveal or hover over a card.";
     previewRarity.textContent = "";
+
+    const isBox = openingMode === "box";
+    revealEyebrow.textContent = isBox ? "Your Booster Box" : "Your Pack";
+    boxProgressReveal.hidden = !isBox;
+    if (isBox) boxProgressReveal.textContent = `Booster Box · Pack ${boxSession.openedPacks} of ${BOX_PACK_COUNT}`;
   }
 
   function revealCard(button, card) {
@@ -164,11 +221,72 @@
     const total = grid.children.length;
     const revealed = grid.querySelectorAll(".revealed").length;
     if (revealed === total) {
-      status.textContent = "Pack complete!";
-      instruction.textContent = "Hover over any card to inspect it, or open another pack.";
+      status.textContent = openingMode === "box" ? `Pack ${boxSession.openedPacks} complete!` : "Pack complete!";
+      instruction.textContent = "Hover over any card to inspect it, or continue opening.";
       revealAllButton.hidden = true;
       anotherButton.hidden = false;
-    } else status.textContent = `${revealed} of ${total} cards revealed`;
+      if (openingMode === "box") {
+        anotherButton.textContent = boxSession.openedPacks >= BOX_PACK_COUNT
+          ? "View Booster Box Summary"
+          : `Open Next Pack (${boxSession.openedPacks + 1} of ${BOX_PACK_COUNT})`;
+      } else {
+        anotherButton.textContent = "Open Another Pack";
+      }
+    } else {
+      status.textContent = `${revealed} of ${total} cards revealed`;
+    }
+  }
+
+  function recordPackForBox(pack) {
+    boxSession.openedPacks += 1;
+    boxSession.packs.push(pack);
+    boxSession.pulls.push(...pack);
+  }
+
+  function rarityRank(rarity) {
+    return { Secret: 5, "Ultra Rare": 4, "Super Rare": 3, Rare: 2, Uncommon: 1, Common: 0 }[rarity] ?? 0;
+  }
+
+  async function createSummaryCard(card, compact = false) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = compact ? "summary-card compact" : "summary-card";
+    item.dataset.rarity = card.rarity;
+    item.innerHTML = `<span class="summary-image-wrap"><img alt="${card.id} ${card.name}"></span><span class="summary-card-name">${card.id}<br>${card.name}</span><span class="summary-card-rarity">${card.rarity}</span>`;
+    const image = item.querySelector("img");
+    try { image.src = await resolvedImage(card); } catch { image.src = card.image; }
+    item.addEventListener("mouseenter", () => preview(card));
+    item.addEventListener("focus", () => preview(card));
+    item.addEventListener("click", () => preview(card));
+    return item;
+  }
+
+  async function renderBoxSummary() {
+    boxTotalCards.textContent = String(boxSession.pulls.length);
+    const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret"];
+    const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
+    boxSession.pulls.forEach(card => { counts[card.rarity] = (counts[card.rarity] || 0) + 1; });
+    boxRarityStats.replaceChildren(...order.map(rarity => {
+      const item = document.createElement("div");
+      item.className = "box-rarity-stat";
+      item.dataset.rarity = rarity;
+      item.innerHTML = `<strong>${counts[rarity] || 0}</strong><span>${rarity}</span>`;
+      return item;
+    }));
+
+    const premiums = boxSession.pulls
+      .filter(card => rarityRank(card.rarity) >= rarityRank("Rare"))
+      .sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity));
+
+    const premiumCards = await Promise.all(premiums.map(card => createSummaryCard(card)));
+    boxPremiumGrid.replaceChildren(...premiumCards);
+
+    boxAllPulls.replaceChildren();
+    boxAllPulls.dataset.loaded = "false";
+    boxAllPulls.hidden = true;
+    boxRevealDetailsButton.disabled = false;
+    boxRevealDetailsButton.textContent = "Show All Pulls";
+    showStage(stages.summary);
   }
 
   function showAssetGate(show) {
@@ -213,7 +331,7 @@
       onProgress: ({ completed, total, failed }) => {
         assetGateProgressFill.style.width = `${Math.round((completed / total) * 100)}%`;
         assetGateProgressText.textContent = `${completed} / ${total}${failed ? ` · ${failed} failed` : ""}`;
-        assetGateStatus.textContent = `Downloading Battle of Ages images…`;
+        assetGateStatus.textContent = "Downloading Battle of Ages images…";
       }
     });
     assetGateDownload.disabled = false;
@@ -271,7 +389,8 @@
     await refreshAssetStatus();
   }
 
-  beginButton.addEventListener("click", () => showStage(boosterStage));
+  beginButton.addEventListener("click", () => startOpening("single"));
+  beginBoxButton.addEventListener("click", () => startOpening("box"));
   downloadAssetsButton.addEventListener("click", () => installAssets(false));
   assetGateDownload.addEventListener("click", installFromGate);
   repairAssetsButton.addEventListener("click", () => installAssets(true));
@@ -279,13 +398,14 @@
   boosterButton.addEventListener("click", () => {
     if (boosterButton.classList.contains("opening")) return;
     currentPack = buildPack();
-    renderPack(currentPack); // Face-down cards appear immediately; fronts resolve in parallel.
+    if (openingMode === "box") recordPackForBox(currentPack);
+    renderPack(currentPack);
     boosterButton.classList.add("opening");
     clickHint.textContent = "Opening…";
     setTimeout(() => {
       boosterButton.classList.remove("opening");
       clickHint.textContent = "Click to open";
-      showStage(revealStage);
+      showStage(stages.reveal);
     }, 900);
   });
 
@@ -299,7 +419,39 @@
     });
   });
 
-  anotherButton.addEventListener("click", () => showStage(boosterStage));
+  anotherButton.addEventListener("click", () => {
+    if (openingMode === "box" && boxSession.openedPacks >= BOX_PACK_COUNT) {
+      renderBoxSummary();
+      return;
+    }
+    prepareBoosterStage();
+    showStage(stages.booster);
+  });
+
+  boxRevealDetailsButton.addEventListener("click", async () => {
+    if (boxAllPulls.dataset.loaded !== "true") {
+      boxRevealDetailsButton.disabled = true;
+      boxRevealDetailsButton.textContent = "Loading All Pulls…";
+      const allCards = await Promise.all(boxSession.pulls.map(card => createSummaryCard(card, true)));
+      boxAllPulls.replaceChildren(...allCards);
+      boxAllPulls.dataset.loaded = "true";
+      boxRevealDetailsButton.disabled = false;
+    }
+    boxAllPulls.hidden = !boxAllPulls.hidden;
+    boxRevealDetailsButton.textContent = boxAllPulls.hidden ? "Show All Pulls" : "Hide All Pulls";
+  });
+
+  openAnotherBoxButton.addEventListener("click", () => startOpening("box"));
+  backToSelectionButton.addEventListener("click", () => {
+    openingMode = "single";
+    boxSession = createEmptyBoxSession();
+    showStage(stages.intro);
+  });
+
+  // Economy is intentionally disabled for now. The mode and cost hooks are centralized here
+  // so a future account/gold service can charge before startOpening() runs.
+  void ECONOMY;
+
   refreshAssetStatus();
   initializeAssetGate();
 })();
