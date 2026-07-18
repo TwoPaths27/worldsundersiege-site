@@ -14,37 +14,56 @@
     </nav>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="set-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display"></div>
-      <div class="hero-copy">
+  <main class="pack-app">
+    <section id="introStage" class="stage intro-stage">
+      <div class="intro-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display and booster pack"></div>
+      <div class="intro-copy panel">
         <p class="eyebrow">Battle of Ages</p>
         <h1>Open a Booster Pack</h1>
-        <p>Each pack contains <strong>6 Commons</strong>, <strong>4 Uncommons</strong>, and <strong>2 Rare-or-higher</strong> cards.</p>
-        <button id="openPackButton" class="primary-button" type="button">Open Booster Pack</button>
+        <p class="lead">Reveal twelve cards from the inaugural set of <em>Worlds Under Siege</em>.</p>
+        <div class="contents" aria-label="Pack contents">
+          <span><strong>6</strong> Commons</span><span><strong>4</strong> Uncommons</span><span><strong>2</strong> Rare or Higher</span>
+        </div>
+        <button id="beginButton" class="primary-button" type="button">Choose a Booster</button>
       </div>
     </section>
 
-    <section class="pack-area" aria-live="polite">
-      <aside class="preview-panel">
+    <section id="boosterStage" class="stage booster-stage" hidden>
+      <div class="booster-copy">
+        <p class="eyebrow">Battle of Ages</p>
+        <h1>Your Booster Awaits</h1>
+        <p>Click the pack to break the seal.</p>
+      </div>
+      <button id="boosterButton" class="booster-button" type="button" aria-label="Open Battle of Ages booster pack">
+        <span class="foil-tear" aria-hidden="true"></span>
+        <img src="battle-of-ages-booster.png" alt="Battle of Ages booster pack">
+        <span class="click-hint">Click to open</span>
+      </button>
+    </section>
+
+    <section id="revealStage" class="stage reveal-stage" hidden aria-live="polite">
+      <aside class="preview-panel panel">
         <h2>Card Preview</h2>
-        <div class="preview-frame"><img id="previewImage" src="logo.png" alt="Hover over a revealed card to preview it"></div>
-        <p id="previewName">Hover over a revealed card.</p>
+        <div class="preview-frame"><img id="previewImage" src="logo.png" alt="Card preview"></div>
+        <p id="previewName" class="preview-name">Reveal or hover over a card.</p>
         <p id="previewRarity" class="rarity-label"></p>
       </aside>
 
-      <section class="reveal-panel">
+      <section class="reveal-panel panel">
         <div class="reveal-heading">
-          <div><p class="eyebrow">Your Pack</p><h2 id="packStatus">Ready to open</h2></div>
-          <button id="revealAllButton" class="secondary-button" type="button" hidden>Reveal All</button>
+          <div><p class="eyebrow">Your Pack</p><h1 id="packStatus">The cards are face down</h1></div>
+          <button id="revealAllButton" class="secondary-button" type="button">Reveal All</button>
         </div>
+        <p id="revealInstruction" class="instruction">Click any card to flip it. The final two cards are your Rare-or-higher slots.</p>
         <div id="cardGrid" class="card-grid"></div>
-        <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
+        <div class="pack-actions">
+          <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
+        </div>
       </section>
     </section>
   </main>
 
-  <footer>© 2026 Worlds Under Siege™ · Booster Simulator Step 1</footer>
+  <footer>© 2026 Worlds Under Siege™ · Open Packs</footer>
   <script src="packdata.js"></script>
   <script src="open-packs.js"></script>
 </body>

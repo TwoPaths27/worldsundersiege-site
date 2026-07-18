@@ -1,0 +1,26 @@
+WORLDS UNDER SIEGE — OPEN PACKS STEP 2
+
+Replace the Step 1 files with:
+- open-packs.html
+- open-packs.css
+- open-packs.js
+- packdata.js
+
+Also add these two image files to the website root:
+- battle-of-ages-set.png
+- battle-of-ages-booster.png
+
+Keep your existing cards/ folder, logo.png, and other website files.
+
+This version fixes the tiny-circle card-back issue and adds:
+- Intro/product screen
+- Animated booster screen
+- Pack shake and opening transition
+- Twelve full-size face-down cards rising from the pack
+- Click-to-flip reveals
+- Hover preview
+- Rarity glow effects
+- Open Another Pack flow
+
+Secret cards are expected at cards/BOA-226.jpg and cards/BOA-227.jpg.
+The code also tries .png automatically if a Secret Rare JPG is not found.
