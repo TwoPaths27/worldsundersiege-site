@@ -64,6 +64,18 @@
       </button>
     </section>
 
+
+    <section id="boxPacksStage" class="stage box-packs-stage" hidden>
+      <section class="box-packs-panel panel">
+        <p class="eyebrow">Battle of Ages</p>
+        <h1>Booster Box</h1>
+        <p class="lead">Choose a pack to open.</p>
+        <div class="box-packs-counter"><strong id="boxPacksRemaining">24</strong><span> / 24 Packs Remaining</span></div>
+        <div class="box-packs-track"><span id="boxPacksTrackFill"></span></div>
+        <div id="boxPackGrid" class="box-pack-grid" aria-label="Booster packs remaining"></div>
+      </section>
+    </section>
+
     <section id="revealStage" class="stage reveal-stage" hidden aria-live="polite">
       <aside class="preview-panel panel">
         <h2>Card Preview</h2>
@@ -91,6 +103,10 @@
         <h1>Box Complete!</h1>
         <p class="lead">You opened 24 packs and revealed <strong id="boxTotalCards">288</strong> cards.</p>
         <div id="boxRarityStats" class="box-rarity-stats" aria-label="Booster box rarity totals"></div>
+        <section id="bestPullSection" class="best-pull-section" hidden>
+          <p class="eyebrow">Best Pull</p>
+          <div id="bestPullCard" class="best-pull-card"></div>
+        </section>
         <div class="box-summary-heading">
           <div>
             <h2>Rare-or-Higher Pulls</h2>

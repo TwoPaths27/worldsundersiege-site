@@ -23,6 +23,7 @@
   const stages = {
     intro: document.getElementById("introStage"),
     booster: document.getElementById("boosterStage"),
+    boxPacks: document.getElementById("boxPacksStage"),
     reveal: document.getElementById("revealStage"),
     summary: document.getElementById("boxSummaryStage")
   };
@@ -46,6 +47,9 @@
   const boxProgressBoosterText = document.getElementById("boxProgressBoosterText");
   const boxProgressBoosterFill = document.getElementById("boxProgressBoosterFill");
   const boxProgressReveal = document.getElementById("boxProgressReveal");
+  const boxPackGrid = document.getElementById("boxPackGrid");
+  const boxPacksRemaining = document.getElementById("boxPacksRemaining");
+  const boxPacksTrackFill = document.getElementById("boxPacksTrackFill");
 
   const boxTotalCards = document.getElementById("boxTotalCards");
   const boxRarityStats = document.getElementById("boxRarityStats");
@@ -54,6 +58,8 @@
   const boxRevealDetailsButton = document.getElementById("boxRevealDetailsButton");
   const openAnotherBoxButton = document.getElementById("openAnotherBoxButton");
   const backToSelectionButton = document.getElementById("backToSelectionButton");
+  const bestPullSection = document.getElementById("bestPullSection");
+  const bestPullCard = document.getElementById("bestPullCard");
 
   const assetStatus = document.getElementById("assetStatus");
   const downloadAssetsButton = document.getElementById("downloadAssetsButton");
@@ -77,6 +83,7 @@
   let currentPack = [];
   let openingMode = "single";
   let boxSession = createEmptyBoxSession();
+  let selectedBoxPack = null;
 
   function createEmptyBoxSession() {
     return { openedPacks: 0, pulls: [], packs: [] };
@@ -124,8 +131,39 @@
 
   function startOpening(mode) {
     openingMode = mode;
-    if (mode === "box") boxSession = createEmptyBoxSession();
+    if (mode === "box") {
+      boxSession = createEmptyBoxSession();
+      selectedBoxPack = null;
+      renderBoxPacks();
+      showStage(stages.boxPacks);
+      return;
+    }
     prepareBoosterStage();
+    showStage(stages.booster);
+  }
+
+  function renderBoxPacks() {
+    const remaining = BOX_PACK_COUNT - boxSession.openedPacks;
+    boxPacksRemaining.textContent = String(remaining);
+    boxPacksTrackFill.style.width = `${(remaining / BOX_PACK_COUNT) * 100}%`;
+    const packs = [];
+    for (let index = boxSession.openedPacks; index < BOX_PACK_COUNT; index += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "box-pack-choice";
+      button.setAttribute("aria-label", `Open booster pack ${index + 1} of ${BOX_PACK_COUNT}`);
+      button.innerHTML = `<img src="battle-of-ages-booster.png" alt="Battle of Ages booster pack"><span>${index + 1}</span>`;
+      button.addEventListener("click", () => selectBoxPack(index));
+      packs.push(button);
+    }
+    boxPackGrid.replaceChildren(...packs);
+  }
+
+  function selectBoxPack(index) {
+    selectedBoxPack = index;
+    prepareBoosterStage();
+    boosterHeading.textContent = `Booster Pack ${boxSession.openedPacks + 1} of ${BOX_PACK_COUNT}`;
+    boosterInstruction.textContent = "Click the selected pack to break the seal.";
     showStage(stages.booster);
   }
 
@@ -222,13 +260,13 @@
     const revealed = grid.querySelectorAll(".revealed").length;
     if (revealed === total) {
       status.textContent = openingMode === "box" ? `Pack ${boxSession.openedPacks} complete!` : "Pack complete!";
-      instruction.textContent = "Hover over any card to inspect it, or continue opening.";
+      instruction.textContent = openingMode === "box" ? "Hover over any card to inspect it, then return to the remaining packs." : "Hover over any card to inspect it, or continue opening.";
       revealAllButton.hidden = true;
       anotherButton.hidden = false;
       if (openingMode === "box") {
         anotherButton.textContent = boxSession.openedPacks >= BOX_PACK_COUNT
           ? "View Booster Box Summary"
-          : `Open Next Pack (${boxSession.openedPacks + 1} of ${BOX_PACK_COUNT})`;
+          : `Return to Packs (${BOX_PACK_COUNT - boxSession.openedPacks} Remaining)`;
       } else {
         anotherButton.textContent = "Open Another Pack";
       }
@@ -280,6 +318,16 @@
 
     const premiumCards = await Promise.all(premiums.map(card => createSummaryCard(card)));
     boxPremiumGrid.replaceChildren(...premiumCards);
+
+    const bestPull = premiums[0] || boxSession.pulls.slice().sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity))[0];
+    if (bestPull) {
+      const bestCard = await createSummaryCard(bestPull);
+      bestPullCard.replaceChildren(bestCard);
+      bestPullSection.hidden = false;
+    } else {
+      bestPullCard.replaceChildren();
+      bestPullSection.hidden = true;
+    }
 
     boxAllPulls.replaceChildren();
     boxAllPulls.dataset.loaded = "false";
@@ -398,7 +446,10 @@
   boosterButton.addEventListener("click", () => {
     if (boosterButton.classList.contains("opening")) return;
     currentPack = buildPack();
-    if (openingMode === "box") recordPackForBox(currentPack);
+    if (openingMode === "box") {
+      recordPackForBox(currentPack);
+      selectedBoxPack = null;
+    }
     renderPack(currentPack);
     boosterButton.classList.add("opening");
     clickHint.textContent = "Opening…";
@@ -420,8 +471,13 @@
   });
 
   anotherButton.addEventListener("click", () => {
-    if (openingMode === "box" && boxSession.openedPacks >= BOX_PACK_COUNT) {
-      renderBoxSummary();
+    if (openingMode === "box") {
+      if (boxSession.openedPacks >= BOX_PACK_COUNT) {
+        renderBoxSummary();
+      } else {
+        renderBoxPacks();
+        showStage(stages.boxPacks);
+      }
       return;
     }
     prepareBoosterStage();
