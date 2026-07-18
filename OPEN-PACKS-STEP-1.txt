@@ -1,0 +1,28 @@
+WORLD UNDER SIEGE — OPEN PACKS STEP 1
+
+Replace these files in your website root:
+- open-packs.html
+- open-packs.css
+- open-packs.js
+- packdata.js
+
+Keep your existing cards folder.
+
+IMPORTANT FOR SECRET RARES:
+This step expects the two Secret Rare images to be named exactly:
+- cards/BOA-226.jpg
+- cards/BOA-227.jpg
+
+If your files include card names, either rename them or edit the two image lines at the bottom of packdata.js.
+
+This step includes:
+- Exact 12-card pack construction
+- 6 Commons, 4 Uncommons, 2 independent premium slots
+- BOA-001 through BOA-227 only
+- No SD1 cards
+- Click-to-flip cards
+- Reveal All
+- Hover preview
+- Rarity glow effects
+
+Next step: booster-pack opening presentation, staged card dealing, and stronger premium reveal effects.

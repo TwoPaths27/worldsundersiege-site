@@ -4,24 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Open Packs - Worlds Under Siege</title>
-  <link rel="stylesheet" href="page-template.css">
+  <link rel="stylesheet" href="open-packs.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a href="index.html"><img src="logo.png" class="top-logo" alt="Worlds Under Siege"></a>
-      <nav class="nav">
-        <a href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a href="open-packs.html">Open Packs</a>
-      </nav>
-    </div>
+  <header class="site-header">
+    <a href="index.html" class="brand"><img src="logo.png" alt="Worlds Under Siege"></a>
+    <nav aria-label="Main navigation">
+      <a href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a class="active" href="open-packs.html">Open Packs</a>
+    </nav>
   </header>
-  <main class="page coming-page">
-    <section class="panel coming-panel">
-      <img class="coming-art" src="coming-soon.png" alt="Coming Soon">
-      <h1>Open Packs</h1>
-      <p>Open Battle of Ages booster packs and grow your collection. Digital pack opening is currently under development.</p>
-      <a class="btn" href="index.html">Return Home</a>
+
+  <main>
+    <section class="hero">
+      <div class="set-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display"></div>
+      <div class="hero-copy">
+        <p class="eyebrow">Battle of Ages</p>
+        <h1>Open a Booster Pack</h1>
+        <p>Each pack contains <strong>6 Commons</strong>, <strong>4 Uncommons</strong>, and <strong>2 Rare-or-higher</strong> cards.</p>
+        <button id="openPackButton" class="primary-button" type="button">Open Booster Pack</button>
+      </div>
+    </section>
+
+    <section class="pack-area" aria-live="polite">
+      <aside class="preview-panel">
+        <h2>Card Preview</h2>
+        <div class="preview-frame"><img id="previewImage" src="logo.png" alt="Hover over a revealed card to preview it"></div>
+        <p id="previewName">Hover over a revealed card.</p>
+        <p id="previewRarity" class="rarity-label"></p>
+      </aside>
+
+      <section class="reveal-panel">
+        <div class="reveal-heading">
+          <div><p class="eyebrow">Your Pack</p><h2 id="packStatus">Ready to open</h2></div>
+          <button id="revealAllButton" class="secondary-button" type="button" hidden>Reveal All</button>
+        </div>
+        <div id="cardGrid" class="card-grid"></div>
+        <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
+      </section>
     </section>
   </main>
+
+  <footer>© 2026 Worlds Under Siege™ · Booster Simulator Step 1</footer>
+  <script src="packdata.js"></script>
+  <script src="open-packs.js"></script>
 </body>
 </html>
