@@ -1,0 +1,19 @@
+OPEN PACKS STEP 4 — CARD IMAGE DOWNLOAD SYSTEM
+
+Replace these files in your website root:
+- open-packs.html
+- open-packs.css
+- open-packs.js
+
+Add this new file:
+- asset-cache.js
+
+Keep:
+- cards.js
+- packdata.js
+- card-back.png
+- your cards folder
+
+IMPORTANT:
+This download system can only cache files that actually exist at the paths listed in cards.js.
+Use the Repair button to redownload every image and display a list of any missing or mismatched filenames.

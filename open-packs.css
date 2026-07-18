@@ -16,3 +16,22 @@ footer{text-align:center;padding:24px;border-top:1px solid #5f4521;color:#bfae8d
 .booster-button.loading{pointer-events:none;filter:drop-shadow(0 28px 24px rgba(0,0,0,.75)) grayscale(.15)}
 .booster-button.loading .click-hint::after{content:" Loading cards…"}
 .card-front.image-error::after{content:"Image unavailable";position:absolute;inset:0;display:grid;place-items:center;padding:12px;text-align:center;color:#f4d890;background:#130e0a;font-weight:bold}
+
+.asset-box {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(209, 171, 89, .55);
+  border-radius: 12px;
+  background: rgba(8, 12, 18, .62);
+}
+.asset-box p { margin: .25rem 0 0; opacity: .86; }
+.asset-actions { display: flex; gap: .65rem; flex-wrap: wrap; margin-top: .8rem; }
+.text-button { border: 0; background: transparent; color: #e4c57d; text-decoration: underline; cursor: pointer; }
+.asset-progress { margin-top: .85rem; display: grid; grid-template-columns: 1fr auto; gap: .65rem; align-items: center; }
+.asset-progress-bar { height: 12px; overflow: hidden; border-radius: 999px; background: #111923; border: 1px solid #354150; }
+.asset-progress-bar span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #8d6425, #efd58f); transition: width .18s ease; }
+.asset-errors { margin-top: .8rem; color: #ffc3c3; }
+.asset-errors pre { white-space: pre-wrap; max-height: 11rem; overflow: auto; font-size: .78rem; }
+.asset-ready { color: #9ce9a8; }
+.asset-warning { color: #ffd487; }
+.card-front.loading::after { content: "Loading…"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,12,18,.88); color: #e8d39c; font-size: .78rem; }

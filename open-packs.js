@@ -1,8 +1,6 @@
 (() => {
   "use strict";
 
-  // Use cards.js as the source of truth for names and image paths. packdata.js
-  // remains the source of truth for rarities and booster collation.
   const siteCardsById = new Map(
     (typeof cards !== "undefined" ? cards : [])
       .filter(card => card && card.id)
@@ -11,11 +9,7 @@
 
   const packCards = BOA_PACK_CARDS.map(card => {
     const siteCard = siteCardsById.get(card.id);
-    return {
-      ...card,
-      name: siteCard?.name || card.name,
-      image: siteCard?.image || card.image
-    };
+    return { ...card, name: siteCard?.name || card.name, image: siteCard?.image || card.image };
   });
 
   const groups = packCards.reduce((result, card) => {
@@ -38,6 +32,16 @@
   const previewRarity = document.getElementById("previewRarity");
   const clickHint = boosterButton.querySelector(".click-hint");
 
+  const assetStatus = document.getElementById("assetStatus");
+  const downloadAssetsButton = document.getElementById("downloadAssetsButton");
+  const repairAssetsButton = document.getElementById("repairAssetsButton");
+  const assetProgress = document.getElementById("assetProgress");
+  const assetProgressFill = document.getElementById("assetProgressFill");
+  const assetProgressText = document.getElementById("assetProgressText");
+  const assetErrors = document.getElementById("assetErrors");
+  const assetErrorList = document.getElementById("assetErrorList");
+
+  const allImagePaths = packCards.map(card => card.image);
   let currentPack = [];
 
   const randomItem = items => items[Math.floor(Math.random() * items.length)];
@@ -64,45 +68,49 @@
     const commons = sampleUnique(groups.Common, BOA_PACK_CONFIG.commonsPerPack);
     const uncommons = sampleUnique(groups.Uncommon, BOA_PACK_CONFIG.uncommonsPerPack);
     const premiums = [];
-
     for (let slot = 0; slot < BOA_PACK_CONFIG.premiumSlotsPerPack; slot++) {
       const rarity = rollPremiumRarity();
       let card = randomItem(groups[rarity]);
-      while (premiums.some(existing => existing.id === card.id) && groups[rarity].length > 1) {
-        card = randomItem(groups[rarity]);
-      }
+      while (premiums.some(existing => existing.id === card.id) && groups[rarity].length > 1) card = randomItem(groups[rarity]);
       premiums.push(card);
     }
-
     return [...commons, ...uncommons, ...premiums];
   }
 
   function showStage(stage) {
-    [introStage, boosterStage, revealStage].forEach(item => {
-      item.hidden = item !== stage;
-    });
+    [introStage, boosterStage, revealStage].forEach(item => { item.hidden = item !== stage; });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function preview(card) {
-    previewImage.src = card.image;
-    previewImage.alt = `${card.id} ${card.name}`;
+  async function resolvedImage(card) {
+    return WUSAssets.getObjectUrl(card.image);
+  }
+
+  async function preview(card) {
     previewName.textContent = `${card.id} — ${card.name}`;
     previewRarity.textContent = card.rarity;
+    previewImage.alt = `${card.id} ${card.name}`;
+    try {
+      previewImage.src = await resolvedImage(card);
+    } catch {
+      previewImage.src = card.image;
+    }
   }
 
-  function preloadImage(src) {
-    return new Promise(resolve => {
-      const image = new Image();
-      image.onload = () => resolve({ src, ok: true });
-      image.onerror = () => resolve({ src, ok: false });
-      image.src = src;
-    });
-  }
-
-  async function preloadPack(pack) {
-    // Card fronts and the card back are loaded before the reveal screen appears.
-    await Promise.all([preloadImage("card-back.png"), ...pack.map(card => preloadImage(card.image))]);
+  async function attachFrontImage(image, front, card) {
+    front.classList.add("loading");
+    try {
+      // Both the grid and preview use the exact same cached blob URL.
+      image.src = await resolvedImage(card);
+      image.hidden = false;
+      front.classList.remove("image-error");
+    } catch (error) {
+      front.classList.add("image-error");
+      image.hidden = true;
+      front.title = `${card.id}: ${card.image} (${error.message})`;
+    } finally {
+      front.classList.remove("loading");
+    }
   }
 
   function createCard(card, index) {
@@ -111,34 +119,15 @@
     button.className = `pack-card${index >= 10 ? " premium-card" : ""}`;
     button.dataset.rarity = card.rarity;
     button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-    button.innerHTML = `
-      <span class="card-inner">
-        <span class="card-face card-back"></span>
-        <span class="card-face card-front"><img src="${card.image}" alt="${card.id} ${card.name}"></span>
-      </span>`;
+    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}"></span></span>`;
 
     const image = button.querySelector("img");
     const front = button.querySelector(".card-front");
-
-    image.addEventListener("error", () => {
-      // Secret cards may be stored as PNGs. All other cards use the exact path
-      // from cards.js, which also fixes Ultra Rare filename mismatches.
-      if (card.rarity === "Secret" && !image.dataset.fallback) {
-        image.dataset.fallback = "true";
-        image.src = `cards/${card.id}.png`;
-        return;
-      }
-      front.classList.add("image-error");
-      image.hidden = true;
-    });
+    attachFrontImage(image, front, card);
 
     button.addEventListener("click", () => revealCard(button, card));
-    button.addEventListener("mouseenter", () => {
-      if (button.classList.contains("revealed")) preview(card);
-    });
-    button.addEventListener("focus", () => {
-      if (button.classList.contains("revealed")) preview(card);
-    });
+    button.addEventListener("mouseenter", () => { if (button.classList.contains("revealed")) preview(card); });
+    button.addEventListener("focus", () => { if (button.classList.contains("revealed")) preview(card); });
     return button;
   }
 
@@ -154,10 +143,7 @@
   }
 
   function revealCard(button, card) {
-    if (button.classList.contains("revealed")) {
-      preview(card);
-      return;
-    }
+    if (button.classList.contains("revealed")) { preview(card); return; }
     button.classList.add("revealed");
     if (["Ultra Rare", "Secret"].includes(card.rarity)) button.classList.add("big-hit");
     button.setAttribute("aria-label", `${card.id} ${card.name}, ${card.rarity}`);
@@ -173,28 +159,64 @@
       instruction.textContent = "Hover over any card to inspect it, or open another pack.";
       revealAllButton.hidden = true;
       anotherButton.hidden = false;
-    } else {
-      status.textContent = `${revealed} of ${total} cards revealed`;
+    } else status.textContent = `${revealed} of ${total} cards revealed`;
+  }
+
+  async function refreshAssetStatus() {
+    try {
+      const result = await WUSAssets.getStatus(allImagePaths);
+      if (result.complete) {
+        assetStatus.textContent = `${result.installed} / ${result.total} images downloaded — ready`;
+        assetStatus.className = "asset-ready";
+        downloadAssetsButton.textContent = "Images Installed";
+      } else {
+        assetStatus.textContent = `${result.installed} / ${result.total} images downloaded`;
+        assetStatus.className = "asset-warning";
+        downloadAssetsButton.textContent = result.installed ? "Continue Download" : "Download Images";
+      }
+    } catch (error) {
+      assetStatus.textContent = error.message;
+      assetStatus.className = "asset-warning";
     }
   }
 
+  async function installAssets(force = false) {
+    downloadAssetsButton.disabled = true;
+    repairAssetsButton.disabled = true;
+    assetProgress.hidden = false;
+    assetErrors.hidden = true;
+    assetErrorList.textContent = "";
+
+    const result = await WUSAssets.install(allImagePaths, {
+      force,
+      onProgress: ({ completed, total, failed }) => {
+        assetProgressFill.style.width = `${Math.round((completed / total) * 100)}%`;
+        assetProgressText.textContent = `${completed} / ${total}${failed ? ` · ${failed} failed` : ""}`;
+      }
+    });
+
+    if (result.failed.length) {
+      assetErrors.hidden = false;
+      assetErrorList.textContent = result.failed.map(item => `${item.path}\n  ${item.error}`).join("\n\n");
+    }
+    downloadAssetsButton.disabled = false;
+    repairAssetsButton.disabled = false;
+    await refreshAssetStatus();
+  }
+
   beginButton.addEventListener("click", () => showStage(boosterStage));
+  downloadAssetsButton.addEventListener("click", () => installAssets(false));
+  repairAssetsButton.addEventListener("click", () => installAssets(true));
 
-  boosterButton.addEventListener("click", async () => {
-    if (boosterButton.classList.contains("opening") || boosterButton.classList.contains("loading")) return;
-
-    boosterButton.classList.add("loading");
-    clickHint.textContent = "Loading cards…";
+  boosterButton.addEventListener("click", () => {
+    if (boosterButton.classList.contains("opening")) return;
     currentPack = buildPack();
-    await preloadPack(currentPack);
-    renderPack(currentPack);
-
-    boosterButton.classList.remove("loading");
+    renderPack(currentPack); // Face-down cards appear immediately; fronts resolve in parallel.
     boosterButton.classList.add("opening");
-    clickHint.textContent = "Click to open";
-
+    clickHint.textContent = "Opening…";
     setTimeout(() => {
       boosterButton.classList.remove("opening");
+      clickHint.textContent = "Click to open";
       showStage(revealStage);
     }, 900);
   });
@@ -210,7 +232,5 @@
   });
 
   anotherButton.addEventListener("click", () => showStage(boosterStage));
-
-  // Begin caching the card back immediately.
-  preloadImage("card-back.png");
+  refreshAssetStatus();
 })();
