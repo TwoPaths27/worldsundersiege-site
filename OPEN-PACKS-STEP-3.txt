@@ -1,0 +1,20 @@
+OPEN PACKS — STEP 3 FIX
+
+Replace these files in your website root:
+- open-packs.html
+- open-packs.css
+- open-packs.js
+
+Add this new file to your website root:
+- card-back.png
+
+Keep your existing files:
+- cards.js
+- packdata.js
+- cards/ folder
+
+Changes:
+- Uses card-back.png as the back of every face-down card.
+- Loads cards.js before the simulator and uses its exact image paths. This fixes stale or mismatched Ultra Rare filenames.
+- Preloads all 12 selected card images before showing the reveal screen, reducing delayed/blank images while flipping.
+- Adds a visible loading state while the selected pack is being cached.
