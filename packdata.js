@@ -1354,15 +1354,15 @@ const BOA_PACK_CARDS = [
   },
   {
     "id": "BOA-226",
-    "name": "Secret Rare 1",
+    "name": "King Arthur",
     "rarity": "Secret",
-    "image": "cards/BOA-226.jpg"
+    "image": "cards/BOA-226 King Arthur.jpg"
   },
   {
     "id": "BOA-227",
-    "name": "Secret Rare 2",
+    "name": "Dracula",
     "rarity": "Secret",
-    "image": "cards/BOA-227.jpg"
+    "image": "cards/BOA-227 Dracula.jpg"
   }
 ];
 
