@@ -3,7 +3,7 @@
 
   const CACHE_NAME = "wus-card-images-boa-v1";
   const VERSION_KEY = "wus-card-image-pack-version";
-  const VERSION = "BOA-1.0";
+  const VERSION = "BOA-1.1";
   const objectUrls = new Map();
 
   function absoluteUrl(path) {
@@ -20,6 +20,8 @@
     return cache.match(absoluteUrl(path));
   }
 
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   async function fetchAndCache(path, force = false) {
     const url = absoluteUrl(path);
     const cache = await openCache();
@@ -28,10 +30,26 @@
       if (existing) return existing;
     }
 
-    const response = await fetch(url, { cache: force ? "reload" : "default" });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    await cache.put(url, response.clone());
-    return response;
+    let lastError;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        const response = await fetch(url, { cache: force ? "reload" : "default" });
+        if (response.ok) {
+          await cache.put(url, response.clone());
+          return response;
+        }
+        const error = new Error(`${response.status} ${response.statusText}`.trim());
+        error.status = response.status;
+        // 404 is a real missing/incorrect filename. Retrying will not help.
+        if (response.status === 404) throw error;
+        lastError = error;
+      } catch (error) {
+        if (error.status === 404) throw error;
+        lastError = error;
+      }
+      if (attempt < 4) await sleep(500 * (2 ** (attempt - 1)));
+    }
+    throw lastError || new Error("Download failed");
   }
 
   async function getObjectUrl(path) {

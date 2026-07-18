@@ -41,6 +41,15 @@
   const assetErrors = document.getElementById("assetErrors");
   const assetErrorList = document.getElementById("assetErrorList");
 
+  const assetGate = document.getElementById("assetGate");
+  const assetGateStatus = document.getElementById("assetGateStatus");
+  const assetGateDownload = document.getElementById("assetGateDownload");
+  const assetGateProgress = document.getElementById("assetGateProgress");
+  const assetGateProgressFill = document.getElementById("assetGateProgressFill");
+  const assetGateProgressText = document.getElementById("assetGateProgressText");
+  const assetGateErrors = document.getElementById("assetGateErrors");
+  const assetGateErrorList = document.getElementById("assetGateErrorList");
+
   const allImagePaths = packCards.map(card => card.image);
   let currentPack = [];
 
@@ -162,6 +171,64 @@
     } else status.textContent = `${revealed} of ${total} cards revealed`;
   }
 
+  function showAssetGate(show) {
+    assetGate.hidden = !show;
+    document.body.classList.toggle("asset-locked", show);
+  }
+
+  function formatAssetFailures(failed) {
+    return failed.map(item => {
+      const hint = item.error.startsWith("404")
+        ? "File not found. Check that the GitHub filename and capitalization exactly match this path."
+        : item.error.startsWith("5")
+          ? "Temporary server error. Use Continue Download to retry."
+          : "Download failed. Use Continue Download to retry.";
+      return `${item.path}\n  ${item.error}\n  ${hint}`;
+    }).join("\n\n");
+  }
+
+  async function initializeAssetGate() {
+    try {
+      const result = await WUSAssets.getStatus(allImagePaths);
+      if (result.complete) {
+        showAssetGate(false);
+        return;
+      }
+      assetGateStatus.textContent = `${result.installed} / ${result.total} images installed`;
+      assetGateDownload.textContent = result.installed ? "Continue Download" : "Download Images";
+      showAssetGate(true);
+    } catch (error) {
+      assetGateStatus.textContent = error.message;
+      showAssetGate(true);
+    }
+  }
+
+  async function installFromGate() {
+    assetGateDownload.disabled = true;
+    assetGateProgress.hidden = false;
+    assetGateErrors.hidden = true;
+    assetGateErrorList.textContent = "";
+    const result = await WUSAssets.install(allImagePaths, {
+      force: false,
+      onProgress: ({ completed, total, failed }) => {
+        assetGateProgressFill.style.width = `${Math.round((completed / total) * 100)}%`;
+        assetGateProgressText.textContent = `${completed} / ${total}${failed ? ` · ${failed} failed` : ""}`;
+        assetGateStatus.textContent = `Downloading Battle of Ages images…`;
+      }
+    });
+    assetGateDownload.disabled = false;
+    if (result.failed.length) {
+      assetGateStatus.textContent = `${result.total - result.failed.length} / ${result.total} installed. Fix or retry the failed files.`;
+      assetGateDownload.textContent = "Continue Download";
+      assetGateErrors.hidden = false;
+      assetGateErrorList.textContent = formatAssetFailures(result.failed);
+    } else {
+      assetGateStatus.textContent = "Battle of Ages is ready!";
+      await refreshAssetStatus();
+      setTimeout(() => showAssetGate(false), 450);
+    }
+  }
+
   async function refreshAssetStatus() {
     try {
       const result = await WUSAssets.getStatus(allImagePaths);
@@ -197,7 +264,7 @@
 
     if (result.failed.length) {
       assetErrors.hidden = false;
-      assetErrorList.textContent = result.failed.map(item => `${item.path}\n  ${item.error}`).join("\n\n");
+      assetErrorList.textContent = formatAssetFailures(result.failed);
     }
     downloadAssetsButton.disabled = false;
     repairAssetsButton.disabled = false;
@@ -206,6 +273,7 @@
 
   beginButton.addEventListener("click", () => showStage(boosterStage));
   downloadAssetsButton.addEventListener("click", () => installAssets(false));
+  assetGateDownload.addEventListener("click", installFromGate);
   repairAssetsButton.addEventListener("click", () => installAssets(true));
 
   boosterButton.addEventListener("click", () => {
@@ -233,4 +301,5 @@
 
   anotherButton.addEventListener("click", () => showStage(boosterStage));
   refreshAssetStatus();
+  initializeAssetGate();
 })();

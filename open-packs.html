@@ -78,6 +78,23 @@
     </section>
   </main>
 
+
+  <div id="assetGate" class="asset-gate" hidden role="dialog" aria-modal="true" aria-labelledby="assetGateTitle">
+    <div class="asset-gate-card panel">
+      <p class="eyebrow">Game Resources</p>
+      <h1 id="assetGateTitle">Download Battle of Ages Images</h1>
+      <p>Worlds Under Siege stores the 227 card images on this device so packs, decks, and matches load quickly.</p>
+      <p id="assetGateStatus" class="asset-warning">Checking installed images…</p>
+      <div class="asset-progress" id="assetGateProgress" hidden>
+        <div class="asset-progress-bar"><span id="assetGateProgressFill"></span></div>
+        <span id="assetGateProgressText">0 / 227</span>
+      </div>
+      <button id="assetGateDownload" class="primary-button" type="button">Download Images</button>
+      <details id="assetGateErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetGateErrorList"></pre></details>
+      <p class="asset-note">This prompt will not appear again while the complete image pack remains installed.</p>
+    </div>
+  </div>
+
   <footer>© 2026 Worlds Under Siege™ · Open Packs</footer>
   <script src="cards.js"></script>
   <script src="packdata.js"></script>

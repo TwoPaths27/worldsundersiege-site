@@ -1,0 +1,14 @@
+OPEN PACKS — STEP 5
+
+Changes:
+- First-visit download gate appears when any BOA image is missing.
+- Gate disappears automatically and stays hidden once all 227 images are cached.
+- Temporary 5xx/network failures retry automatically up to four times.
+- 404 errors now explain that the deployed filename/path is missing or mismatched.
+- Existing repair/continue controls remain available.
+
+IMPORTANT:
+BOA-226 and BOA-227 must exist on GitHub at exactly:
+  cards/BOA-226.jpg
+  cards/BOA-227.jpg
+Or update packdata.js to the exact deployed filenames.

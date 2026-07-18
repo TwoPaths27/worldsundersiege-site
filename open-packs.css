@@ -35,3 +35,21 @@ footer{text-align:center;padding:24px;border-top:1px solid #5f4521;color:#bfae8d
 .asset-ready { color: #9ce9a8; }
 .asset-warning { color: #ffd487; }
 .card-front.loading::after { content: "Loading…"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,12,18,.88); color: #e8d39c; font-size: .78rem; }
+
+/* First-visit asset download gate */
+.asset-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(5, 4, 3, 0.92);
+  backdrop-filter: blur(8px);
+}
+.asset-gate[hidden] { display: none; }
+.asset-gate-card { width: min(620px, 100%); text-align: center; }
+.asset-gate-card .asset-progress { margin: 20px 0; }
+.asset-gate-card .primary-button { min-width: 220px; }
+.asset-note { margin-top: 16px; opacity: .75; font-size: .9rem; }
+body.asset-locked { overflow: hidden; }
