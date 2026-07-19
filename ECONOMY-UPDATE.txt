@@ -1,0 +1,11 @@
+WORLDS UNDER SIEGE — LOCAL ECONOMY UPDATE
+
+- Booster pack: 200 Gold
+- Booster box (24 packs): 4,200 Gold
+- Purchases are charged before opening begins.
+- Duplicate pulls still convert to Gold.
+- Missing singles can be purchased inside Deck Builder:
+  Common 25, Uncommon 50, Rare 100, Super Rare 200, Ultra Rare 300.
+- Secret Rares cannot be purchased and remain hidden until discovered.
+- Card purchases stop automatically at the ownership cap.
+- Collection, Gold, and decks remain stored in browser localStorage.

@@ -87,6 +87,37 @@
     return Math.max(0, Math.floor(Number(load().cards[cardId]) || 0));
   }
 
+  function addGold(amount) {
+    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    const data = load();
+    data.gold += value;
+    save(data);
+    return { ok: true, amount: value, gold: data.gold };
+  }
+
+  function spendGold(amount) {
+    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    const data = load();
+    if (data.gold < value) return { ok: false, reason: "insufficient-gold", cost: value, gold: data.gold };
+    data.gold -= value;
+    save(data);
+    return { ok: true, cost: value, gold: data.gold };
+  }
+
+  function purchaseCard(card, price) {
+    if (!card?.id) return { ok: false, reason: "invalid-card" };
+    const cost = Math.max(0, Math.floor(Number(price) || 0));
+    const data = load();
+    const limit = getLimit(card);
+    const owned = Math.max(0, Math.floor(Number(data.cards[card.id]) || 0));
+    if (owned >= limit) return { ok: false, reason: "ownership-cap", owned, limit, gold: data.gold };
+    if (data.gold < cost) return { ok: false, reason: "insufficient-gold", cost, owned, limit, gold: data.gold };
+    data.gold -= cost;
+    data.cards[card.id] = owned + 1;
+    save(data);
+    return { ok: true, card, cost, owned: owned + 1, limit, gold: data.gold };
+  }
+
   function reset() {
     const data = defaultData();
     save(data);
@@ -101,6 +132,9 @@
     getOwned,
     getLimit,
     getGoldValue,
+    addGold,
+    spendGold,
+    purchaseCard,
     reset
   });
 })();

@@ -2,7 +2,7 @@
   "use strict";
 
   const BOX_PACK_COUNT = 24;
-  const ECONOMY = Object.freeze({ enabled: false, packCost: null, boxCost: null });
+  const ECONOMY = Object.freeze({ enabled: true, packCost: 200, boxCost: 4200 });
 
   const siteCardsById = new Map(
     (typeof cards !== "undefined" ? cards : [])
@@ -62,6 +62,7 @@
   const bestPullCard = document.getElementById("bestPullCard");
   const playerGold = document.getElementById("playerGold");
   const collectionResult = document.getElementById("collectionResult");
+  const economyMessage = document.getElementById("economyMessage");
 
   const assetStatus = document.getElementById("assetStatus");
   const downloadAssetsButton = document.getElementById("downloadAssetsButton");
@@ -94,7 +95,37 @@
   }
 
   function refreshGold() {
-    if (playerGold && window.WUSCollection) playerGold.textContent = WUSCollection.load().gold.toLocaleString();
+    if (!window.WUSCollection) return;
+    const gold = WUSCollection.load().gold;
+    if (playerGold) playerGold.textContent = gold.toLocaleString();
+    if (beginButton) beginButton.disabled = gold < ECONOMY.packCost;
+    if (beginBoxButton) beginBoxButton.disabled = gold < ECONOMY.boxCost;
+    if (openAnotherBoxButton) openAnotherBoxButton.disabled = gold < ECONOMY.boxCost;
+  }
+
+  function showEconomyMessage(message, isError = false) {
+    if (!economyMessage) return;
+    economyMessage.textContent = message;
+    economyMessage.classList.toggle("economy-error", isError);
+  }
+
+  function chargeForOpening(mode) {
+    if (!ECONOMY.enabled || !window.WUSCollection) return true;
+    const cost = mode === "box" ? ECONOMY.boxCost : ECONOMY.packCost;
+    const result = WUSCollection.spendGold(cost);
+    if (!result.ok) {
+      showEconomyMessage(`Not enough Gold. You need ${cost.toLocaleString()} Gold and currently have ${result.gold.toLocaleString()}.`, true);
+      refreshGold();
+      return false;
+    }
+    showEconomyMessage(`${cost.toLocaleString()} Gold spent. Remaining balance: ${result.gold.toLocaleString()} Gold.`);
+    refreshGold();
+    return true;
+  }
+
+  function purchaseOpening(mode) {
+    if (!chargeForOpening(mode)) return;
+    startOpening(mode);
   }
 
   function saveCurrentPackToCollection() {
@@ -473,8 +504,8 @@
     await refreshAssetStatus();
   }
 
-  beginButton.addEventListener("click", () => startOpening("single"));
-  beginBoxButton.addEventListener("click", () => startOpening("box"));
+  beginButton.addEventListener("click", () => purchaseOpening("single"));
+  beginBoxButton.addEventListener("click", () => purchaseOpening("box"));
   downloadAssetsButton.addEventListener("click", () => installAssets(false));
   assetGateDownload.addEventListener("click", installFromGate);
   repairAssetsButton.addEventListener("click", () => installAssets(true));
@@ -516,8 +547,7 @@
       }
       return;
     }
-    prepareBoosterStage();
-    showStage(stages.booster);
+    purchaseOpening("single");
   });
 
   boxRevealDetailsButton.addEventListener("click", async () => {
@@ -533,16 +563,13 @@
     boxRevealDetailsButton.textContent = boxAllPulls.hidden ? "Show All Pulls" : "Hide All Pulls";
   });
 
-  openAnotherBoxButton.addEventListener("click", () => startOpening("box"));
+  openAnotherBoxButton.addEventListener("click", () => purchaseOpening("box"));
   backToSelectionButton.addEventListener("click", () => {
     openingMode = "single";
     boxSession = createEmptyBoxSession();
     showStage(stages.intro);
   });
 
-  // Economy is intentionally disabled for now. The mode and cost hooks are centralized here
-  // so a future account/gold service can charge before startOpening() runs.
-  void ECONOMY;
 
   refreshGold();
   window.addEventListener("wus-player-data-changed", refreshGold);
