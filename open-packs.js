@@ -50,6 +50,12 @@
   const boxPackGrid = document.getElementById("boxPackGrid");
   const boxPacksRemaining = document.getElementById("boxPacksRemaining");
   const boxPacksTrackFill = document.getElementById("boxPacksTrackFill");
+  const openAllPacksButton = document.getElementById("openAllPacksButton");
+  const openAllOverlay = document.getElementById("openAllOverlay");
+  const openAllAnimation = document.getElementById("openAllAnimation");
+  const openAllStatus = document.getElementById("openAllStatus");
+  const openAllProgressFill = document.getElementById("openAllProgressFill");
+  const openAllProgressText = document.getElementById("openAllProgressText");
 
   const boxTotalCards = document.getElementById("boxTotalCards");
   const boxRarityStats = document.getElementById("boxRarityStats");
@@ -89,6 +95,7 @@
   let selectedBoxPack = null;
   let currentPackCollectionResult = null;
   let currentPackSaved = false;
+  let openingAllPacks = false;
 
   function createEmptyBoxSession() {
     return { openedPacks: 0, pulls: [], packs: [], collectionAdded: 0, duplicatesConverted: 0, goldEarned: 0 };
@@ -256,6 +263,100 @@
       packs.push(button);
     }
     boxPackGrid.replaceChildren(...packs);
+    if (openAllPacksButton) {
+      openAllPacksButton.disabled = remaining <= 0 || openingAllPacks;
+      openAllPacksButton.textContent = remaining === BOX_PACK_COUNT
+        ? "Open All 24 Packs"
+        : `Open All ${remaining} Remaining Packs`;
+    }
+    if (openAllOverlay && !openingAllPacks) openAllOverlay.hidden = true;
+  }
+
+  function wait(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
+
+  function createOpeningPackVisual(index) {
+    const visual = document.createElement("div");
+    visual.className = "open-all-pack";
+    visual.style.setProperty("--pack-delay", `${(index % 8) * 35}ms`);
+    visual.innerHTML = `<img src="battle-of-ages-booster.png" alt=""><span class="open-all-burst"></span>`;
+    return visual;
+  }
+
+  async function openAllRemainingPacks() {
+    if (openingAllPacks || openingMode !== "box" || !window.WUSCollection) return;
+
+    const active = WUSCollection.getActiveOpening();
+    if (!active || active.mode !== "box") {
+      showEconomyMessage("No active booster box was found.", true);
+      return;
+    }
+
+    openingAllPacks = true;
+    openAllPacksButton.disabled = true;
+    boxPackGrid.querySelectorAll("button").forEach(button => { button.disabled = true; });
+    openAllOverlay.hidden = false;
+    openAllAnimation.replaceChildren();
+
+    const startingOpened = active.openedPacks || 0;
+    const totalToOpen = BOX_PACK_COUNT - startingOpened;
+    openAllStatus.textContent = `Opening ${totalToOpen} remaining ${totalToOpen === 1 ? "pack" : "packs"}…`;
+    openAllProgressFill.style.width = "0%";
+    openAllProgressText.textContent = `0 / ${totalToOpen} packs opened`;
+
+    const visualCount = Math.min(totalToOpen, 12);
+    for (let index = 0; index < visualCount; index += 1) {
+      openAllAnimation.appendChild(createOpeningPackVisual(index));
+    }
+    await wait(450);
+    openAllAnimation.classList.add("is-opening");
+
+    try {
+      for (let offset = 0; offset < totalToOpen; offset += 1) {
+        const opening = WUSCollection.getActiveOpening();
+        if (!opening || opening.mode !== "box") throw new Error("The booster box session could not be found.");
+
+        const pack = buildPack();
+        const packIndex = opening.openedPacks;
+        const saved = WUSCollection.savePendingPack(opening.id, packIndex, pack.map(card => card.id));
+        if (!saved.ok) throw new Error("A booster pack could not be saved.");
+
+        const settled = WUSCollection.settlePendingPack(opening.id, pack);
+        if (!settled.ok) throw new Error("A booster pack could not be added to the collection.");
+        if (settled.opening) syncBoxSession(settled.opening);
+
+        const completed = offset + 1;
+        openAllProgressFill.style.width = `${(completed / totalToOpen) * 100}%`;
+        openAllProgressText.textContent = `${completed} / ${totalToOpen} packs opened`;
+        openAllStatus.textContent = completed === totalToOpen
+          ? "Booster box complete!"
+          : `Opening pack ${completed + 1} of ${totalToOpen}…`;
+
+        const visual = openAllAnimation.children[offset % Math.max(1, visualCount)];
+        if (visual) {
+          visual.classList.remove("bursting");
+          void visual.offsetWidth;
+          visual.classList.add("bursting");
+        }
+        await wait(85);
+      }
+
+      const completedOpening = WUSCollection.getActiveOpening();
+      if (completedOpening) syncBoxSession(completedOpening);
+      refreshGold();
+      await wait(750);
+      await renderBoxSummary();
+    } catch (error) {
+      console.error(error);
+      openAllStatus.textContent = "Opening paused";
+      openAllProgressText.textContent = error.message || "Please try again.";
+      renderBoxPacks();
+    } finally {
+      openingAllPacks = false;
+      openAllAnimation.classList.remove("is-opening");
+      if (openAllPacksButton) openAllPacksButton.disabled = false;
+    }
   }
 
   function selectBoxPack(index) {
@@ -540,6 +641,7 @@
 
   beginButton.addEventListener("click", () => purchaseOpening("single"));
   beginBoxButton.addEventListener("click", () => purchaseOpening("box"));
+  if (openAllPacksButton) openAllPacksButton.addEventListener("click", openAllRemainingPacks);
   downloadAssetsButton.addEventListener("click", () => installAssets(false));
   assetGateDownload.addEventListener("click", installFromGate);
   repairAssetsButton.addEventListener("click", () => installAssets(true));

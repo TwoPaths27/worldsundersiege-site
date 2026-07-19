@@ -16,7 +16,7 @@ let activeDeckId = null;
 let selectedCard = null;
 let selectedForm = 0;
 const $ = id => document.getElementById(id);
-const ids = ["deckName","newDeckBtn","saveDeckBtn","savedDecks","deleteDeckBtn","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","resetFilters","cardBrowser","emptyBrowser","visibleCount"];
+const ids = ["deckName","newDeckBtn","saveDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage"];
 const els = Object.fromEntries(ids.map(id=>[id,$(id)]));
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const owned=id=>window.WUSCollection?.getOwned(id)||0;
@@ -52,7 +52,19 @@ function populateFilters(){
   addRange(els.rangeFilter,4,"Range");
   addRange(els.spdFilter,4,"Speed");
 }
-function populateSaved(){const decks=loadDecks();els.savedDecks.innerHTML='<option value="">Load saved deck…</option>';Object.entries(decks).sort((a,b)=>(b[1].updated||0)-(a[1].updated||0)).forEach(([id,d])=>els.savedDecks.add(new Option(d.name,id)));els.savedDecks.value=activeDeckId||"";els.deleteDeckBtn.disabled=!activeDeckId;}
+function populateSaved(){
+  const decks=loadDecks();
+  const sorted=Object.entries(decks).sort((a,b)=>(b[1].updated||0)-(a[1].updated||0));
+  els.savedDecks.innerHTML='<option value="">Load saved deck…</option>';
+  els.managerDeckSelect.innerHTML='<option value="">Choose a saved deck…</option>';
+  sorted.forEach(([id,d])=>{els.savedDecks.add(new Option(d.name,id));els.managerDeckSelect.add(new Option(d.name,id));});
+  els.savedDecks.value=activeDeckId||"";
+  els.deleteDeckBtn.disabled=!activeDeckId;
+  els.renameDeckBtn.disabled=!activeDeckId;
+  els.managerEmptyMessage.hidden=sorted.length!==0;
+  els.managerDeckSelect.disabled=sorted.length===0;
+  els.managerLoadDeck.disabled=true;
+}
 async function setImg(img,path){img.src="card-back.png";try{img.src=window.WUSAssets?await WUSAssets.getObjectUrl(path):encodeURI(path);}catch{img.src=encodeURI(path);}}
 function formData(card){return card.forms?.[selectedForm]||card;}
 function purchasePrice(card){return card?.isSecret||card?.rarity==="Secret Rare"?null:(BUY_PRICE[card?.rarity]??null);}
@@ -73,7 +85,7 @@ function buyCard(card){
   renderPreview();renderDeck();renderBrowser();
 }
 function selectCard(card){selectedCard=card;selectedForm=0;renderPreview();document.querySelectorAll('.browser-card').forEach(e=>e.classList.toggle('selected',e.dataset.id===card.id));}
-function renderPreview(){const c=selectedCard;if(!c)return;const f=formData(c);setImg(els.previewImage,c.image);els.previewName.textContent=f.name||c.name;els.previewOwned.textContent=`Owned ${owned(c.id)} / ${c.copyLimit}`;els.previewMeta.textContent=`${c.id} · ${c.rarity} · ${c.types.join(" / ")}${c.isSecret?" · Secret printing":""}`;els.previewStats.innerHTML=[["COST",f.cost],["ATK",f.atk],["HP",f.hp],["RNG",f.range],["SPD",f.spd]].map(([k,v])=>v===null||v===undefined?'':`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join('');els.previewCharacteristics.innerHTML=(f.characteristics||[]).map(x=>`<span class="tag">${x}</span>`).join('');els.previewEffect.hidden=!(f.effectName||f.effectText);els.previewEffectName.textContent=f.effectName||'Effect';els.previewEffectText.textContent=f.effectText||'No additional effect.';
+function renderPreview(){const c=selectedCard;if(!c)return;const f=formData(c);setImg(els.previewImage,f.image||c.image);els.previewName.textContent=f.name||c.name;els.previewOwned.textContent=`Owned ${owned(c.id)} / ${c.copyLimit}`;els.previewMeta.textContent=`${c.id} · ${c.rarity} · ${c.types.join(" / ")}${c.isSecret?" · Secret printing":""}`;els.previewStats.innerHTML=[["COST",f.cost],["ATK",f.atk],["HP",f.hp],["RNG",f.range],["SPD",f.spd]].map(([k,v])=>v===null||v===undefined?'':`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join('');els.previewCharacteristics.innerHTML=(f.characteristics||[]).map(x=>`<span class="tag">${x}</span>`).join('');els.previewEffect.hidden=!(f.effectName||f.effectText);els.previewEffectName.textContent=f.effectName||'Effect';els.previewEffectText.textContent=f.effectText||'No additional effect.';
 const price=purchasePrice(c), have=owned(c.id), limit=ownershipLimit(c), gold=window.WUSCollection?.load().gold||0;
 els.purchasePanel.classList.remove("purchase-error");
 if(c.isSecret||c.rarity==="Secret Rare"){
@@ -89,7 +101,23 @@ function addCard(id){const c=byId[id];if(!c||!canAdd(c))return;if(isStronghold(c
 function removeCard(id){const c=byId[id];if(!c)return;if(isStronghold(c)){if(stronghold===id)stronghold=null;}else if(isArmy(c)){armies=armies.filter(x=>x!==id);}else if(mainDeck[id]){mainDeck[id]-=1;if(mainDeck[id]<=0)delete mainDeck[id];}saveActive();renderDeck();renderBrowser();}
 function slotMarkup(card,kind,index){if(!card)return `<div class="special-slot empty"><span>${kind==='Stronghold'?'Choose 1 Stronghold':`Army Slot ${index+1}`}</span><small>${kind==='Stronghold'?'This is your deck’s main card.':'Choose a different Army card.'}</small></div>`;return `<article class="special-slot filled ${card.isSecret?'secret':''}" data-special-id="${card.id}"><img src="card-back.png" alt=""><div><strong>${card.name}</strong><small>${card.id} · ${card.rarity}</small><small>Owned ${owned(card.id)}</small></div><button class="special-remove" aria-label="Remove ${card.name}">×</button></article>`;}
 function renderSpecialSections(){const sh=stronghold?byId[stronghold]:null;els.strongholdSlot.innerHTML=slotMarkup(sh,"Stronghold",0);if(sh){const row=els.strongholdSlot.querySelector('[data-special-id]');setImg(row.querySelector('img'),sh.image);row.onmouseenter=()=>selectCard(sh);row.querySelector('button').onclick=()=>removeCard(sh.id);}els.armySlots.innerHTML=Array.from({length:ARMY_LIMIT},(_,i)=>slotMarkup(armies[i]?byId[armies[i]]:null,"Army",i)).join('');els.armySlots.querySelectorAll('[data-special-id]').forEach(row=>{const c=byId[row.dataset.specialId];setImg(row.querySelector('img'),c.image);row.onmouseenter=()=>selectCard(c);row.querySelector('button').onclick=()=>removeCard(c.id);});}
-function renderDeck(){const entries=Object.entries(mainDeck).filter(([,q])=>q>0).sort(([a],[b])=>byId[a].name.localeCompare(byId[b].name));const total=mainTotal();els.deckSummary.textContent=`${total} / ${MAIN_DECK_LIMIT} cards · ${entries.length} unique`;els.emptyDeck.hidden=entries.length>0;els.deckList.innerHTML='';let violations=[];const groupTotals={};entries.forEach(([id,q])=>{const c=byId[id];groupTotals[c.gameplayId]=(groupTotals[c.gameplayId]||0)+q;if(q>owned(id))violations.push(`${c.name}: deck uses ${q}, owned ${owned(id)}`);});Object.entries(groupTotals).forEach(([gid,q])=>{const c=DB.find(x=>x.gameplayId===gid);if(q>c.copyLimit)violations.push(`${c.name}: ${q}/${c.copyLimit} shared copies`);});if(total!==MAIN_DECK_LIMIT)violations.push(`Main deck must contain exactly ${MAIN_DECK_LIMIT} cards (${total}/${MAIN_DECK_LIMIT})`);if(!stronghold)violations.push('Choose exactly 1 Stronghold');else if(owned(stronghold)<1)violations.push(`${byId[stronghold].name}: not owned`);if(armies.length>ARMY_LIMIT)violations.push(`Choose no more than ${ARMY_LIMIT} Armies`);armies.forEach(id=>{if(owned(id)<1)violations.push(`${byId[id].name}: not owned`);});els.deckStatus.className=`deck-status ${violations.length?'invalid':'valid'}`;els.deckStatus.textContent=violations.length?violations.join(' · '):`Deck ready: ${MAIN_DECK_LIMIT} cards, 1 Stronghold, ${armies.length} Arm${armies.length===1?'y':'ies'}.`;
+const RARITY_ORDER={"Common":0,"Uncommon":1,"Rare":2,"Super Rare":3,"Ultra Rare":4,"Secret Rare":5};
+function deckSortValue(card,mode){
+  if(mode==="type")return (card.types?.[0]||"").toLowerCase();
+  if(mode==="rarity")return RARITY_ORDER[card.rarity]??99;
+  if(["cost","atk","hp","range","spd"].includes(mode)){const value=card[mode];return value===null||value===undefined?-1:Number(value);}
+  return card.name.toLowerCase();
+}
+function sortedDeckEntries(){
+  const mode=els.deckSort?.value||"name";
+  return Object.entries(mainDeck).filter(([,q])=>q>0).sort(([a],[b])=>{
+    const ca=byId[a],cb=byId[b],va=deckSortValue(ca,mode),vb=deckSortValue(cb,mode);
+    if(typeof va==="number"&&typeof vb==="number"&&va!==vb)return va-vb;
+    const compared=String(va).localeCompare(String(vb),undefined,{numeric:true,sensitivity:"base"});
+    return compared||ca.name.localeCompare(cb.name);
+  });
+}
+function renderDeck(){const entries=sortedDeckEntries();const total=mainTotal();els.deckSummary.textContent=`${total} / ${MAIN_DECK_LIMIT} cards · ${entries.length} unique`;els.emptyDeck.hidden=entries.length>0;els.deckList.innerHTML='';let violations=[];const groupTotals={};entries.forEach(([id,q])=>{const c=byId[id];groupTotals[c.gameplayId]=(groupTotals[c.gameplayId]||0)+q;if(q>owned(id))violations.push(`${c.name}: deck uses ${q}, owned ${owned(id)}`);});Object.entries(groupTotals).forEach(([gid,q])=>{const c=DB.find(x=>x.gameplayId===gid);if(q>c.copyLimit)violations.push(`${c.name}: ${q}/${c.copyLimit} shared copies`);});if(total!==MAIN_DECK_LIMIT)violations.push(`Main deck must contain exactly ${MAIN_DECK_LIMIT} cards (${total}/${MAIN_DECK_LIMIT})`);if(!stronghold)violations.push('Choose exactly 1 Stronghold');else if(owned(stronghold)<1)violations.push(`${byId[stronghold].name}: not owned`);if(armies.length>ARMY_LIMIT)violations.push(`Choose no more than ${ARMY_LIMIT} Armies`);armies.forEach(id=>{if(owned(id)<1)violations.push(`${byId[id].name}: not owned`);});els.deckStatus.className=`deck-status ${violations.length?'invalid':'valid'}`;els.deckStatus.textContent=violations.length?violations.join(' · '):`Deck ready: ${MAIN_DECK_LIMIT} cards, 1 Stronghold, ${armies.length} Arm${armies.length===1?'y':'ies'}.`;
 entries.forEach(([id,q])=>{const c=byId[id];const div=document.createElement('article');div.className=`deck-entry compact-card ${c.isSecret?'secret':''}`;div.title=`${c.name} · ${c.id} · Owned ${owned(id)} · Shared ${sharedQty(c.gameplayId)}/${c.copyLimit}`;div.innerHTML=`<img class="deck-thumb" src="card-back.png" alt="${c.name}"><div class="qty-controls"><button class="qty-btn minus" aria-label="Remove one ${c.name}">−</button><span class="qty">${q}</span><button class="qty-btn plus" aria-label="Add one ${c.name}" ${canAddMain(c)?'':'disabled'}>+</button></div>`;setImg(div.querySelector('img'),c.image);div.onmouseenter=()=>selectCard(c);div.onclick=()=>selectCard(c);div.querySelector('.minus').onclick=e=>{e.stopPropagation();removeCard(id)};div.querySelector('.plus').onclick=e=>{e.stopPropagation();addCard(id)};els.deckList.append(div);});renderSpecialSections();
 const counts={Character:0,Animal:0,Action:0,Item:0,Construct:0,Event:0};entries.forEach(([id,q])=>byId[id].types.forEach(t=>{if(t in counts)counts[t]+=q;}));Object.entries(counts).forEach(([t,n])=>{const e=$("count"+t);if(e)e.textContent=n;});}
 function statMatches(card,key,selected){
@@ -133,9 +161,69 @@ function resetFilters(){
   renderBrowser();
 }
 function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();}
-els.newDeckBtn.onclick=newDeck;els.clearDeckBtn.onclick=()=>{if(confirm('Remove the main deck, Stronghold, and all Armies?')){mainDeck={};stronghold=null;armies=[];saveActive();renderDeck();renderBrowser();}};els.saveDeckBtn.onclick=()=>{const decks=loadDecks();const id=activeDeckId||`deck-${Date.now()}`;decks[id]={name:els.deckName.value.trim()||'Untitled Deck',...currentState(),updated:Date.now()};storeDecks(decks);activeDeckId=id;populateSaved();};els.savedDecks.onchange=()=>{const id=els.savedDecks.value;if(!id)return;const d=loadDecks()[id];if(!d)return;activeDeckId=id;applyState(d);els.deckName.value=d.name;saveActive();populateSaved();renderDeck();renderBrowser();};els.deleteDeckBtn.onclick=()=>{if(!activeDeckId||!confirm('Delete this saved deck?'))return;const decks=loadDecks();delete decks[activeDeckId];storeDecks(decks);newDeck();};["searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly"].forEach(id=>{
+const allImagePaths=[...new Set(DB.flatMap(card=>[card.image,...(card.forms||[]).map(form=>form.image)].filter(Boolean)))];
+function lockPage(show){document.body.classList.toggle("builder-locked",show);}
+function showDeckManager(){els.assetGate.hidden=true;els.deckManagerModal.hidden=false;lockPage(true);populateSaved();}
+function closeDeckManager(){els.deckManagerModal.hidden=true;lockPage(false);}
+function loadDeckById(id){const d=loadDecks()[id];if(!d)return false;activeDeckId=id;applyState(d);els.deckName.value=d.name||"Untitled Deck";saveActive();populateSaved();renderDeck();renderBrowser();closeDeckManager();return true;}
+function formatAssetFailures(failed){return failed.map(x=>`${x.path}: ${x.error}`).join("\n");}
+async function checkAssetsBeforeEntry(){
+  lockPage(true);els.assetGate.hidden=false;els.deckManagerModal.hidden=true;
+  if(!window.WUSAssets||!allImagePaths.length){showDeckManager();return;}
+  try{
+    const status=await WUSAssets.getStatus(allImagePaths);
+    if(status.complete){showDeckManager();return;}
+    els.assetGateStatus.textContent=`${status.installed} / ${status.total} images installed`;
+    els.assetGateDownload.textContent=status.installed?"Continue Download":"Download Images";
+  }catch(error){els.assetGateStatus.textContent=error.message||"Could not check card images.";}
+}
+async function installAssetsFromGate(){
+  els.assetGateDownload.disabled=true;els.assetGateProgress.hidden=false;els.assetGateErrors.hidden=true;els.assetGateErrorList.textContent="";
+  const result=await WUSAssets.install(allImagePaths,{onProgress:({completed,total,failed})=>{
+    els.assetGateProgressFill.style.width=`${Math.round(completed/total*100)}%`;
+    els.assetGateProgressText.textContent=`${completed} / ${total}${failed?` · ${failed} failed`:""}`;
+    els.assetGateStatus.textContent="Downloading Battle of Ages images…";
+  }});
+  els.assetGateDownload.disabled=false;
+  if(result.failed.length){
+    els.assetGateStatus.textContent=`${result.total-result.failed.length} / ${result.total} installed. Retry the failed files.`;
+    els.assetGateDownload.textContent="Continue Download";els.assetGateErrors.hidden=false;els.assetGateErrorList.textContent=formatAssetFailures(result.failed);
+  }else{els.assetGateStatus.textContent="Battle of Ages is ready!";els.assetGateStatus.classList.remove("warning");els.assetGateStatus.classList.add("ready");setTimeout(showDeckManager,350);}
+}
+els.assetGateDownload.onclick=installAssetsFromGate;
+els.managerDeckSelect.onchange=()=>{els.managerLoadDeck.disabled=!els.managerDeckSelect.value;};
+els.managerNewDeck.onclick=()=>{newDeck();closeDeckManager();};
+els.managerLoadDeck.onclick=()=>loadDeckById(els.managerDeckSelect.value);
+function saveDeck({forceNew=false,nameOverride=null}={}){
+  const decks=loadDecks();
+  const id=forceNew||!activeDeckId?`deck-${Date.now()}`:activeDeckId;
+  const name=(nameOverride??els.deckName.value).trim()||"Untitled Deck";
+  decks[id]={name,...currentState(),updated:Date.now()};
+  storeDecks(decks);activeDeckId=id;els.deckName.value=name;saveActive();populateSaved();
+}
+function saveDeckAs(){
+  const suggested=els.deckName.value.trim()||"Untitled Deck";
+  const name=prompt("Save this deck as:",suggested);
+  if(name===null)return;
+  saveDeck({forceNew:true,nameOverride:name});
+}
+function renameDeck(){
+  if(!activeDeckId)return;
+  const decks=loadDecks(),current=decks[activeDeckId];if(!current)return;
+  const name=prompt("Rename this deck:",current.name||els.deckName.value||"Untitled Deck");
+  if(name===null||!name.trim())return;
+  current.name=name.trim();current.updated=Date.now();decks[activeDeckId]=current;storeDecks(decks);els.deckName.value=current.name;saveActive();populateSaved();
+}
+els.newDeckBtn.onclick=newDeck;
+els.clearDeckBtn.onclick=()=>{if(confirm('Remove the main deck, Stronghold, and all Armies?')){mainDeck={};stronghold=null;armies=[];saveActive();renderDeck();renderBrowser();}};
+els.saveDeckBtn.onclick=()=>saveDeck();
+els.saveAsDeckBtn.onclick=saveDeckAs;
+els.renameDeckBtn.onclick=renameDeck;
+els.savedDecks.onchange=()=>{const id=els.savedDecks.value;if(id)loadDeckById(id);};
+els.deleteDeckBtn.onclick=()=>{if(!activeDeckId||!confirm('Delete this saved deck?'))return;const decks=loadDecks();delete decks[activeDeckId];storeDecks(decks);newDeck();};
+els.deckSort.addEventListener("change",renderDeck);["searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly"].forEach(id=>{
   els[id].addEventListener(id==="searchCards"?"input":"change",renderBrowser);
 });els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
-function init(){populateFilters();populateSaved();try{const active=JSON.parse(localStorage.getItem(ACTIVE_KEY));if(active){applyState(active);els.deckName.value=active.name||'New Deck';}else{const legacy=JSON.parse(localStorage.getItem(LEGACY_ACTIVE_KEY));if(legacy){applyState(legacy);els.deckName.value=legacy.name||'New Deck';}}}catch{}els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);}
+function init(){populateFilters();populateSaved();mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);checkAssetsBeforeEntry();}
 init();
 })();

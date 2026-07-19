@@ -19,6 +19,8 @@
       <label class="deck-name-label">Deck Name<input id="deckName" maxlength="48" value="New Deck"></label>
       <button id="newDeckBtn" class="secondary-btn">New</button>
       <button id="saveDeckBtn" class="primary-btn">Save Deck</button>
+      <button id="saveAsDeckBtn" class="secondary-btn">Save As</button>
+      <button id="renameDeckBtn" class="secondary-btn" disabled>Rename</button>
       <select id="savedDecks" aria-label="Saved decks"><option value="">Load saved deck…</option></select>
       <button id="deleteDeckBtn" class="danger-btn" disabled>Delete</button>
     </div>
@@ -48,7 +50,7 @@
         <div id="strongholdSlot" class="stronghold-slot"></div>
       </section>
 
-      <div class="main-deck-heading"><h3>Main Deck</h3><span>Exactly 60 cards</span></div>
+      <div class="main-deck-heading"><div><h3>Main Deck</h3><span>Exactly 60 cards</span></div><label class="deck-sort-label">Sort Deck<select id="deckSort"><option value="name">Name</option><option value="type">Type</option><option value="cost">Cost</option><option value="atk">ATK</option><option value="hp">HP</option><option value="range">Range</option><option value="spd">Speed</option><option value="rarity">Rarity</option></select></label></div>
       <div id="deckList" class="deck-list"></div>
       <div id="emptyDeck" class="empty-message">Add 60 cards from your collection using the <strong>+</strong> button.</div>
 
@@ -95,6 +97,36 @@
     </aside>
   </section>
 </main>
+  <div id="assetGate" class="builder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="assetGateTitle">
+    <div class="builder-modal-card panel-dark">
+      <span class="eyebrow">Game Resources</span>
+      <h2 id="assetGateTitle">Download Battle of Ages Images</h2>
+      <p>The Deck Builder stores the card images on this device so your collection loads quickly and works reliably.</p>
+      <p id="assetGateStatus" class="modal-status warning">Checking installed images…</p>
+      <div id="assetGateProgress" class="modal-progress" hidden>
+        <div class="modal-progress-track"><span id="assetGateProgressFill"></span></div>
+        <span id="assetGateProgressText">0 / 227</span>
+      </div>
+      <button id="assetGateDownload" class="primary-btn" type="button">Download Images</button>
+      <details id="assetGateErrors" class="modal-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetGateErrorList"></pre></details>
+      <p class="modal-note">This prompt will not appear while the complete image pack remains installed.</p>
+    </div>
+  </div>
+
+  <div id="deckManagerModal" class="builder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="deckManagerTitle">
+    <div class="builder-modal-card deck-manager-card panel-dark">
+      <span class="eyebrow">Deck Builder</span>
+      <h2 id="deckManagerTitle">Choose a Deck</h2>
+      <p>Start with a clean slate or load one of your saved decks.</p>
+      <button id="managerNewDeck" class="primary-btn manager-main-btn" type="button">New Deck</button>
+      <div class="manager-divider"><span>or</span></div>
+      <label class="manager-load-label" for="managerDeckSelect">Load Deck</label>
+      <select id="managerDeckSelect"><option value="">Choose a saved deck…</option></select>
+      <button id="managerLoadDeck" class="secondary-btn manager-main-btn" type="button" disabled>Load Selected Deck</button>
+      <p id="managerEmptyMessage" class="modal-note" hidden>You do not have any saved decks yet.</p>
+    </div>
+  </div>
+
 <script src="asset-cache.js"></script>
 <script src="collection-store.js"></script>
 <script src="card-database.js"></script>
