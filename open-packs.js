@@ -109,34 +109,73 @@
     economyMessage.classList.toggle("economy-error", isError);
   }
 
-  function chargeForOpening(mode) {
-    if (!ECONOMY.enabled || !window.WUSCollection) return true;
+  function purchaseOpening(mode) {
+    if (!window.WUSCollection) return;
     const cost = mode === "box" ? ECONOMY.boxCost : ECONOMY.packCost;
-    const result = WUSCollection.spendGold(cost);
+    const totalPacks = mode === "box" ? BOX_PACK_COUNT : 1;
+    const result = WUSCollection.purchaseOpening(mode, cost, totalPacks);
     if (!result.ok) {
-      showEconomyMessage(`Not enough Gold. You need ${cost.toLocaleString()} Gold and currently have ${result.gold.toLocaleString()}.`, true);
+      if (result.reason === "opening-already-active") {
+        showEconomyMessage("You already have an unopened purchase. Resuming it now.");
+        restoreOpening(result.opening);
+      } else {
+        showEconomyMessage(`Not enough Gold. You need ${cost.toLocaleString()} Gold and currently have ${result.gold.toLocaleString()}.`, true);
+      }
       refreshGold();
-      return false;
+      return;
     }
-    showEconomyMessage(`${cost.toLocaleString()} Gold spent. Remaining balance: ${result.gold.toLocaleString()} Gold.`);
+    showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
     refreshGold();
-    return true;
+    restoreOpening(result.opening);
   }
 
-  function purchaseOpening(mode) {
-    if (!chargeForOpening(mode)) return;
-    startOpening(mode);
+  function cardIdsToCards(ids) {
+    return (ids || []).map(id => packCards.find(card => card.id === id)).filter(Boolean);
+  }
+
+  function syncBoxSession(opening) {
+    if (!opening) return;
+    boxSession = {
+      openedPacks: opening.openedPacks || 0,
+      pulls: cardIdsToCards(opening.pulls),
+      packs: (opening.packs || []).map(pack => cardIdsToCards(pack.cardIds)),
+      collectionAdded: opening.collectionAdded || 0,
+      duplicatesConverted: opening.duplicatesConverted || 0,
+      goldEarned: opening.goldEarned || 0
+    };
+  }
+
+  function restoreOpening(opening) {
+    if (!opening) return;
+    openingMode = opening.mode;
+    if (opening.mode === "box") syncBoxSession(opening);
+    if (opening.currentPack?.cardIds?.length) {
+      currentPack = cardIdsToCards(opening.currentPack.cardIds);
+      currentPackSaved = false;
+      currentPackCollectionResult = null;
+      if (opening.mode === "box") selectedBoxPack = opening.currentPack.packIndex;
+      renderPack(currentPack);
+      showStage(stages.reveal);
+      showEconomyMessage("Resumed your saved pack. No additional Gold was charged.");
+      return;
+    }
+    if (opening.mode === "box") {
+      if (opening.openedPacks >= BOX_PACK_COUNT) renderBoxSummary();
+      else { renderBoxPacks(); showStage(stages.boxPacks); }
+    } else {
+      prepareBoosterStage(); showStage(stages.booster);
+    }
   }
 
   function saveCurrentPackToCollection() {
     if (currentPackSaved || !window.WUSCollection) return currentPackCollectionResult;
-    currentPackCollectionResult = WUSCollection.addCards(currentPack);
+    const opening = WUSCollection.getActiveOpening();
+    if (!opening?.currentPack) return currentPackCollectionResult;
+    const settled = WUSCollection.settlePendingPack(opening.id, currentPack);
+    if (!settled.ok) return currentPackCollectionResult;
+    currentPackCollectionResult = settled.result || { added: 0, converted: 0, goldEarned: 0 };
     currentPackSaved = true;
-    if (openingMode === "box") {
-      boxSession.collectionAdded += currentPackCollectionResult.added;
-      boxSession.duplicatesConverted += currentPackCollectionResult.converted;
-      boxSession.goldEarned += currentPackCollectionResult.goldEarned;
-    }
+    if (openingMode === "box" && settled.opening) syncBoxSession(settled.opening);
     refreshGold();
     return currentPackCollectionResult;
   }
@@ -305,7 +344,7 @@
     const isBox = openingMode === "box";
     revealEyebrow.textContent = isBox ? "Your Booster Box" : "Your Pack";
     boxProgressReveal.hidden = !isBox;
-    if (isBox) boxProgressReveal.textContent = `Booster Box · Pack ${boxSession.openedPacks} of ${BOX_PACK_COUNT}`;
+    if (isBox) boxProgressReveal.textContent = `Booster Box · Pack ${Math.min(boxSession.openedPacks + 1, BOX_PACK_COUNT)} of ${BOX_PACK_COUNT}`;
   }
 
   function revealCard(button, card) {
@@ -321,7 +360,7 @@
     const total = grid.children.length;
     const revealed = grid.querySelectorAll(".revealed").length;
     if (revealed === total) {
-      status.textContent = openingMode === "box" ? `Pack ${boxSession.openedPacks} complete!` : "Pack complete!";
+      status.textContent = openingMode === "box" ? `Pack ${Math.min(boxSession.openedPacks + 1, BOX_PACK_COUNT)} complete!` : "Pack complete!";
       instruction.textContent = openingMode === "box" ? "Hover over any card to inspect it, then return to the remaining packs." : "Hover over any card to inspect it, or continue opening.";
       revealAllButton.hidden = true;
       const collectionUpdate = saveCurrentPackToCollection();
@@ -337,12 +376,6 @@
     } else {
       status.textContent = `${revealed} of ${total} cards revealed`;
     }
-  }
-
-  function recordPackForBox(pack) {
-    boxSession.openedPacks += 1;
-    boxSession.packs.push(pack);
-    boxSession.pulls.push(...pack);
   }
 
   function rarityRank(rarity) {
@@ -512,11 +545,16 @@
 
   boosterButton.addEventListener("click", () => {
     if (boosterButton.classList.contains("opening")) return;
-    currentPack = buildPack();
-    if (openingMode === "box") {
-      recordPackForBox(currentPack);
-      selectedBoxPack = null;
+    const opening = WUSCollection.getActiveOpening();
+    if (!opening) { showEconomyMessage("No saved purchase was found. Return to the selection screen and purchase a pack.", true); return; }
+    if (opening.currentPack?.cardIds?.length) {
+      currentPack = cardIdsToCards(opening.currentPack.cardIds);
+    } else {
+      currentPack = buildPack();
+      const packIndex = opening.mode === "box" ? opening.openedPacks : 0;
+      WUSCollection.savePendingPack(opening.id, packIndex, currentPack.map(card => card.id));
     }
+    selectedBoxPack = null;
     renderPack(currentPack);
     boosterButton.classList.add("opening");
     clickHint.textContent = "Opening…";
@@ -563,11 +601,18 @@
     boxRevealDetailsButton.textContent = boxAllPulls.hidden ? "Show All Pulls" : "Hide All Pulls";
   });
 
-  openAnotherBoxButton.addEventListener("click", () => purchaseOpening("box"));
+  openAnotherBoxButton.addEventListener("click", () => {
+    const opening = WUSCollection.getActiveOpening();
+    if (opening?.mode === "box" && opening.openedPacks >= BOX_PACK_COUNT) WUSCollection.clearActiveOpening(opening.id);
+    purchaseOpening("box");
+  });
   backToSelectionButton.addEventListener("click", () => {
+    const opening = WUSCollection.getActiveOpening();
+    if (opening?.mode === "box" && opening.openedPacks >= BOX_PACK_COUNT) WUSCollection.clearActiveOpening(opening.id);
     openingMode = "single";
     boxSession = createEmptyBoxSession();
     showStage(stages.intro);
+    refreshGold();
   });
 
 
@@ -575,4 +620,8 @@
   window.addEventListener("wus-player-data-changed", refreshGold);
   refreshAssetStatus();
   initializeAssetGate();
+  const savedOpening = window.WUSCollection?.getActiveOpening?.();
+  if (savedOpening) {
+    setTimeout(() => restoreOpening(savedOpening), 0);
+  }
 })();
