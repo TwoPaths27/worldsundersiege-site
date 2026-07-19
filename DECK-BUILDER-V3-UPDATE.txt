@@ -1,0 +1,8 @@
+Worlds Under Siege Deck Builder v3
+
+- Main Deck cards now display as compact card images with quantity controls directly below.
+- Main Deck uses a fixed-height scrolling grid to keep more of the builder visible.
+- Card Pool now uses the same compact image-first presentation with an add button below each card.
+- Card Pool remains vertically scrollable.
+- Army selection has been moved underneath the 60-card Main Deck.
+- Stronghold remains separate above the Main Deck as the deck's required main card.

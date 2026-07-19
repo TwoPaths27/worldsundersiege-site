@@ -25,3 +25,105 @@
 .card-browser{height:330px;max-height:330px;min-height:330px;overflow-y:auto;scrollbar-gutter:stable}
 @media(max-width:1250px){.card-browser{height:336px;max-height:336px;min-height:336px}.army-slots{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:800px){.army-slots{grid-template-columns:1fr}.card-browser{height:330px;max-height:330px;min-height:330px}.deck-breakdown{grid-template-columns:repeat(3,1fr)}}
+
+/* Compact visual card grids — v3 */
+.deck-list{
+  grid-template-columns:repeat(5,minmax(86px,1fr));
+  gap:10px;
+  max-height:470px;
+  min-height:180px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+}
+.deck-entry.compact-card{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:6px;
+  min-width:0;
+  background:#111a29;
+  border:1px solid var(--line);
+  border-radius:10px;
+  cursor:pointer;
+}
+.deck-entry.compact-card:hover{border-color:rgba(232,185,79,.65);background:#172238}
+.deck-entry.compact-card .deck-thumb{
+  width:100%;
+  height:auto;
+  aspect-ratio:5/7;
+  object-fit:cover;
+  border-radius:6px;
+}
+.deck-entry.compact-card .qty-controls{
+  display:grid;
+  grid-template-columns:1fr 30px 1fr;
+  gap:4px;
+  width:100%;
+}
+.deck-entry.compact-card .qty-btn{width:100%;padding:5px 0}
+.deck-entry.compact-card .qty{align-self:center}
+
+.card-browser{
+  grid-template-columns:repeat(3,minmax(86px,1fr));
+  gap:10px;
+  height:430px;
+  max-height:430px;
+  min-height:430px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+}
+.browser-card{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:6px;
+  min-width:0;
+}
+.browser-thumb{
+  width:100%;
+  height:auto;
+  aspect-ratio:5/7;
+  object-fit:cover;
+  border-radius:6px;
+}
+.browser-card-controls{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 30px;
+  gap:6px;
+  align-items:center;
+}
+.browser-quantity{
+  color:#ffe39b;
+  font-weight:800;
+  font-size:11px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:center;
+}
+.browser-add{
+  position:static;
+  width:30px;
+  height:30px;
+  justify-self:end;
+}
+.army-section{margin-top:12px}
+
+@media(max-width:1450px){
+  .deck-list{grid-template-columns:repeat(4,minmax(82px,1fr))}
+  .card-browser{grid-template-columns:repeat(2,minmax(90px,1fr))}
+}
+@media(max-width:1250px){
+  .deck-list{grid-template-columns:repeat(6,minmax(84px,1fr))}
+  .card-browser{grid-template-columns:repeat(6,minmax(84px,1fr));height:390px;max-height:390px;min-height:390px}
+}
+@media(max-width:800px){
+  .deck-list{grid-template-columns:repeat(4,minmax(76px,1fr));max-height:430px}
+  .card-browser{grid-template-columns:repeat(3,minmax(80px,1fr));height:390px;max-height:390px;min-height:390px}
+}
+@media(max-width:480px){
+  .deck-list{grid-template-columns:repeat(3,minmax(72px,1fr))}
+  .card-browser{grid-template-columns:repeat(2,minmax(82px,1fr))}
+}
