@@ -209,7 +209,7 @@
   function rollPremiumRarity() {
     const roll = Math.random();
     const { secret, ultraRare, superRare } = BOA_PACK_CONFIG.premiumOdds;
-    if (roll < secret) return "Secret";
+    if (roll < secret) return "Secret Rare";
     if (roll < secret + ultraRare) return "Ultra Rare";
     if (roll < secret + ultraRare + superRare) return "Super Rare";
     return "Rare";
@@ -219,8 +219,11 @@
     const commons = sampleUnique(groups.Common, BOA_PACK_CONFIG.commonsPerPack);
     const uncommons = sampleUnique(groups.Uncommon, BOA_PACK_CONFIG.uncommonsPerPack);
     const premiums = [];
-    for (let slot = 0; slot < BOA_PACK_CONFIG.premiumSlotsPerPack; slot++) {
-      const rarity = rollPremiumRarity();
+    const premiumRarities = ["Rare", "Rare"];
+    const upgradeRoll = rollPremiumRarity();
+    if (upgradeRoll !== "Rare") premiumRarities[1] = upgradeRoll;
+
+    for (const rarity of premiumRarities) {
       let card = randomItem(groups[rarity]);
       while (premiums.some(existing => existing.id === card.id) && groups[rarity].length > 1) {
         card = randomItem(groups[rarity]);
@@ -452,7 +455,7 @@
   function revealCard(button, card) {
     if (button.classList.contains("revealed")) { preview(card); return; }
     button.classList.add("revealed");
-    if (["Ultra Rare", "Secret"].includes(card.rarity)) button.classList.add("big-hit");
+    if (["Ultra Rare", "Secret Rare"].includes(card.rarity)) button.classList.add("big-hit");
     button.setAttribute("aria-label", `${card.id} ${card.name}, ${card.rarity}`);
     preview(card);
     updateStatus();
@@ -481,7 +484,7 @@
   }
 
   function rarityRank(rarity) {
-    return { Secret: 5, "Ultra Rare": 4, "Super Rare": 3, Rare: 2, Uncommon: 1, Common: 0 }[rarity] ?? 0;
+    return { "Secret Rare": 5, "Ultra Rare": 4, "Super Rare": 3, Rare: 2, Uncommon: 1, Common: 0 }[rarity] ?? 0;
   }
 
   async function createSummaryCard(card, compact = false) {
