@@ -1,0 +1,12 @@
+Worlds Under Siege - Deck Builder Effects & Filters Update
+
+- Added full effect rules text for all 227 Battle of Ages cards.
+- Added separate Dr. Jekyl and Mr. Hyde effect text.
+- Card preview now displays effect name and full effect text.
+- Search now includes full effect text.
+- Kept Search, Type, and Rarity filters.
+- Added Set filter (currently Battle of Ages).
+- Replaced min/max inputs with exact-value dropdowns:
+  Cost 0-10, ATK 0-14, HP 0-17, Range 0-4, Speed 0-4.
+- Cards without a stat do not appear for an exact stat selection.
+- Alternate-form cards match a stat if either face has that value.

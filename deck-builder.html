@@ -34,7 +34,7 @@
         <div id="previewMeta" class="preview-meta">Hover or select a card to inspect it.</div>
         <div id="previewStats" class="stat-row"></div>
         <div id="previewCharacteristics" class="tag-list"></div>
-        <div id="previewEffect" class="effect-box" hidden><strong id="previewEffectName"></strong></div>
+        <div id="previewEffect" class="effect-box" hidden><strong id="previewEffectName"></strong><p id="previewEffectText"></p></div>
         <div id="purchasePanel" class="purchase-panel" hidden></div>
       </div>
     </aside>
@@ -71,10 +71,22 @@
       <div class="panel-heading"><h2>Your Cards</h2><span id="visibleCount"></span></div>
       <div class="filters">
         <input id="searchCards" type="search" placeholder="Search name, ID, effect or characteristic…">
-        <div class="filter-row"><select id="typeFilter"><option value="All">All Types</option></select><select id="rarityFilter"><option value="All">All Rarities</option></select></div>
-        <div class="filter-row numeric"><label>Cost min<input id="costMin" type="number" min="0" inputmode="numeric"></label><label>Cost max<input id="costMax" type="number" min="0" inputmode="numeric"></label></div>
-        <div class="filter-row numeric"><label>ATK min<input id="atkMin" type="number" min="0" inputmode="numeric"></label><label>HP min<input id="hpMin" type="number" min="0" inputmode="numeric"></label></div>
-        <div class="filter-row numeric"><label>Range min<input id="rangeMin" type="number" min="0" inputmode="numeric"></label><label>SPD min<input id="spdMin" type="number" min="0" inputmode="numeric"></label></div>
+        <div class="filter-row">
+          <select id="typeFilter"><option value="All">All Types</option></select>
+          <select id="rarityFilter"><option value="All">All Rarities</option></select>
+        </div>
+        <div class="filter-row">
+          <select id="setFilter"><option value="All">All Sets</option></select>
+          <select id="costFilter"><option value="All">Any Cost</option></select>
+        </div>
+        <div class="filter-row">
+          <select id="atkFilter"><option value="All">Any ATK</option></select>
+          <select id="hpFilter"><option value="All">Any HP</option></select>
+        </div>
+        <div class="filter-row">
+          <select id="rangeFilter"><option value="All">Any Range</option></select>
+          <select id="spdFilter"><option value="All">Any Speed</option></select>
+        </div>
         <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
         <button id="resetFilters" class="secondary-btn full">Reset Filters</button>
       </div>
