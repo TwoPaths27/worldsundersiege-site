@@ -133,3 +133,68 @@
 .purchase-panel{margin-top:14px;border:1px solid rgba(232,185,79,.45);background:#111a29;border-radius:9px;padding:11px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .purchase-panel>div,.purchase-panel:not(:has(div)){display:flex;flex-direction:column;gap:3px}.purchase-panel span{color:var(--muted);font-size:12px}.purchase-panel.purchase-error{border-color:#a95353;color:#ffd0d0}.purchase-panel button:disabled{opacity:.45;cursor:not-allowed}
 .browser-card{overflow:hidden}.buy-overlay{position:absolute;inset:0 0 42px;background:rgba(5,9,16,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .16s ease;text-align:center;padding:8px;z-index:2}.browser-card:hover .buy-overlay,.browser-card:focus-within .buy-overlay{opacity:1;pointer-events:auto}.buy-overlay strong{color:#ffe39b;font-size:15px}.buy-overlay span{color:#d2d8e3;font-size:11px}.buy-card-btn{border:1px solid #d7aa46;background:#9f7427;color:#fff;border-radius:7px;padding:7px 10px;font-weight:800;cursor:pointer}.buy-card-btn:disabled{background:#343b49;border-color:#515969;cursor:not-allowed}.buy-overlay.maxed strong{color:#a9d5af}
+
+/* Card grid sizing hotfix — keeps portrait cards visible and controls clickable */
+.card-browser{
+  grid-auto-rows:max-content;
+  align-items:start;
+  align-content:start;
+}
+.browser-card{
+  display:flex;
+  flex-direction:column;
+  align-self:start;
+  height:auto;
+  min-height:0;
+  overflow:hidden;
+}
+.browser-card > .browser-thumb{
+  display:block;
+  width:100%;
+  height:auto !important;
+  min-height:0;
+  aspect-ratio:5 / 7;
+  object-fit:contain;
+  flex:none;
+}
+.browser-card-controls{
+  min-height:32px;
+  flex:none;
+}
+.browser-add{
+  display:grid;
+  place-items:center;
+  line-height:1;
+  z-index:4;
+}
+.buy-overlay{
+  bottom:42px;
+}
+
+.deck-list{
+  grid-auto-rows:max-content;
+  align-items:start;
+  align-content:start;
+}
+.deck-entry.compact-card{
+  align-self:start;
+  height:auto;
+}
+.deck-entry.compact-card > .deck-thumb{
+  display:block;
+  width:100%;
+  height:auto !important;
+  aspect-ratio:5 / 7;
+  object-fit:contain;
+  flex:none;
+}
+
+/* Desktop card pool: six readable cards (3 columns x 2 rows), then scroll. */
+@media (min-width:1251px){
+  .card-browser{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    height:500px;
+    min-height:500px;
+    max-height:500px;
+  }
+}

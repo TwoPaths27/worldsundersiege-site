@@ -1,0 +1,7 @@
+Worlds Under Siege - Deck Builder Card Grid Hotfix
+
+- Restores full portrait card images in Your Cards.
+- Keeps + buttons visible and clickable.
+- Prevents CSS grid rows from compressing card tiles.
+- Keeps six readable cards visible on desktop, with the rest scrolling.
+- Applies the same portrait protection to cards already in the deck.
