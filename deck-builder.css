@@ -10,3 +10,18 @@
 @media(max-width:1250px){.builder-layout{grid-template-columns:300px 1fr}.browser-panel{grid-column:1/-1;max-height:650px}.card-browser{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:800px){.builder-page{padding:18px 10px}.builder-toolbar{align-items:stretch;flex-direction:column}.toolbar-actions{justify-content:flex-start}.builder-layout{display:flex;flex-direction:column}.preview-panel,.deck-panel,.browser-panel{min-height:auto}.deck-list{grid-template-columns:1fr}.card-browser{grid-template-columns:repeat(2,minmax(0,1fr))}.deck-breakdown{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:480px){.card-browser{grid-template-columns:1fr}.toolbar-actions>*{flex:1}.deck-name-label{flex-basis:100%}.deck-name-label input{width:100%}}
+
+/* Deck structure: 60-card main deck + separate Stronghold and Army selections */
+.special-card-section{margin:12px 14px 0;border:1px solid var(--line);border-radius:11px;background:rgba(8,14,25,.52);overflow:hidden}
+.special-section-heading,.main-deck-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px}.special-section-heading{border-bottom:1px solid var(--line)}
+.special-section-heading h3,.main-deck-heading h3{margin:0;font-size:14px}.special-section-heading span,.main-deck-heading span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.stronghold-slot{padding:9px}.army-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:9px}
+.special-slot{min-height:76px;border:1px dashed rgba(255,255,255,.2);border-radius:9px;background:#0d1625;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;color:var(--muted)}
+.special-slot.empty{flex-direction:column;gap:3px}.special-slot.empty span{font-weight:800;color:#d6dbe5}.special-slot.empty small{font-size:9px}
+.special-slot.filled{position:relative;display:grid;grid-template-columns:46px 1fr 26px;gap:8px;text-align:left;justify-content:stretch;border-style:solid;min-width:0}
+.special-slot.filled img{width:46px;height:64px;object-fit:cover;border-radius:5px;background:#080d15}.special-slot.filled>div{min-width:0}.special-slot.filled strong,.special-slot.filled small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.special-slot.filled strong{font-size:12px}.special-slot.filled small{font-size:9px;color:var(--muted);margin-top:3px}.special-remove{width:25px;height:25px;border-radius:50%;border:1px solid var(--line);background:#682331;color:#fff;font-size:17px;cursor:pointer;align-self:center}
+.main-deck-heading{padding:14px 16px 0}.deck-list{max-height:430px;min-height:110px}.deck-breakdown{grid-template-columns:repeat(6,1fr)}
+/* Exactly six browser cards are visible on desktop (2 columns x 3 rows); more cards scroll. */
+.card-browser{height:330px;max-height:330px;min-height:330px;overflow-y:auto;scrollbar-gutter:stable}
+@media(max-width:1250px){.card-browser{height:336px;max-height:336px;min-height:336px}.army-slots{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.army-slots{grid-template-columns:1fr}.card-browser{height:330px;max-height:330px;min-height:330px}.deck-breakdown{grid-template-columns:repeat(3,1fr)}}

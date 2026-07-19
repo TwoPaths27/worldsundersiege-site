@@ -40,18 +40,28 @@
 
     <section class="deck-panel panel-dark">
       <div class="panel-heading deck-heading"><div><h2>Current Deck</h2><p id="deckSummary">0 total cards · 0 unique</p></div><button id="clearDeckBtn" class="secondary-btn">Clear</button></div>
-      <div id="deckStatus" class="deck-status valid">No ownership or copy-limit violations.</div>
+      <div id="deckStatus" class="deck-status invalid">Build a 60-card deck, choose 1 Stronghold, and optionally choose up to 3 different Armies.</div>
+
+      <section class="special-card-section">
+        <div class="special-section-heading"><h3>Stronghold</h3><span>Required · exactly 1</span></div>
+        <div id="strongholdSlot" class="stronghold-slot"></div>
+      </section>
+
+      <section class="special-card-section army-section">
+        <div class="special-section-heading"><h3>Armies</h3><span>Optional · up to 3 different cards</span></div>
+        <div id="armySlots" class="army-slots"></div>
+      </section>
+
+      <div class="main-deck-heading"><h3>Main Deck</h3><span>Exactly 60 cards</span></div>
       <div id="deckList" class="deck-list"></div>
-      <div id="emptyDeck" class="empty-message">Add cards from your collection using the <strong>+</strong> button.</div>
+      <div id="emptyDeck" class="empty-message">Add 60 cards from your collection using the <strong>+</strong> button.</div>
       <div class="deck-breakdown">
         <div><span>Characters</span><strong id="countCharacter">0</strong></div>
         <div><span>Animals</span><strong id="countAnimal">0</strong></div>
         <div><span>Actions</span><strong id="countAction">0</strong></div>
         <div><span>Items</span><strong id="countItem">0</strong></div>
         <div><span>Constructs</span><strong id="countConstruct">0</strong></div>
-        <div><span>Armies</span><strong id="countArmy">0</strong></div>
         <div><span>Events</span><strong id="countEvent">0</strong></div>
-        <div><span>Strongholds</span><strong id="countStronghold">0</strong></div>
       </div>
     </section>
 
