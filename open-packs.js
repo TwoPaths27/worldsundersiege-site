@@ -60,7 +60,7 @@
   const backToSelectionButton = document.getElementById("backToSelectionButton");
   const bestPullSection = document.getElementById("bestPullSection");
   const bestPullCard = document.getElementById("bestPullCard");
-  const playerGold = document.getElementById("playerGold");
+  const goldBalances = [...document.querySelectorAll("[data-gold-balance]")];
   const collectionResult = document.getElementById("collectionResult");
   const economyMessage = document.getElementById("economyMessage");
 
@@ -97,9 +97,10 @@
   function refreshGold() {
     if (!window.WUSCollection) return;
     const gold = WUSCollection.load().gold;
-    if (playerGold) playerGold.textContent = gold.toLocaleString();
+    goldBalances.forEach(element => { element.textContent = gold.toLocaleString(); });
     if (beginButton) beginButton.disabled = gold < ECONOMY.packCost;
     if (beginBoxButton) beginBoxButton.disabled = gold < ECONOMY.boxCost;
+    if (anotherButton && openingMode === "single") anotherButton.disabled = gold < ECONOMY.packCost;
     if (openAnotherBoxButton) openAnotherBoxButton.disabled = gold < ECONOMY.boxCost;
   }
 
@@ -371,7 +372,7 @@
           ? "View Booster Box Summary"
           : `Return to Packs (${BOX_PACK_COUNT - boxSession.openedPacks} Remaining)`;
       } else {
-        anotherButton.textContent = "Open Another Pack";
+        anotherButton.textContent = "Open Another Pack · 200 Gold";
       }
     } else {
       status.textContent = `${revealed} of ${total} cards revealed`;
@@ -583,6 +584,12 @@
         renderBoxPacks();
         showStage(stages.boxPacks);
       }
+      return;
+    }
+    const gold = WUSCollection.load().gold;
+    if (gold < ECONOMY.packCost) {
+      showEconomyMessage(`Not enough Gold. Another booster costs ${ECONOMY.packCost.toLocaleString()} Gold and you currently have ${gold.toLocaleString()}.`, true);
+      refreshGold();
       return;
     }
     purchaseOpening("single");

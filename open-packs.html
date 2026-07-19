@@ -14,7 +14,7 @@
     </nav>
   </header>
 
-  <div class="player-wallet" aria-label="Player gold"><span>Gold</span><strong id="playerGold">0</strong></div>
+  <div class="player-wallet" aria-label="Player gold"><span>Gold</span><strong data-gold-balance>0</strong></div>
   <main class="pack-app">
     <section id="introStage" class="stage intro-stage">
       <div class="intro-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display and booster pack"></div>
@@ -40,9 +40,10 @@
           </div>
           <details id="assetErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetErrorList"></pre></details>
         </div>
+        <div class="stage-wallet" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
         <div class="opening-choices">
-          <button id="beginButton" class="primary-button" type="button">Open One Booster <span>200 Gold</span></button>
-          <button id="beginBoxButton" class="secondary-button" type="button">Open Booster Box <span>4,200 Gold · 24 Packs</span></button>
+          <button id="beginButton" class="primary-button" type="button">Open One Booster <span>Costs 200 Gold</span></button>
+          <button id="beginBoxButton" class="secondary-button" type="button">Open Booster Box <span>Costs 4,200 Gold · 24 Packs</span></button>
         </div>
         <p id="economyMessage" class="economy-note" role="status">A booster costs 200 Gold. A 24-pack booster box costs 4,200 Gold.</p>
       </div>
@@ -93,8 +94,13 @@
         <p id="revealInstruction" class="instruction">Click any card to flip it. The final two cards are your Rare-or-higher slots.</p>
         <div id="cardGrid" class="card-grid"></div>
         <div id="collectionResult" class="collection-result" hidden></div>
+        <div class="reveal-purchase-bar">
+          <div class="stage-wallet compact" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
+          <p>Another booster costs <strong>200 Gold</strong>.</p>
+        </div>
         <div class="pack-actions">
-          <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack</button>
+          <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack · 200 Gold</button>
+          <a class="secondary-button button-link" href="deck-builder.html">Go to Deck Builder</a>
         </div>
       </section>
     </section>
@@ -118,8 +124,13 @@
         </div>
         <div id="boxPremiumGrid" class="box-premium-grid"></div>
         <div id="boxAllPulls" class="box-all-pulls" hidden></div>
+        <div class="reveal-purchase-bar summary-purchase-bar">
+          <div class="stage-wallet compact" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
+          <p>Another booster box costs <strong>4,200 Gold</strong>.</p>
+        </div>
         <div class="box-summary-actions">
-          <button id="openAnotherBoxButton" class="primary-button" type="button">Open Another Box</button>
+          <button id="openAnotherBoxButton" class="primary-button" type="button">Open Another Box · 4,200 Gold</button>
+          <a class="secondary-button button-link" href="deck-builder.html">Go to Deck Builder</a>
           <button id="backToSelectionButton" class="secondary-button" type="button">Back to Pack Selection</button>
         </div>
       </section>
