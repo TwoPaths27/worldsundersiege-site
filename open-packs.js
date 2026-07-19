@@ -2,7 +2,7 @@
   "use strict";
 
   const BOX_PACK_COUNT = 24;
-  const ECONOMY = Object.freeze({ enabled: true, packCost: 200, boxCost: 4200 });
+  const ECONOMY = Object.freeze({ enabled: true, packCost: 0, boxCost: 0 });
 
   const siteCardsById = new Map(
     (typeof cards !== "undefined" ? cards : [])
