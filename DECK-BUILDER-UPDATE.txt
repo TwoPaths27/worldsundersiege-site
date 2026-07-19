@@ -1,0 +1,17 @@
+Worlds Under Siege — Deck Builder Update
+
+Included:
+- Full Battle of Ages metadata database from the supplied PDF
+- Search/filter by name, ID, type, rarity, cost, ATK, HP, range, speed, characteristics and effect name
+- Collection-backed deck construction
+- Greyed-out unowned cards
+- Secret Rares hidden until owned
+- BOA-226 shares its gameplay copy limit with BOA-001
+- BOA-227 shares its gameplay copy limit with BOA-020
+- Separate ownership per printing
+- + and - quantity controls in the deck
+- Local deck saving, loading, renaming and deleting
+- Dr. Jekyl / Mr. Hyde alternate-form preview
+- Collection navigation page removed; inventory now lives inside Deck Builder
+
+Important: the exact overall deck-size and composition rules were not supplied, so this version validates ownership and per-card/shared-printing copy limits only.
