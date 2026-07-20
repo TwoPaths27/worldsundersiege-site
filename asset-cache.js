@@ -1,13 +1,15 @@
 (() => {
   "use strict";
 
-  const CACHE_NAME = "wus-card-images-boa-v1";
+  const CACHE_NAME = "wus-card-images-boa-v2";
   const VERSION_KEY = "wus-card-image-pack-version";
-  const VERSION = "BOA-1.1";
+  const VERSION = "BOA-1.2";
   const objectUrls = new Map();
 
   function absoluteUrl(path) {
-    return new URL(path, window.location.href).href;
+    const url = new URL(path, window.location.href);
+    url.searchParams.set("v", VERSION);
+    return url.href;
   }
 
   async function openCache() {
