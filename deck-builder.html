@@ -89,7 +89,14 @@
           <select id="rangeFilter"><option value="All">Any Range</option></select>
           <select id="spdFilter"><option value="All">Any Speed</option></select>
         </div>
-        <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
+        <div class="filter-toggles">
+          <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
+          <label class="toggle buy-mode-toggle"><input id="buyCardsMode" type="checkbox"> Buy Cards</label>
+        </div>
+        <div id="buyModeBanner" class="buy-mode-banner" hidden role="status">
+          <strong>🪙 Buying Mode Enabled</strong>
+          <span>Purchasable cards now show their Gold price.</span>
+        </div>
         <button id="resetFilters" class="secondary-btn full">Reset Filters</button>
       </div>
       <div id="cardBrowser" class="card-browser"></div>

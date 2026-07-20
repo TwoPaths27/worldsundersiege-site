@@ -15,11 +15,20 @@ let armies = [];
 let activeDeckId = null;
 let selectedCard = null;
 let selectedForm = 0;
+let buyModeEnabled = false;
+const actionLocks = new Map();
 const $ = id => document.getElementById(id);
-const ids = ["deckName","newDeckBtn","saveDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage"];
+const ids = ["deckName","newDeckBtn","saveDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","buyCardsMode","buyModeBanner","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage"];
 const els = Object.fromEntries(ids.map(id=>[id,$(id)]));
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const owned=id=>window.WUSCollection?.getOwned(id)||0;
+function actionAllowed(key, delay=180){
+  const now=performance.now();
+  const last=actionLocks.get(key)||0;
+  if(now-last<delay)return false;
+  actionLocks.set(key,now);
+  return true;
+}
 const isStronghold=card=>card?.types?.includes("Stronghold");
 const isArmy=card=>card?.types?.includes("Army");
 const isMainCard=card=>card&&!isStronghold(card)&&!isArmy(card);
@@ -71,6 +80,7 @@ function purchasePrice(card){return card?.isSecret||card?.rarity==="Secret Rare"
 function ownershipLimit(card){return window.WUSCollection?.getLimit(card) ?? card.copyLimit ?? 3;}
 function canPurchase(card){const price=purchasePrice(card);return price!==null&&owned(card.id)<ownershipLimit(card);}
 function buyCard(card){
+  if(!buyModeEnabled||!actionAllowed(`buy:${card?.id}`))return;
   const price=purchasePrice(card);
   if(price===null||!window.WUSCollection)return;
   const result=WUSCollection.purchaseCard(card,price);
@@ -88,17 +98,19 @@ function selectCard(card){selectedCard=card;selectedForm=0;renderPreview();docum
 function renderPreview(){const c=selectedCard;if(!c)return;const f=formData(c);setImg(els.previewImage,f.image||c.image);els.previewName.textContent=f.name||c.name;els.previewOwned.textContent=`Owned ${owned(c.id)} / ${c.copyLimit}`;els.previewMeta.textContent=`${c.id} · ${c.rarity} · ${c.types.join(" / ")}${c.isSecret?" · Secret printing":""}`;els.previewStats.innerHTML=[["COST",f.cost],["ATK",f.atk],["HP",f.hp],["RNG",f.range],["SPD",f.spd]].map(([k,v])=>v===null||v===undefined?'':`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join('');els.previewCharacteristics.innerHTML=(f.characteristics||[]).map(x=>`<span class="tag">${x}</span>`).join('');els.previewEffect.hidden=!(f.effectName||f.effectText);els.previewEffectName.textContent=f.effectName||'Effect';els.previewEffectText.textContent=f.effectText||'No additional effect.';
 const price=purchasePrice(c), have=owned(c.id), limit=ownershipLimit(c), gold=window.WUSCollection?.load().gold||0;
 els.purchasePanel.classList.remove("purchase-error");
-if(c.isSecret||c.rarity==="Secret Rare"){
+if(!buyModeEnabled){
+  els.purchasePanel.hidden=true;
+}else if(c.isSecret||c.rarity==="Secret Rare"){
   els.purchasePanel.hidden=false;els.purchasePanel.innerHTML='<strong>Secret Rare</strong><span>Only obtainable from booster packs.</span>';
 }else if(price!==null&&have<limit){
-  els.purchasePanel.hidden=false;els.purchasePanel.innerHTML=`<div><strong>Buy another copy</strong><span>${price.toLocaleString()} Gold · Owned ${have}/${limit}</span></div><button id="previewBuyButton" class="primary-btn" ${gold<price?'disabled':''}>Buy</button>`;
+  els.purchasePanel.hidden=false;els.purchasePanel.innerHTML=`<div><strong>🪙 Buy another copy</strong><span>${price.toLocaleString()} Gold · Owned ${have}/${limit}</span></div><button id="previewBuyButton" class="primary-btn" ${gold<price?'disabled':''}>Buy</button>`;
   els.purchasePanel.querySelector('button')?.addEventListener('click',()=>buyCard(c));
 }else if(price!==null){
   els.purchasePanel.hidden=false;els.purchasePanel.innerHTML='<strong>Maximum Owned</strong><span>No more copies can be purchased.</span>';
 }else els.purchasePanel.hidden=true;
 if(c.forms){els.formTabs.hidden=false;els.formTabs.innerHTML=c.forms.map((x,i)=>`<button class="form-tab ${i===selectedForm?'active':''}" data-form="${i}">${x.name}</button>`).join('');els.formTabs.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedForm=Number(b.dataset.form);renderPreview();});}else{els.formTabs.hidden=true;els.formTabs.innerHTML='';}}
-function addCard(id){const c=byId[id];if(!c||!canAdd(c))return;if(isStronghold(c))stronghold=id;else if(isArmy(c))armies.push(id);else mainDeck[id]=(mainDeck[id]||0)+1;saveActive();renderDeck();renderBrowser();}
-function removeCard(id){const c=byId[id];if(!c)return;if(isStronghold(c)){if(stronghold===id)stronghold=null;}else if(isArmy(c)){armies=armies.filter(x=>x!==id);}else if(mainDeck[id]){mainDeck[id]-=1;if(mainDeck[id]<=0)delete mainDeck[id];}saveActive();renderDeck();renderBrowser();}
+function addCard(id){const c=byId[id];if(!c||!actionAllowed(`add:${id}`)||!canAdd(c))return;if(isStronghold(c))stronghold=id;else if(isArmy(c))armies.push(id);else mainDeck[id]=(mainDeck[id]||0)+1;saveActive();renderDeck();renderBrowser();}
+function removeCard(id){const c=byId[id];if(!c||!actionAllowed(`remove:${id}`))return;if(isStronghold(c)){if(stronghold===id)stronghold=null;}else if(isArmy(c)){armies=armies.filter(x=>x!==id);}else if(mainDeck[id]){mainDeck[id]-=1;if(mainDeck[id]<=0)delete mainDeck[id];}saveActive();renderDeck();renderBrowser();}
 function slotMarkup(card,kind,index){if(!card)return `<div class="special-slot empty"><span>${kind==='Stronghold'?'Choose 1 Stronghold':`Army Slot ${index+1}`}</span><small>${kind==='Stronghold'?'This is your deck’s main card.':'Choose a different Army card.'}</small></div>`;return `<article class="special-slot filled ${card.isSecret?'secret':''}" data-special-id="${card.id}"><img src="card-back.png" alt=""><div><strong>${card.name}</strong><small>${card.id} · ${card.rarity}</small><small>Owned ${owned(card.id)}</small></div><button class="special-remove" aria-label="Remove ${card.name}">×</button></article>`;}
 function renderSpecialSections(){const sh=stronghold?byId[stronghold]:null;els.strongholdSlot.innerHTML=slotMarkup(sh,"Stronghold",0);if(sh){const row=els.strongholdSlot.querySelector('[data-special-id]');setImg(row.querySelector('img'),sh.image);row.onmouseenter=()=>selectCard(sh);row.querySelector('button').onclick=()=>removeCard(sh.id);}els.armySlots.innerHTML=Array.from({length:ARMY_LIMIT},(_,i)=>slotMarkup(armies[i]?byId[armies[i]]:null,"Army",i)).join('');els.armySlots.querySelectorAll('[data-special-id]').forEach(row=>{const c=byId[row.dataset.specialId];setImg(row.querySelector('img'),c.image);row.onmouseenter=()=>selectCard(c);row.querySelector('button').onclick=()=>removeCard(c.id);});}
 const RARITY_ORDER={"Common":0,"Uncommon":1,"Rare":2,"Super Rare":3,"Ultra Rare":4,"Secret Rare":5};
@@ -151,13 +163,19 @@ function matches(c){
 }
 function deckUseLabel(c){if(isStronghold(c))return stronghold===c.id?'Selected':'Not selected';if(isArmy(c))return armies.includes(c.id)?'Selected':'Not selected';return `Deck ${printingQty(c.id)}`;}
 function addLabel(c){if(isStronghold(c))return stronghold?'Replace Stronghold':'Select Stronghold';if(isArmy(c))return 'Add Army';return `Add ${c.name}`;}
-function renderBrowser(){const list=DB.filter(matches);els.visibleCount.textContent=`${list.length} shown`;els.emptyBrowser.hidden=list.length>0;els.cardBrowser.innerHTML='';list.forEach(c=>{const have=owned(c.id);const div=document.createElement('article');div.className=`browser-card ${have?'':'unowned'} ${c.isSecret?'secret':''}`;div.dataset.id=c.id;div.title=`${c.name} · ${c.id} · ${c.rarity} · Owned ${have} · ${deckUseLabel(c)}`;const price=purchasePrice(c), limit=ownershipLimit(c), purchasable=canPurchase(c);
-const purchaseMarkup=c.isSecret?'':(purchasable?`<div class="buy-overlay"><strong>${price.toLocaleString()} Gold</strong><span>Owned ${have}/${limit}</span><button class="buy-card-btn" ${window.WUSCollection.load().gold<price?'disabled':''}>Buy Copy</button></div>`:(price!==null?`<div class="buy-overlay maxed"><strong>Maximum Owned</strong><span>${have}/${limit} copies</span></div>`:''));
-div.innerHTML=`<img class="browser-thumb" src="card-back.png" alt="${c.name}">${purchaseMarkup}<div class="browser-card-controls"><span class="browser-quantity">${isStronghold(c)?(stronghold===c.id?'Selected':'Stronghold'):isArmy(c)?(armies.includes(c.id)?'Selected':'Army'):`${printingQty(c.id)} / ${have}`}</span><button class="browser-add" aria-label="${addLabel(c)}" ${canAdd(c)?'':'disabled'}>+</button></div>`;setImg(div.querySelector('img'),c.image);div.onclick=()=>selectCard(c);div.ondblclick=()=>addCard(c.id);div.onmouseenter=()=>selectCard(c);div.querySelector('.browser-add').onclick=e=>{e.stopPropagation();addCard(c.id)};div.querySelector('.buy-card-btn')?.addEventListener('click',e=>{e.stopPropagation();selectCard(c);buyCard(c)});els.cardBrowser.append(div);});if(selectedCard)document.querySelector(`[data-id="${selectedCard.id}"]`)?.classList.add('selected');}
+function renderBrowser(){const list=DB.filter(matches);els.visibleCount.textContent=`${list.length} shown`;els.emptyBrowser.hidden=list.length>0;els.cardBrowser.innerHTML='';list.forEach(c=>{const have=owned(c.id);const div=document.createElement('article');div.className=`browser-card ${have?'':'unowned'} ${buyModeEnabled?'buy-mode-card':''} ${c.isSecret?'secret':''}`;div.dataset.id=c.id;div.title=`${c.name} · ${c.id} · ${c.rarity} · Owned ${have} · ${deckUseLabel(c)}`;const price=purchasePrice(c), limit=ownershipLimit(c), purchasable=canPurchase(c), gold=window.WUSCollection?.load().gold||0;
+const purchaseMarkup=buyModeEnabled&&!c.isSecret&&purchasable?`<div class="buy-overlay"><strong>🪙 ${price.toLocaleString()} Gold</strong><span>Owned ${have}/${limit}</span><button class="buy-card-btn" ${gold<price?'disabled':''}>Buy Copy</button></div>`:'';
+const quantityLabel=isStronghold(c)?(stronghold===c.id?'Selected':'Stronghold'):isArmy(c)?(armies.includes(c.id)?'Selected':'Army'):`${printingQty(c.id)} / ${have}`;
+div.innerHTML=`<img class="browser-thumb" src="card-back.png" alt="${c.name}">${purchaseMarkup}<div class="browser-card-controls"><span class="browser-quantity">${quantityLabel}</span><button class="browser-add" aria-label="${addLabel(c)}" ${canAdd(c)?'':'disabled'}>+</button></div>`;setImg(div.querySelector('img'),c.image);div.onclick=()=>selectCard(c);div.onmouseenter=()=>selectCard(c);div.querySelector('.browser-add').onclick=e=>{e.stopPropagation();addCard(c.id)};div.querySelector('.buy-card-btn')?.addEventListener('click',e=>{e.stopPropagation();selectCard(c);buyCard(c)});els.cardBrowser.append(div);});if(selectedCard)document.querySelector(`[data-id="${selectedCard.id}"]`)?.classList.add('selected');}
 function resetFilters(){
   els.searchCards.value="";
   ["typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter"].forEach(id=>els[id].value="All");
   els.ownedOnly.checked=false;
+  els.buyCardsMode.checked=false;
+  buyModeEnabled=false;
+  els.buyModeBanner.hidden=true;
+  document.body.classList.remove("buy-mode-enabled");
+  renderPreview();
   renderBrowser();
 }
 function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();}
@@ -223,7 +241,15 @@ els.savedDecks.onchange=()=>{const id=els.savedDecks.value;if(id)loadDeckById(id
 els.deleteDeckBtn.onclick=()=>{if(!activeDeckId||!confirm('Delete this saved deck?'))return;const decks=loadDecks();delete decks[activeDeckId];storeDecks(decks);newDeck();};
 els.deckSort.addEventListener("change",renderDeck);["searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly"].forEach(id=>{
   els[id].addEventListener(id==="searchCards"?"input":"change",renderBrowser);
-});els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
+});
+els.buyCardsMode.addEventListener("change",()=>{
+  buyModeEnabled=els.buyCardsMode.checked;
+  els.buyModeBanner.hidden=!buyModeEnabled;
+  document.body.classList.toggle("buy-mode-enabled",buyModeEnabled);
+  renderPreview();
+  renderBrowser();
+});
+els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
 function init(){populateFilters();populateSaved();mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);checkAssetsBeforeEntry();}
 init();
 })();
