@@ -169,8 +169,18 @@
       return;
     }
     if (opening.mode === "box") {
-      if (opening.openedPacks >= BOX_PACK_COUNT) renderBoxSummary();
-      else { renderBoxPacks(); showStage(stages.boxPacks); }
+      if (opening.openedPacks >= BOX_PACK_COUNT) {
+        // A completed box summary is only shown during the session in which it was opened.
+        // Clear stale completed state and return to Pack Selection on a later visit.
+        if (window.WUSCollection) WUSCollection.clearActiveOpening(opening.id);
+        openingMode = "single";
+        boxSession = createEmptyBoxSession();
+        showStage(stages.intro);
+        refreshGold();
+        return;
+      }
+      renderBoxPacks();
+      showStage(stages.boxPacks);
     } else {
       prepareBoosterStage(); showStage(stages.booster);
     }
@@ -507,6 +517,13 @@
   }
 
   async function renderBoxSummary() {
+    // The completed box remains available in memory for this summary screen,
+    // but it should not be restored after the player leaves or reloads the page.
+    const completedOpening = window.WUSCollection?.getActiveOpening?.();
+    if (completedOpening?.mode === "box" && completedOpening.openedPacks >= BOX_PACK_COUNT) {
+      WUSCollection.clearActiveOpening(completedOpening.id);
+    }
+
     boxTotalCards.textContent = String(boxSession.pulls.length);
     const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret Rare"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
