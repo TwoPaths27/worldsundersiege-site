@@ -503,7 +503,7 @@
 
   async function renderBoxSummary() {
     boxTotalCards.textContent = String(boxSession.pulls.length);
-    const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret"];
+    const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret Rare"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
     boxSession.pulls.forEach(card => { counts[card.rarity] = (counts[card.rarity] || 0) + 1; });
     const economyStat = document.createElement("div");
