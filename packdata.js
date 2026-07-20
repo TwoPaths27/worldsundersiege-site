@@ -1373,8 +1373,8 @@ const BOA_PACK_CONFIG = {
   uncommonsPerPack: 4,
   premiumSlotsPerPack: 2,
   premiumOdds: {
-    secret: 1 / 96,
+    secret: 1 / 48,
     ultraRare: 1 / 6,
-    superRare: 1 / 4
+    superRare: 1 / 3
   }
 };
