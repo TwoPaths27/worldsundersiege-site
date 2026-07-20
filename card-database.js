@@ -5668,5 +5668,83 @@ window.WUS_CARD_DATABASE = [
     "variantOf": "BOA-020",
     "copyLimit": 3,
     "effectText": "Whenever Dracula is revealed, you may put a Character from your Discard Pile into play Revealed and adjacent to Dracula."
+  },
+  {
+    "id": "BOA-228",
+    "name": "Tarzan",
+    "set": "Battle of Ages",
+    "rarity": "Secret Rare",
+    "type": "Character",
+    "cost": 5,
+    "atk": 5,
+    "hp": 6,
+    "range": 1,
+    "spd": 3,
+    "characteristics": [],
+    "effectName": "Beast Master",
+    "setCode": "BOA",
+    "types": [
+      "Character"
+    ],
+    "image": "cards/BOA-228 Tarzan.jpg",
+    "isSecret": true,
+    "gameplayId": "BOA-039",
+    "variantOf": "BOA-039",
+    "copyLimit": 3,
+    "effectText": "Whenever Tarzan is revealed, you may put into play one Animal from your hand, adjacent to Tarzan without paying its cost."
+  },
+  {
+    "id": "BOA-229",
+    "name": "Alexander the Great",
+    "set": "Battle of Ages",
+    "rarity": "Secret Rare",
+    "type": "Character",
+    "cost": 10,
+    "atk": 12,
+    "hp": 10,
+    "range": 2,
+    "spd": 3,
+    "characteristics": [
+      "King",
+      "Warrior",
+      "Macedonian"
+    ],
+    "effectName": "Conqueror of Worlds",
+    "setCode": "BOA",
+    "types": [
+      "Character"
+    ],
+    "image": "cards/BOA-229 Alexander the Great.jpg",
+    "isSecret": true,
+    "gameplayId": "BOA-062",
+    "variantOf": "BOA-062",
+    "copyLimit": 3,
+    "effectText": "Whenever Alexander the Great destroys a Unit or Construct by Battle, restore his Speed to 3. He can attack another Unit or Construct again this turn."
+  },
+  {
+    "id": "BOA-230",
+    "name": "Joan of Arc",
+    "set": "Battle of Ages",
+    "rarity": "Secret Rare",
+    "type": "Character",
+    "cost": 3,
+    "atk": 3,
+    "hp": 5,
+    "range": 1,
+    "spd": 2,
+    "characteristics": [
+      "French"
+    ],
+    "effectName": "Banner of Light",
+    "setCode": "BOA",
+    "types": [
+      "Character"
+    ],
+    "image": "cards/BOA-230 Joan of Arc.jpg",
+    "isSecret": true,
+    "gameplayId": "BOA-077",
+    "variantOf": "BOA-077",
+    "copyLimit": 3,
+    "effectText": "Whenever Joan of Arc is revealed, reveal all Units on the Battlefield. As long as you control Joan of Arc, Units cannot be concealed."
   }
 ];

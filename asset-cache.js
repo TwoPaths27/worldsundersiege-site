@@ -83,7 +83,7 @@
     let completed = 0;
     const failed = [];
 
-    // A small worker pool avoids launching 227 full-resolution downloads at once.
+    // A small worker pool avoids launching 230 full-resolution downloads at once.
     const queue = [...uniquePaths];
     const workers = Array.from({ length: 4 }, async () => {
       while (queue.length) {

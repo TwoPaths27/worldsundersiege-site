@@ -32,7 +32,6 @@
   const beginBoxButton = document.getElementById("beginBoxButton");
   const boosterButton = document.getElementById("boosterButton");
   const anotherButton = document.getElementById("anotherPackButton");
-  const openNextPackButton = document.getElementById("openNextPackButton");
   const revealAllButton = document.getElementById("revealAllButton");
   const grid = document.getElementById("cardGrid");
   const status = document.getElementById("packStatus");
@@ -169,18 +168,8 @@
       return;
     }
     if (opening.mode === "box") {
-      if (opening.openedPacks >= BOX_PACK_COUNT) {
-        // A completed box summary is only shown during the session in which it was opened.
-        // Clear stale completed state and return to Pack Selection on a later visit.
-        if (window.WUSCollection) WUSCollection.clearActiveOpening(opening.id);
-        openingMode = "single";
-        boxSession = createEmptyBoxSession();
-        showStage(stages.intro);
-        refreshGold();
-        return;
-      }
-      renderBoxPacks();
-      showStage(stages.boxPacks);
+      if (opening.openedPacks >= BOX_PACK_COUNT) renderBoxSummary();
+      else { renderBoxPacks(); showStage(stages.boxPacks); }
     } else {
       prepareBoosterStage(); showStage(stages.booster);
     }
@@ -450,7 +439,6 @@
     revealAllButton.hidden = false;
     revealAllButton.disabled = false;
     anotherButton.hidden = true;
-    if (openNextPackButton) openNextPackButton.hidden = true;
     currentPackSaved = false;
     currentPackCollectionResult = null;
     if (collectionResult) { collectionResult.hidden = true; collectionResult.replaceChildren(); }
@@ -484,14 +472,11 @@
       renderCollectionResult(collectionUpdate);
       anotherButton.hidden = false;
       if (openingMode === "box") {
-        const boxComplete = boxSession.openedPacks >= BOX_PACK_COUNT;
-        anotherButton.textContent = boxComplete
+        anotherButton.textContent = boxSession.openedPacks >= BOX_PACK_COUNT
           ? "View Booster Box Summary"
           : `Return to Packs (${BOX_PACK_COUNT - boxSession.openedPacks} Remaining)`;
-        if (openNextPackButton) openNextPackButton.hidden = boxComplete;
       } else {
         anotherButton.textContent = "Open Another Pack · 200 Gold";
-        if (openNextPackButton) openNextPackButton.hidden = true;
       }
     } else {
       status.textContent = `${revealed} of ${total} cards revealed`;
@@ -517,15 +502,8 @@
   }
 
   async function renderBoxSummary() {
-    // The completed box remains available in memory for this summary screen,
-    // but it should not be restored after the player leaves or reloads the page.
-    const completedOpening = window.WUSCollection?.getActiveOpening?.();
-    if (completedOpening?.mode === "box" && completedOpening.openedPacks >= BOX_PACK_COUNT) {
-      WUSCollection.clearActiveOpening(completedOpening.id);
-    }
-
     boxTotalCards.textContent = String(boxSession.pulls.length);
-    const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret Rare"];
+    const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
     boxSession.pulls.forEach(card => { counts[card.rarity] = (counts[card.rarity] || 0) + 1; });
     const economyStat = document.createElement("div");
@@ -702,17 +680,6 @@
       }, index * 170);
     });
   });
-
-  if (openNextPackButton) {
-    openNextPackButton.addEventListener("click", () => {
-      if (openingMode !== "box" || boxSession.openedPacks >= BOX_PACK_COUNT) return;
-      selectedBoxPack = boxSession.openedPacks;
-      prepareBoosterStage();
-      boosterHeading.textContent = `Booster Pack ${boxSession.openedPacks + 1} of ${BOX_PACK_COUNT}`;
-      boosterInstruction.textContent = "Click the next pack to break the seal.";
-      showStage(stages.booster);
-    });
-  }
 
   anotherButton.addEventListener("click", () => {
     if (openingMode === "box") {

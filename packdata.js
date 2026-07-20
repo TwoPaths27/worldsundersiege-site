@@ -1,5 +1,5 @@
 // Battle of Ages booster data — Step 1
-// BOA-001 through BOA-227 only. SD1 cards are intentionally excluded.
+// BOA-001 through BOA-230 only. SD1 cards are intentionally excluded.
 
 const BOA_PACK_CARDS = [
   {
@@ -1363,6 +1363,24 @@ const BOA_PACK_CARDS = [
     "name": "Dracula",
     "rarity": "Secret Rare",
     "image": "cards/BOA-227 Dracula.jpg"
+  },
+  {
+    "id": "BOA-228",
+    "name": "Tarzan",
+    "rarity": "Secret Rare",
+    "image": "cards/BOA-228 Tarzan.jpg"
+  },
+  {
+    "id": "BOA-229",
+    "name": "Alexander the Great",
+    "rarity": "Secret Rare",
+    "image": "cards/BOA-229 Alexander the Great.jpg"
+  },
+  {
+    "id": "BOA-230",
+    "name": "Joan of Arc",
+    "rarity": "Secret Rare",
+    "image": "cards/BOA-230 Joan of Arc.jpg"
   }
 ];
 
@@ -1374,7 +1392,7 @@ const BOA_PACK_CONFIG = {
   premiumSlotsPerPack: 2,
   premiumOdds: {
     secret: 1 / 48,
-    ultraRare: 1 / 6,
-    superRare: 1 / 3
+    ultraRare: 1 / 8,
+    superRare: 1 / 4
   }
 };

@@ -1,6 +1,6 @@
 Worlds Under Siege - Deck Builder Effects & Filters Update
 
-- Added full effect rules text for all 227 Battle of Ages cards.
+- Added full effect rules text for all 230 Battle of Ages cards.
 - Added separate Dr. Jekyl and Mr. Hyde effect text.
 - Card preview now displays effect name and full effect text.
 - Search now includes full effect text.

@@ -4,8 +4,8 @@
   const STORAGE_KEY = "wus-player-data-v1";
   const LIMITED_TYPES = new Set(["Event", "Stronghold", "Army"]);
   const GOLD_BY_RARITY = Object.freeze({
-    Common: 2, Uncommon: 5, Rare: 10, "Super Rare": 15,
-    "Ultra Rare": 30, Secret: 100, "Secret Rare": 100
+    Common: 10, Uncommon: 20, Rare: 40, "Super Rare": 80,
+    "Ultra Rare": 150, Secret: 300, "Secret Rare": 300
   });
 
   function defaultData() {

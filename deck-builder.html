@@ -89,14 +89,7 @@
           <select id="rangeFilter"><option value="All">Any Range</option></select>
           <select id="spdFilter"><option value="All">Any Speed</option></select>
         </div>
-        <div class="filter-toggles">
-          <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
-          <label class="toggle buy-mode-toggle"><input id="buyCardsMode" type="checkbox"> Buy Cards</label>
-        </div>
-        <div id="buyModeBanner" class="buy-mode-banner" hidden role="status">
-          <strong>🪙 Buying Mode Enabled</strong>
-          <span>Purchasable cards now show their Gold price.</span>
-        </div>
+        <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
         <button id="resetFilters" class="secondary-btn full">Reset Filters</button>
       </div>
       <div id="cardBrowser" class="card-browser"></div>
@@ -112,7 +105,7 @@
       <p id="assetGateStatus" class="modal-status warning">Checking installed images…</p>
       <div id="assetGateProgress" class="modal-progress" hidden>
         <div class="modal-progress-track"><span id="assetGateProgressFill"></span></div>
-        <span id="assetGateProgressText">0 / 227</span>
+        <span id="assetGateProgressText">0 / 230</span>
       </div>
       <button id="assetGateDownload" class="primary-btn" type="button">Download Images</button>
       <details id="assetGateErrors" class="modal-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetGateErrorList"></pre></details>
