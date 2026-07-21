@@ -1399,3 +1399,170 @@ body {
 .hand-fan {
   justify-content: safe center;
 }
+
+/* =========================================================
+   Laptop Layout Polish
+   Keep this section at the very bottom of game.css.
+========================================================= */
+
+.game-header {
+  box-sizing: border-box;
+  height: var(--top-bar-height);
+  min-height: var(--top-bar-height);
+  max-height: none;
+  padding: clamp(3px, 0.55vh, 7px) clamp(10px, 1.5vw, 20px);
+  overflow: visible;
+}
+
+.game-title {
+  min-width: 0;
+  line-height: 1;
+}
+
+.game-title h1 {
+  margin: 0;
+  font-size: clamp(21px, 3.4vh, 30px);
+  line-height: 1;
+}
+
+.game-title p {
+  margin-top: clamp(2px, 0.35vh, 4px);
+  font-size: clamp(11px, 1.8vh, 15px);
+  line-height: 1.1;
+}
+
+.game-title__back {
+  display: block;
+  font-size: clamp(10px, 1.45vh, 13px);
+  line-height: 1;
+}
+
+.side-panel {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-card {
+  min-height: 0;
+}
+
+.panel-card:has(#gameLog) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-card:has(#gameLog) h2 {
+  flex: 0 0 auto;
+}
+
+#gameLog,
+.game-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+.hand-panel {
+  overflow: visible;
+}
+
+.hand-fan {
+  align-items: flex-end;
+  padding-top: clamp(16px, 2.4vh, 24px);
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.hand-card {
+  overflow: visible;
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 54px;
+    --hand-height: 132px;
+    --battlefield-cell-size: min(7.25vh, 5.9vw, 64px);
+  }
+
+  .game-header {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .game-title h1 {
+    font-size: clamp(20px, 3.1vh, 25px);
+  }
+
+  .game-title p {
+    font-size: clamp(10px, 1.65vh, 13px);
+  }
+
+  .hand-panel {
+    height: calc(var(--hand-height) - 24px);
+  }
+
+  .hand-panel__header {
+    height: 24px;
+    min-height: 24px;
+  }
+
+  .hand-fan {
+    height: calc(100% - 24px);
+    padding-top: 18px;
+  }
+
+  .hand-card {
+    width: clamp(60px, 7vh, 78px);
+    height: clamp(84px, 9.8vh, 108px);
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    transform: translateY(-12px) scale(1.12);
+  }
+
+  .battlefield-stage {
+    grid-template-rows:
+      calc(var(--battlefield-cell-size) * 0.92)
+      calc(var(--battlefield-cell-size) * 6 + var(--screen-gap) * 5)
+      calc(var(--battlefield-cell-size) * 0.92);
+  }
+
+  .stronghold {
+    height: calc(var(--battlefield-cell-size) * 0.92);
+    padding: clamp(3px, 0.55vh, 7px);
+  }
+
+  .game-layout {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+@media (max-height: 680px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 50px;
+    --hand-height: 118px;
+    --battlefield-cell-size: min(6.85vh, 5.65vw, 60px);
+    --screen-gap: 4px;
+  }
+
+  .hand-fan {
+    padding-top: 14px;
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    transform: translateY(-9px) scale(1.08);
+  }
+}
