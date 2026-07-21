@@ -719,14 +719,78 @@ function renderHand() {
   if (cardCount === 0) {
     const message = document.createElement("p");
 
-    message.textContent =
-      "Hand cards will be added after battlefield movement is verified.";
+    message.textContent = "Your hand is empty.";
     message.style.color = "#bfbfbf";
 
     elements.hand.appendChild(message);
+    return;
+  }
+
+  for (const card of player.hand) {
+    const cardButton = document.createElement("button");
+
+    cardButton.type = "button";
+    cardButton.className = "hand-card";
+    cardButton.dataset.cardId = card.id;
+    cardButton.setAttribute(
+      "aria-label",
+      `${card.name}, cost ${card.cost}`
+    );
+
+    const cost = document.createElement("span");
+    cost.className = "hand-card__cost";
+    cost.textContent = String(card.cost);
+
+    const name = document.createElement("strong");
+    name.className = "hand-card__name";
+    name.textContent = card.name;
+
+    const stats = document.createElement("span");
+    stats.className = "hand-card__stats";
+    stats.textContent =
+      `ATK ${card.attack} · HP ${card.hp} · ` +
+      `RNG ${card.range} · SPD ${card.speed}`;
+
+    cardButton.append(cost, stats, name);
+
+    cardButton.addEventListener("mouseenter", () => {
+      renderHandCardPreview(card);
+    });
+
+    cardButton.addEventListener("mouseleave", () => {
+      renderCardPreview();
+    });
+
+    elements.hand.appendChild(cardButton);
   }
 }
+function renderHandCardPreview(card) {
+  elements.cardPreview.replaceChildren();
+  elements.cardPreview.className = "card-preview";
 
+  const name = document.createElement("h3");
+  name.textContent = card.name;
+
+  const type = document.createElement("p");
+  type.textContent = card.type;
+
+  const cost = document.createElement("p");
+  cost.textContent = `Cost: ${card.cost}`;
+
+  const stats = document.createElement("p");
+  stats.textContent =
+    `Attack ${card.attack} · ` +
+    `HP ${card.hp} · ` +
+    `Range ${card.range} · ` +
+    `Speed ${card.speed}`;
+
+  elements.cardPreview.append(
+    name,
+    type,
+    cost,
+    stats
+  );
+}
 function renderGameLog() {
   elements.gameLog.replaceChildren();
 
