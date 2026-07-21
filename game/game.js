@@ -29,7 +29,26 @@ const PLAYER_RECRUITING_SPACES = new Set([
   "3,5",
   "4,5",
 ]);
-
+function createCard({
+  id,
+  name,
+  cost,
+  attack,
+  hp,
+  range,
+  speed,
+}) {
+  return {
+    id,
+    name,
+    type: "Unit",
+    cost,
+    attack,
+    hp,
+    range,
+    speed,
+  };
+}
 const GameState = {
   turn: 1,
   activePlayer: 1,
@@ -42,7 +61,37 @@ const GameState = {
       energy: 1,
       maxEnergy: 1,
       strongholdHP: 30,
-      hand: [],
+      hand: [
+  createCard({
+    id: "p1-swordsman",
+    name: "Swordsman",
+    cost: 1,
+    attack: 2,
+    hp: 3,
+    range: 1,
+    speed: 2,
+  }),
+
+  createCard({
+    id: "p1-archer",
+    name: "Archer",
+    cost: 2,
+    attack: 2,
+    hp: 2,
+    range: 3,
+    speed: 2,
+  }),
+
+  createCard({
+    id: "p1-knight",
+    name: "Knight",
+    cost: 3,
+    attack: 4,
+    hp: 6,
+    range: 1,
+    speed: 2,
+  }),
+],
     },
 
     2: {
@@ -50,7 +99,37 @@ const GameState = {
       energy: 1,
       maxEnergy: 1,
       strongholdHP: 30,
-      hand: [],
+      hand: [
+  createCard({
+    id: "p2-guard",
+    name: "Guard",
+    cost: 1,
+    attack: 1,
+    hp: 5,
+    range: 1,
+    speed: 2,
+  }),
+
+  createCard({
+    id: "p2-crossbowman",
+    name: "Crossbowman",
+    cost: 2,
+    attack: 3,
+    hp: 2,
+    range: 3,
+    speed: 1,
+  }),
+
+  createCard({
+    id: "p2-raider",
+    name: "Raider",
+    cost: 3,
+    attack: 4,
+    hp: 4,
+    range: 1,
+    speed: 3,
+  }),
+],
     },
   },
 
