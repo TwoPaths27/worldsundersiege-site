@@ -848,6 +848,16 @@ function getSelectedUnit() {
   return getUnitById(GameState.selectedUnitId);
 }
 
+function getSelectedCard() {
+  const player = getActivePlayer();
+
+  return (
+    player.hand.find(
+      (card) => card.id === GameState.selectedCardId
+    ) ?? null
+  );
+}
+
 function getUnitById(unitId) {
   return (
     GameState.units.find((unit) => unit.id === unitId) ?? null
