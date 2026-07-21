@@ -167,11 +167,7 @@ createUnit({
 
 const elements = {
   battlefield: document.querySelector("#battlefield"),
-  activePlayer: document.querySelector("#activePlayer"),
   turnNumber: document.querySelector("#turnNumber"),
-
-  currentEnergy: document.querySelector("#currentEnergy"),
-  maxEnergy: document.querySelector("#maxEnergy"),
 
   // Battlefield Energy Displays
   playerCurrentEnergy: document.querySelector("#playerCurrentEnergy"),
@@ -181,6 +177,8 @@ const elements = {
 
   endTurnButton: document.querySelector("#endTurnButton"),
 
+  playerStronghold: document.querySelector("#playerStronghold"),
+  enemyStronghold: document.querySelector("#enemyStronghold"),
   playerStrongholdHP: document.querySelector("#playerStrongholdHP"),
   enemyStrongholdHP: document.querySelector("#enemyStrongholdHP"),
 
@@ -193,6 +191,11 @@ const elements = {
   handOwnerLabel: document.querySelector("#handOwnerLabel"),
   handCount: document.querySelector("#handCount"),
   hand: document.querySelector("#hand"),
+
+  exitGameButton: document.querySelector("#exitGameButton"),
+  exitModal: document.querySelector("#exitModal"),
+  cancelExitButton: document.querySelector("#cancelExitButton"),
+  confirmExitButton: document.querySelector("#confirmExitButton"),
 };
 
 initializeGame();
@@ -254,6 +257,18 @@ function validateRequiredElements() {
 function bindEvents() {
   elements.endTurnButton.addEventListener("click", endTurn);
 
+  elements.exitGameButton.addEventListener("click", openExitModal);
+  elements.cancelExitButton.addEventListener("click", closeExitModal);
+  elements.confirmExitButton.addEventListener("click", () => {
+    window.location.href = "https://worldsundersiege.com";
+  });
+
+  elements.exitModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-exit-close]")) {
+      closeExitModal();
+    }
+  });
+
   elements.toggleHandButton.addEventListener("click", () => {
     const isCollapsed =
       elements.handDock.classList.toggle("is-collapsed");
@@ -269,9 +284,26 @@ function bindEvents() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (!elements.exitModal.hidden) {
+        closeExitModal();
+        return;
+      }
+
       clearSelection();
     }
   });
+}
+
+function openExitModal() {
+  elements.exitModal.hidden = false;
+  document.body.classList.add("modal-open");
+  elements.cancelExitButton.focus();
+}
+
+function closeExitModal() {
+  elements.exitModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  elements.exitGameButton.focus();
 }
 
 function renderGame() {
@@ -285,33 +317,24 @@ function renderGame() {
 }
 
 function renderStatusBar() {
-  const activePlayer = getActivePlayer();
   const playerOne = GameState.players[1];
   const playerTwo = GameState.players[2];
 
-  elements.activePlayer.textContent = activePlayer.name;
   elements.turnNumber.textContent = String(GameState.turn);
 
-  /*
-   * Keep the existing top-bar tracker working temporarily.
-   */
-  elements.currentEnergy.textContent = String(activePlayer.energy);
-  elements.maxEnergy.textContent = String(activePlayer.maxEnergy);
+  elements.playerCurrentEnergy.textContent = String(playerOne.energy);
+  elements.playerMaxEnergy.textContent = String(playerOne.maxEnergy);
+  elements.enemyCurrentEnergy.textContent = String(playerTwo.energy);
+  elements.enemyMaxEnergy.textContent = String(playerTwo.maxEnergy);
 
-  /*
-   * Permanent battlefield Energy displays.
-   */
-  elements.playerCurrentEnergy.textContent =
-    String(playerOne.energy);
-
-  elements.playerMaxEnergy.textContent =
-    String(playerOne.maxEnergy);
-
-  elements.enemyCurrentEnergy.textContent =
-    String(playerTwo.energy);
-
-  elements.enemyMaxEnergy.textContent =
-    String(playerTwo.maxEnergy);
+  elements.playerStronghold.classList.toggle(
+    "is-active-player",
+    GameState.activePlayer === 1
+  );
+  elements.enemyStronghold.classList.toggle(
+    "is-active-player",
+    GameState.activePlayer === 2
+  );
 }
 function renderBattlefield() {
   elements.battlefield.replaceChildren();

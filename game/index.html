@@ -14,45 +14,6 @@
 </head>
 
 <body>
-  <header class="game-header">
-    <div class="game-header__group">
-      <div class="status-box">
-        <span class="status-box__label">Active Player</span>
-        <strong id="activePlayer">Player 1</strong>
-      </div>
-
-      <div class="status-box">
-        <span class="status-box__label">Turn</span>
-        <strong id="turnNumber">1</strong>
-      </div>
-    </div>
-
-    <div class="game-title">
-      <a class="game-title__back" href="../index.html">
-        ← Main Site
-      </a>
-
-      <h1>Worlds Under Siege</h1>
-      <p>Gameplay Prototype</p>
-    </div>
-
-    <div class="game-header__group game-header__group--right">
-      <div class="status-box">
-        <span class="status-box__label">Energy</span>
-
-        <strong>
-          <span id="currentEnergy">1</span>
-          /
-          <span id="maxEnergy">1</span>
-        </strong>
-      </div>
-
-      <button id="endTurnButton" class="primary-button" type="button">
-        End Turn
-      </button>
-    </div>
-  </header>
-
   <main class="game-layout">
     <aside class="side-panel">
       <section class="panel-card">
@@ -60,6 +21,12 @@
 
         <div id="selectedUnitPanel" class="empty-panel">
           Select one of your Units.
+        </div>
+
+        <div class="selected-unit-actions">
+          <button id="endTurnButton" class="primary-button" type="button">
+            End Turn
+          </button>
         </div>
       </section>
 
@@ -224,10 +191,6 @@
   </div>
 
 </div>
-      <strong>Your Event</strong>
-      <span>Empty</span>
-    </button>
-
     <!-- Player Armies -->
     <div class="army-zones army-zones--player">
       <button
@@ -334,6 +297,11 @@
       <section class="panel-card">
         <h2>Controls</h2>
 
+        <div class="turn-indicator">
+          <span>Turn</span>
+          <strong id="turnNumber">1</strong>
+        </div>
+
         <div class="controls-help">
           <p>
             <strong>Select:</strong>
@@ -380,6 +348,36 @@
     </div>
   </div>
 </section>
+
+  <button id="exitGameButton" class="exit-game-button" type="button">
+    <span aria-hidden="true">✕</span> Exit
+  </button>
+
+  <div id="exitModal" class="exit-modal" hidden>
+    <div class="exit-modal__backdrop" data-exit-close></div>
+
+    <section
+      class="exit-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="exitModalTitle"
+      aria-describedby="exitModalMessage"
+    >
+      <h2 id="exitModalTitle">Leave Match?</h2>
+      <p id="exitModalMessage">
+        Are you sure you want to quit and go to the homepage?
+      </p>
+
+      <div class="exit-modal__actions">
+        <button id="cancelExitButton" class="modal-button modal-button--cancel" type="button">
+          No
+        </button>
+        <button id="confirmExitButton" class="modal-button modal-button--confirm" type="button">
+          Yes
+        </button>
+      </div>
+    </section>
+  </div>
 
   <noscript>
     <div class="noscript-message">

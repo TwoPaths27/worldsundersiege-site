@@ -1740,3 +1740,190 @@ body {
     --army-tile-size: clamp(36px, 5.25vh, 46px);
   }
 }
+
+/* =========================================================
+   Minimal Match HUD, Active Stronghold, and Exit Confirmation
+========================================================= */
+
+:root {
+  --top-bar-height: 0px;
+}
+
+.game-header {
+  display: none !important;
+}
+
+.game-layout {
+  height: calc(100dvh - var(--hand-height));
+}
+
+.selected-unit-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.selected-unit-actions .primary-button {
+  width: 100%;
+  padding: 10px 14px;
+}
+
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border: 1px solid #555d6d;
+  border-radius: 8px;
+  background: #242832;
+}
+
+.turn-indicator span {
+  color: #bfc5d0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.turn-indicator strong {
+  font-size: 20px;
+}
+
+.stronghold {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.stronghold--player.is-active-player {
+  border-color: #72b7ff;
+  box-shadow:
+    0 0 0 2px rgba(114, 183, 255, 0.35),
+    0 0 22px rgba(56, 145, 255, 0.9);
+  filter: brightness(1.12);
+}
+
+.stronghold--enemy.is-active-player {
+  border-color: #ff7777;
+  box-shadow:
+    0 0 0 2px rgba(255, 119, 119, 0.35),
+    0 0 22px rgba(230, 56, 56, 0.9);
+  filter: brightness(1.12);
+}
+
+.exit-game-button {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 120;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 9px 13px;
+  color: #fff;
+  background: #a92e35;
+  border: 1px solid #ff737a;
+  border-radius: 8px;
+
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45);
+}
+
+.exit-game-button:hover,
+.exit-game-button:focus-visible {
+  background: #c23a42;
+  border-color: #fff;
+}
+
+.exit-modal[hidden] {
+  display: none;
+}
+
+.exit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.exit-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.78);
+  backdrop-filter: blur(3px);
+}
+
+.exit-modal__dialog {
+  position: relative;
+  width: min(92vw, 420px);
+  padding: 24px;
+  background: #292d37;
+  border: 2px solid #626978;
+  border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65);
+  text-align: center;
+}
+
+.exit-modal__dialog h2 {
+  margin-bottom: 10px;
+}
+
+.exit-modal__dialog p {
+  color: #d2d6de;
+  line-height: 1.5;
+}
+
+.exit-modal__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.modal-button {
+  min-width: 100px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modal-button--cancel {
+  background: #414754;
+  border: 1px solid #747d8e;
+}
+
+.modal-button--confirm {
+  background: #a92e35;
+  border: 1px solid #ff737a;
+}
+
+.modal-button:hover,
+.modal-button:focus-visible {
+  border-color: #fff;
+  filter: brightness(1.12);
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 0px;
+  }
+
+  .game-layout {
+    height: calc(100dvh - var(--hand-height));
+  }
+}
