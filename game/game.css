@@ -1,1 +1,417 @@
+/* ===========================
+   Worlds Under Siege
+   Gameplay Prototype
+=========================== */
 
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:#1c1d22;
+    color:#f5f5f5;
+
+    font-family:Arial,Helvetica,sans-serif;
+
+}
+
+/* ===========================
+   Header
+=========================== */
+
+.game-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px 24px;
+
+    background:#272a31;
+
+    border-bottom:2px solid #444;
+
+}
+
+.game-header__group{
+
+    display:flex;
+
+    gap:16px;
+
+    align-items:center;
+
+}
+
+.status-box{
+
+    background:#353842;
+
+    padding:10px 14px;
+
+    border-radius:8px;
+
+    min-width:110px;
+
+    text-align:center;
+
+}
+
+.status-box__label{
+
+    display:block;
+
+    font-size:12px;
+
+    color:#bbb;
+
+    margin-bottom:4px;
+
+}
+
+.game-title{
+
+    text-align:center;
+
+}
+
+.game-title h1{
+
+    font-size:30px;
+
+}
+
+.game-title p{
+
+    color:#bfbfbf;
+
+    margin-top:4px;
+
+}
+
+.game-title__back{
+
+    color:#7dc4ff;
+
+    text-decoration:none;
+
+    font-size:14px;
+
+}
+
+.primary-button{
+
+    background:#2f74ff;
+
+    color:white;
+
+    border:none;
+
+    padding:12px 18px;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+}
+
+.primary-button:hover{
+
+    background:#4b88ff;
+
+}
+
+/* ===========================
+   Main Layout
+=========================== */
+
+.game-layout{
+
+    display:grid;
+
+    grid-template-columns:250px 1fr 250px;
+
+    gap:20px;
+
+    padding:20px;
+
+}
+
+/* ===========================
+   Panels
+=========================== */
+
+.side-panel{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.panel-card{
+
+    background:#2b2e37;
+
+    border:2px solid #454851;
+
+    border-radius:10px;
+
+    padding:16px;
+
+}
+
+.panel-card h2{
+
+    margin-bottom:12px;
+
+}
+
+.empty-panel{
+
+    color:#bfbfbf;
+
+    min-height:140px;
+
+}
+
+.game-log{
+
+    font-size:14px;
+
+    line-height:1.5;
+
+}
+
+/* ===========================
+   Battlefield
+=========================== */
+
+.battlefield-column{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.stronghold{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px;
+
+    border-radius:10px;
+
+    border:2px solid #666;
+
+}
+
+.stronghold--enemy{
+
+    background:#5a2d2d;
+
+}
+
+.stronghold--player{
+
+    background:#295737;
+
+}
+
+.stronghold__owner{
+
+    display:block;
+
+    font-size:13px;
+
+    color:#ddd;
+
+}
+
+.recruiting-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.recruiting-spaces{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.recruiting-space{
+
+    width:70px;
+
+    height:70px;
+
+    border:2px dashed #777;
+
+    border-radius:10px;
+
+    background:#30333b;
+
+}
+
+/* ===========================
+   Battlefield Grid
+=========================== */
+
+.battlefield{
+
+    display:grid;
+
+    grid-template-columns:repeat(6,90px);
+
+    grid-template-rows:repeat(7,90px);
+
+    gap:6px;
+
+    justify-content:center;
+
+}
+
+.battlefield-cell{
+
+    background:#4b4f58;
+
+    border:2px solid #6b707a;
+
+    border-radius:8px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    transition:.2s;
+
+    cursor:pointer;
+
+}
+
+.battlefield-cell:hover{
+
+    border-color:#ffffff;
+
+}
+
+/* Future highlights */
+
+.cell-selected{
+
+    border-color:gold;
+
+}
+
+.cell-move{
+
+    background:#2859d9;
+
+}
+
+.cell-attack{
+
+    background:#9b2b2b;
+
+}
+
+/* ===========================
+   Hand
+=========================== */
+
+.hand-section{
+
+    padding:20px;
+
+}
+
+.hand-section__header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:14px;
+
+}
+
+.hand{
+
+    display:flex;
+
+    gap:12px;
+
+    min-height:180px;
+
+    overflow-x:auto;
+
+}
+
+/* Placeholder card */
+
+.hand-card{
+
+    width:120px;
+
+    height:170px;
+
+    background:#3b3e47;
+
+    border:2px solid #777;
+
+    border-radius:10px;
+
+}
+
+/* ===========================
+   Responsive
+=========================== */
+
+@media (max-width:1100px){
+
+.game-layout{
+
+grid-template-columns:1fr;
+
+}
+
+.side-panel{
+
+order:2;
+
+}
+
+.battlefield-column{
+
+order:1;
+
+}
+
+}
