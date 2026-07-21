@@ -96,8 +96,8 @@ const GameState = {
 
     2: {
       name: "Player 2",
-      energy: 1,
-      maxEnergy: 1,
+      energy: 0,
+      maxEnergy: 0,
       strongholdHP: 30,
       hand: [
   createCard({
