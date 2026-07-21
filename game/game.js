@@ -100,9 +100,11 @@ const elements = {
   cardPreview: document.querySelector("#cardPreview"),
   gameLog: document.querySelector("#gameLog"),
 
-  handOwnerLabel: document.querySelector("#handOwnerLabel"),
-  handCount: document.querySelector("#handCount"),
-  hand: document.querySelector("#hand"),
+  handDock: document.querySelector("#handDock"),
+toggleHandButton: document.querySelector("#toggleHandButton"),
+handOwnerLabel: document.querySelector("#handOwnerLabel"),
+handCount: document.querySelector("#handCount"),
+hand: document.querySelector("#hand"),
 };
 
 initializeGame();
@@ -163,6 +165,19 @@ function validateRequiredElements() {
 
 function bindEvents() {
   elements.endTurnButton.addEventListener("click", endTurn);
+
+  elements.toggleHandButton.addEventListener("click", () => {
+    const isCollapsed =
+      elements.handDock.classList.toggle("is-collapsed");
+
+    elements.toggleHandButton.setAttribute(
+      "aria-expanded",
+      String(!isCollapsed)
+    );
+
+    elements.toggleHandButton.textContent =
+      isCollapsed ? "Show Hand" : "Hand";
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
