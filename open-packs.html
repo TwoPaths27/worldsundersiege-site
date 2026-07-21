@@ -75,6 +75,16 @@
         <div class="box-packs-counter"><strong id="boxPacksRemaining">24</strong><span> / 24 Packs Remaining</span></div>
         <div class="box-packs-track"><span id="boxPacksTrackFill"></span></div>
         <div id="boxPackGrid" class="box-pack-grid" aria-label="Booster packs remaining"></div>
+        <div class="box-packs-actions">
+          <button id="openAllPacksButton" class="primary-button" type="button">Open All Remaining Packs</button>
+        </div>
+        <div id="openAllOverlay" class="open-all-overlay" hidden aria-live="polite">
+          <p class="eyebrow">Booster Box</p>
+          <h2 id="openAllStatus">Opening remaining packs…</h2>
+          <div id="openAllAnimation" class="open-all-animation" aria-hidden="true"></div>
+          <div class="open-all-progress"><span id="openAllProgressFill"></span></div>
+          <p id="openAllProgressText">0 / 0 packs opened</p>
+        </div>
       </section>
     </section>
 
