@@ -1566,3 +1566,126 @@ body {
     transform: translateY(-9px) scale(1.08);
   }
 }
+
+/* =========================================================
+   Clipping Correction Pass
+   Keeps complete pile/army rows visible and gives the hand
+   enough internal headroom on laptop-height screens.
+========================================================= */
+
+/* The top and bottom stage rows contain two-row pile groups,
+   so they must be taller than a single battlefield cell. */
+.battlefield-stage {
+  grid-template-rows:
+    calc(var(--battlefield-cell-size) * 1.55)
+    calc(var(--battlefield-cell-size) * 6 + var(--screen-gap) * 5)
+    calc(var(--battlefield-cell-size) * 1.55);
+}
+
+/* Prevent labels beneath army slots from being clipped. */
+.army-zones,
+.zone-group,
+.stronghold-lane {
+  overflow: visible;
+}
+
+.game-zone--army,
+.game-zone--pile {
+  line-height: 1.05;
+}
+
+/* On desktop, let raised cards extend upward freely. Using
+   overflow-x:auto forces overflow-y to become auto as well,
+   which was clipping the tops of the cards. */
+.hand-fan {
+  overflow: visible;
+  padding-top: 24px;
+}
+
+.hand-panel {
+  overflow: visible;
+}
+
+@media (max-height: 820px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 54px;
+    --hand-height: 146px;
+    --battlefield-cell-size: min(7vh, 5.5vw, 58px);
+    --screen-gap: 4px;
+  }
+
+  .battlefield-stage {
+    grid-template-rows:
+      calc(var(--battlefield-cell-size) * 1.55)
+      calc(var(--battlefield-cell-size) * 6 + var(--screen-gap) * 5)
+      calc(var(--battlefield-cell-size) * 1.55);
+  }
+
+  .zone-group {
+    gap: 3px;
+  }
+
+  .game-zone--pile,
+  .game-zone--army {
+    padding: 2px;
+    font-size: clamp(7px, 1vh, 10px);
+  }
+
+  .game-zone--pile span {
+    margin-top: 2px;
+    font-size: clamp(7px, 0.95vh, 10px);
+  }
+
+  .hand-panel {
+    height: calc(var(--hand-height) - 25px);
+    padding-top: 4px;
+  }
+
+  .hand-panel__header {
+    height: 24px;
+    min-height: 24px;
+  }
+
+  .hand-fan {
+    height: calc(100% - 24px);
+    min-height: 0;
+    padding: 20px 16px 2px;
+    overflow: visible;
+  }
+
+  .hand-card {
+    width: clamp(58px, 6.8vh, 74px);
+    height: clamp(82px, 9.4vh, 102px);
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    transform: translateY(-8px) scale(1.08);
+  }
+}
+
+@media (max-height: 700px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 50px;
+    --hand-height: 132px;
+    --battlefield-cell-size: min(6.55vh, 5.15vw, 54px);
+    --screen-gap: 3px;
+  }
+
+  .battlefield-stage {
+    grid-template-rows:
+      calc(var(--battlefield-cell-size) * 1.5)
+      calc(var(--battlefield-cell-size) * 6 + var(--screen-gap) * 5)
+      calc(var(--battlefield-cell-size) * 1.5);
+  }
+
+  .hand-fan {
+    padding-top: 17px;
+  }
+
+  .hand-card {
+    width: clamp(54px, 6.3vh, 68px);
+    height: clamp(76px, 8.8vh, 94px);
+  }
+}
