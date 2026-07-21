@@ -15,8 +15,20 @@
  * - End Turn
  */
 
-const BOARD_COLUMNS = 6;
-const BOARD_ROWS = 7;
+const BOARD_COLUMNS = 7;
+const BOARD_ROWS = 6;
+
+const ENEMY_RECRUITING_SPACES = new Set([
+  "2,0",
+  "3,0",
+  "4,0",
+]);
+
+const PLAYER_RECRUITING_SPACES = new Set([
+  "2,5",
+  "3,5",
+  "4,5",
+]);
 
 const GameState = {
   turn: 1,
@@ -44,30 +56,30 @@ const GameState = {
 
   units: [
     createUnit({
-      id: "player-1-knight",
-      name: "Knight",
-      owner: 1,
-      x: 2,
-      y: 5,
-      attack: 3,
-      hp: 6,
-      range: 1,
-      speed: 3,
-      cost: 2,
-    }),
+  id: "player-1-knight",
+  name: "Knight",
+  owner: 1,
+  x: 3,
+  y: 5,
+  attack: 3,
+  hp: 6,
+  range: 1,
+  speed: 3,
+  cost: 2,
+}),
 
-    createUnit({
-      id: "player-2-guard",
-      name: "Guard",
-      owner: 2,
-      x: 3,
-      y: 1,
-      attack: 2,
-      hp: 7,
-      range: 1,
-      speed: 2,
-      cost: 2,
-    }),
+createUnit({
+  id: "player-2-guard",
+  name: "Guard",
+  owner: 2,
+  x: 3,
+  y: 0,
+  attack: 2,
+  hp: 7,
+  range: 1,
+  speed: 2,
+  cost: 2,
+}),
   ],
 
   log: ["Battlefield initialized."],
@@ -205,6 +217,15 @@ function createBattlefieldCell(x, y) {
   const selectedUnit = getSelectedUnit();
   const coordinateKey = getCoordinateKey(x, y);
   const moveDistance = GameState.reachableSpaces.get(coordinateKey);
+  if (ENEMY_RECRUITING_SPACES.has(coordinateKey)) {
+  cell.classList.add("cell-recruit-enemy");
+  cell.dataset.recruitOwner = "2";
+}
+
+if (PLAYER_RECRUITING_SPACES.has(coordinateKey)) {
+  cell.classList.add("cell-recruit-player");
+  cell.dataset.recruitOwner = "1";
+}
 
   if (occupant) {
     cell.appendChild(createUnitToken(occupant));
