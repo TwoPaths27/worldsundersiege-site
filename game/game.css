@@ -1689,3 +1689,54 @@ body {
     height: clamp(76px, 8.8vh, 94px);
   }
 }
+
+/* =========================================================
+   Army Tile Polish
+   Make Army slots compact tiles instead of tall narrow bars.
+========================================================= */
+
+.army-zones {
+  align-self: center;
+  justify-self: center;
+  grid-template-columns: repeat(3, var(--army-tile-size));
+  grid-auto-rows: var(--army-tile-size);
+  width: max-content;
+  height: max-content;
+  gap: clamp(4px, 0.55vh, 7px);
+}
+
+:root {
+  --army-tile-size: clamp(46px, 6.2vh, 64px);
+}
+
+.game-zone--army {
+  width: var(--army-tile-size);
+  height: var(--army-tile-size);
+  min-width: var(--army-tile-size);
+  min-height: var(--army-tile-size);
+  padding: 5px 3px;
+  border-radius: 8px;
+  font-size: clamp(8px, 1.05vh, 11px);
+  line-height: 1.05;
+}
+
+/* Remove the visible Event label text that was appearing beneath the Armies. */
+.game-zone--event {
+  font-size: 0;
+}
+
+.game-zone--event span {
+  display: none;
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  :root {
+    --army-tile-size: clamp(40px, 5.7vh, 52px);
+  }
+}
+
+@media (max-height: 680px) and (min-width: 761px) {
+  :root {
+    --army-tile-size: clamp(36px, 5.25vh, 46px);
+  }
+}
