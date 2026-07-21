@@ -206,42 +206,50 @@ body{
 
 }
 
-.stronghold{
+/* ===========================
+   Strongholds
+=========================== */
 
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    padding:16px;
-
-    border-radius:10px;
-
-    border:2px solid #666;
-
+.stronghold-lane {
+  display: grid;
+  grid-template-columns: repeat(7, 90px);
+  gap: 6px;
+  justify-content: center;
 }
 
-.stronghold--enemy{
+.stronghold {
+  grid-column: 3 / 6;
 
-    background:#5a2d2d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
+  min-height: 110px;
+  padding: 16px;
+
+  border: 2px solid #666;
+  border-radius: 10px;
 }
 
-.stronghold--player{
-
-    background:#295737;
-
+.stronghold--enemy {
+  background: rgba(90, 45, 45, 0.85);
 }
 
-.stronghold__owner{
+.stronghold--player {
+  background: rgba(41, 87, 55, 0.85);
+}
 
-    display:block;
+.stronghold__owner {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #ddd;
+}
 
-    font-size:13px;
-
-    color:#ddd;
-
+.stronghold__health {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 
@@ -406,4 +414,26 @@ order:1;
   }
 }
 
+}
+@media (max-width: 760px) {
+  .battlefield-column {
+    overflow-x: auto;
+  }
+
+  .battlefield {
+    grid-template-columns: repeat(7, 68px);
+    grid-template-rows: repeat(6, 68px);
+    min-width: max-content;
+    justify-content: start;
+  }
+
+  .stronghold-lane {
+    grid-template-columns: repeat(7, 68px);
+    min-width: max-content;
+    justify-content: start;
+  }
+
+  .stronghold {
+    min-height: 90px;
+  }
 }
