@@ -168,8 +168,16 @@ const elements = {
   battlefield: document.querySelector("#battlefield"),
   activePlayer: document.querySelector("#activePlayer"),
   turnNumber: document.querySelector("#turnNumber"),
+
   currentEnergy: document.querySelector("#currentEnergy"),
   maxEnergy: document.querySelector("#maxEnergy"),
+
+  // Battlefield Energy Displays
+  playerCurrentEnergy: document.querySelector("#playerCurrentEnergy"),
+  playerMaxEnergy: document.querySelector("#playerMaxEnergy"),
+  enemyCurrentEnergy: document.querySelector("#enemyCurrentEnergy"),
+  enemyMaxEnergy: document.querySelector("#enemyMaxEnergy"),
+
   endTurnButton: document.querySelector("#endTurnButton"),
 
   playerStrongholdHP: document.querySelector("#playerStrongholdHP"),
@@ -180,10 +188,10 @@ const elements = {
   gameLog: document.querySelector("#gameLog"),
 
   handDock: document.querySelector("#handDock"),
-toggleHandButton: document.querySelector("#toggleHandButton"),
-handOwnerLabel: document.querySelector("#handOwnerLabel"),
-handCount: document.querySelector("#handCount"),
-hand: document.querySelector("#hand"),
+  toggleHandButton: document.querySelector("#toggleHandButton"),
+  handOwnerLabel: document.querySelector("#handOwnerLabel"),
+  handCount: document.querySelector("#handCount"),
+  hand: document.querySelector("#hand"),
 };
 
 initializeGame();
@@ -277,13 +285,33 @@ function renderGame() {
 
 function renderStatusBar() {
   const activePlayer = getActivePlayer();
+  const playerOne = GameState.players[1];
+  const playerTwo = GameState.players[2];
 
   elements.activePlayer.textContent = activePlayer.name;
   elements.turnNumber.textContent = String(GameState.turn);
+
+  /*
+   * Keep the existing top-bar tracker working temporarily.
+   */
   elements.currentEnergy.textContent = String(activePlayer.energy);
   elements.maxEnergy.textContent = String(activePlayer.maxEnergy);
-}
 
+  /*
+   * Permanent battlefield Energy displays.
+   */
+  elements.playerCurrentEnergy.textContent =
+    String(playerOne.energy);
+
+  elements.playerMaxEnergy.textContent =
+    String(playerOne.maxEnergy);
+
+  elements.enemyCurrentEnergy.textContent =
+    String(playerTwo.energy);
+
+  elements.enemyMaxEnergy.textContent =
+    String(playerTwo.maxEnergy);
+}
 function renderBattlefield() {
   elements.battlefield.replaceChildren();
 
