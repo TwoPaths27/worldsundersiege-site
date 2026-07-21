@@ -1355,3 +1355,6 @@ body {
       minmax(115px, 15vw);
   }
 }
+.hand-fan {
+  justify-content: safe center;
+}
