@@ -36,7 +36,7 @@
           </div>
           <div class="asset-progress" id="assetProgress" hidden>
             <div class="asset-progress-bar"><span id="assetProgressFill"></span></div>
-            <span id="assetProgressText">0 / 230</span>
+            <span id="assetProgressText">0 / 227</span>
           </div>
           <details id="assetErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetErrorList"></pre></details>
         </div>
@@ -75,16 +75,6 @@
         <div class="box-packs-counter"><strong id="boxPacksRemaining">24</strong><span> / 24 Packs Remaining</span></div>
         <div class="box-packs-track"><span id="boxPacksTrackFill"></span></div>
         <div id="boxPackGrid" class="box-pack-grid" aria-label="Booster packs remaining"></div>
-        <div class="box-packs-actions">
-          <button id="openAllPacksButton" class="primary-button" type="button">Open All Remaining Packs</button>
-        </div>
-        <div id="openAllOverlay" class="open-all-overlay" hidden aria-live="polite">
-          <p class="eyebrow">Opening Booster Box</p>
-          <h2 id="openAllStatus">Opening all remaining packs…</h2>
-          <div id="openAllAnimation" class="open-all-animation" aria-hidden="true"></div>
-          <div class="open-all-progress"><span id="openAllProgressFill"></span></div>
-          <p id="openAllProgressText">0 / 24 packs opened</p>
-        </div>
       </section>
     </section>
 
@@ -110,7 +100,8 @@
         </div>
         <div class="pack-actions">
           <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack · 200 Gold</button>
-          <a class="secondary-button button-link" href="deck-builder.html">Go to Deck Builder</a>
+          <button id="returnToPacksButton" class="secondary-button" type="button" hidden>Return to Packs</button>
+          <button id="openNextPackButton" class="primary-button" type="button" hidden>Open Next Pack</button>
         </div>
       </section>
     </section>
@@ -152,11 +143,11 @@
     <div class="asset-gate-card panel">
       <p class="eyebrow">Game Resources</p>
       <h1 id="assetGateTitle">Download Battle of Ages Images</h1>
-      <p>Worlds Under Siege stores the 230 card images on this device so packs, decks, and matches load quickly.</p>
+      <p>Worlds Under Siege stores the 227 card images on this device so packs, decks, and matches load quickly.</p>
       <p id="assetGateStatus" class="asset-warning">Checking installed images…</p>
       <div class="asset-progress" id="assetGateProgress" hidden>
         <div class="asset-progress-bar"><span id="assetGateProgressFill"></span></div>
-        <span id="assetGateProgressText">0 / 230</span>
+        <span id="assetGateProgressText">0 / 227</span>
       </div>
       <button id="assetGateDownload" class="primary-button" type="button">Download Images</button>
       <details id="assetGateErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetGateErrorList"></pre></details>
