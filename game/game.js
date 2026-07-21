@@ -53,6 +53,7 @@ const GameState = {
   turn: 1,
   activePlayer: 1,
   selectedUnitId: null,
+  selectedCardId: null,
   reachableSpaces: new Map(),
 
   players: {
