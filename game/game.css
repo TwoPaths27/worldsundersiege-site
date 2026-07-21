@@ -580,10 +580,6 @@ body{
    Arena-Style Hand
 =========================== */
 
-body {
-  padding-bottom: 210px;
-}
-
 .hand-dock {
   position: fixed;
   left: 0;
@@ -891,9 +887,6 @@ order:1;
   }
 }
 
-body {
-  padding-bottom: 175px;
-}
 
 .hand-panel {
   min-height: 150px;
@@ -922,4 +915,443 @@ body {
 .hand-card.is-selected {
   margin-right: 10px;
   transform: translateY(-18px) scale(1.22);
+}
+/* =========================================================
+   Full-Screen Desktop Game Layout
+   Keep this section at the bottom of game.css.
+========================================================= */
+
+:root {
+  --top-bar-height: clamp(48px, 7vh, 68px);
+  --hand-height: clamp(130px, 20vh, 190px);
+  --screen-gap: clamp(4px, 0.7vh, 10px);
+
+  /*
+   * Cell size is limited by both screen height and width.
+   * Height matters most because the board has six rows.
+   */
+  --battlefield-cell-size: min(
+    8.2vh,
+    7.2vw,
+    82px
+  );
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/*
+ * Replace .game-page with your outermost gameplay wrapper
+ * only when your HTML uses a different class name.
+ */
+.game-page {
+  display: grid;
+  grid-template-rows: var(--top-bar-height) minmax(0, 1fr);
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Header/status area */
+
+.game-header,
+.status-bar {
+  min-height: 0;
+  max-height: var(--top-bar-height);
+}
+
+/*
+ * The main game area ends above the hand.
+ * This prevents the hand from covering the player zones.
+ */
+.game-layout {
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 18vw)
+    minmax(0, 1fr)
+    minmax(150px, 18vw);
+
+  gap: var(--screen-gap);
+
+  width: 100%;
+  height: calc(
+    100dvh -
+    var(--top-bar-height) -
+    var(--hand-height)
+  );
+
+  min-height: 0;
+  padding: var(--screen-gap);
+
+  overflow: hidden;
+}
+
+/* Side information panels */
+
+.game-sidebar,
+.sidebar,
+.left-panel,
+.right-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+/*
+ * The page itself never scrolls. A long game log may scroll
+ * inside its own panel instead.
+ */
+#gameLog {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* =========================================================
+   Battlefield Area
+========================================================= */
+
+.battlefield-column {
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  padding: 0;
+  overflow: hidden;
+}
+
+.battlefield-stage {
+  display: grid;
+
+  grid-template-columns:
+    calc(var(--battlefield-cell-size) * 1.65)
+    calc(var(--battlefield-cell-size) * 7 + var(--screen-gap) * 6)
+    calc(var(--battlefield-cell-size) * 1.65);
+
+  grid-template-rows:
+    calc(var(--battlefield-cell-size) * 1.05)
+    calc(var(--battlefield-cell-size) * 6 + var(--screen-gap) * 5)
+    calc(var(--battlefield-cell-size) * 1.05);
+
+  grid-template-areas:
+    "enemy-piles enemy-stronghold enemy-armies"
+    "enemy-event battlefield player-event"
+    "player-armies player-stronghold player-piles";
+
+  gap: var(--screen-gap);
+  align-items: center;
+  justify-content: center;
+
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Battlefield grid */
+
+.battlefield {
+  grid-area: battlefield;
+
+  display: grid;
+  grid-template-columns:
+    repeat(7, var(--battlefield-cell-size));
+  grid-template-rows:
+    repeat(6, var(--battlefield-cell-size));
+
+  gap: var(--screen-gap);
+
+  width: max-content;
+  height: max-content;
+  min-width: 0;
+}
+
+/* Battlefield spaces */
+
+.battlefield-cell {
+  box-sizing: border-box;
+
+  width: var(--battlefield-cell-size);
+  height: var(--battlefield-cell-size);
+  min-width: 0;
+  min-height: 0;
+
+  padding: clamp(2px, 0.4vh, 6px);
+  overflow: hidden;
+}
+
+/* Unit tokens scale with the spaces */
+
+.battlefield-cell [data-unit-id] {
+  box-sizing: border-box;
+  font-size: clamp(8px, 1.1vh, 12px) !important;
+  padding: clamp(2px, 0.5vh, 6px) !important;
+}
+
+/* =========================================================
+   Strongholds
+========================================================= */
+
+.stronghold-lane {
+  display: grid;
+  grid-template-columns:
+    repeat(7, var(--battlefield-cell-size));
+
+  gap: var(--screen-gap);
+
+  width: max-content;
+  min-width: 0;
+}
+
+.stronghold {
+  grid-column: 3 / 6;
+
+  box-sizing: border-box;
+
+  min-width: 0;
+  min-height: 0;
+  height: calc(var(--battlefield-cell-size) * 1.05);
+
+  padding: clamp(5px, 0.8vh, 12px);
+
+  font-size: clamp(10px, 1.4vh, 15px);
+  overflow: hidden;
+}
+
+.stronghold__owner {
+  font-size: clamp(8px, 1.1vh, 12px);
+}
+
+/* =========================================================
+   Deck, Discard, Banish, Army, and Event Zones
+========================================================= */
+
+.zone-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+
+  gap: clamp(3px, 0.4vh, 6px);
+
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.army-zones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: clamp(3px, 0.4vh, 6px);
+
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.game-zone {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.game-zone--pile,
+.game-zone--army {
+  width: 100%;
+  height: 100%;
+
+  padding: clamp(2px, 0.4vh, 6px);
+
+  font-size: clamp(8px, 1.1vh, 12px);
+}
+
+.game-zone--event {
+  box-sizing: border-box;
+
+  width: calc(var(--battlefield-cell-size) * 1.3);
+  height: calc(var(--battlefield-cell-size) * 1.65);
+  min-width: 0;
+  min-height: 0;
+
+  padding: clamp(3px, 0.6vh, 8px);
+
+  font-size: clamp(8px, 1.15vh, 12px);
+}
+
+/* Preserve stage positions */
+
+.zone-group--enemy-piles {
+  grid-area: enemy-piles;
+}
+
+.stronghold-lane--enemy {
+  grid-area: enemy-stronghold;
+}
+
+.army-zones--enemy {
+  grid-area: enemy-armies;
+}
+
+#enemyEventZone {
+  grid-area: enemy-event;
+}
+
+#playerEventZone {
+  grid-area: player-event;
+}
+
+.army-zones--player {
+  grid-area: player-armies;
+}
+
+.stronghold-lane--player {
+  grid-area: player-stronghold;
+}
+
+.zone-group--player-piles {
+  grid-area: player-piles;
+}
+
+/* =========================================================
+   Hand
+========================================================= */
+
+.hand-dock {
+  position: fixed;
+  z-index: 50;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 100%;
+  height: var(--hand-height);
+
+  overflow: visible;
+  pointer-events: none;
+}
+
+.hand-panel {
+  box-sizing: border-box;
+
+  width: min(100%, 1180px);
+  height: calc(var(--hand-height) - 25px);
+  min-height: 0;
+
+  padding:
+    clamp(4px, 0.6vh, 9px)
+    clamp(8px, 1.4vw, 20px);
+
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.hand-panel__header {
+  min-height: 24px;
+  height: clamp(28px, 4vh, 38px);
+  margin: 0;
+}
+
+.hand-panel__header h2 {
+  font-size: clamp(12px, 1.6vh, 16px);
+}
+
+.hand-fan {
+  box-sizing: border-box;
+
+  min-height: 0;
+  height: calc(100% - 38px);
+
+  padding: 4px 24px 0;
+
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.hand-card {
+  flex: 0 0 auto;
+
+  width: clamp(62px, 7.5vh, 92px);
+  height: clamp(88px, 10.5vh, 128px);
+
+  margin-left: clamp(-18px, -1.3vw, -8px);
+}
+
+.hand-card:hover,
+.hand-card:focus-visible,
+.hand-card.is-selected {
+  transform:
+    translateY(clamp(-26px, -3vh, -16px))
+    scale(1.18);
+}
+
+/* Collapsed hand only leaves its button visible */
+
+.hand-dock.is-collapsed {
+  height: 28px;
+}
+
+.hand-dock.is-collapsed .hand-panel {
+  display: none;
+}
+
+/* =========================================================
+   Short Laptop Screens
+========================================================= */
+
+@media (max-height: 760px) and (min-width: 761px) {
+  :root {
+    --top-bar-height: 46px;
+    --hand-height: 126px;
+    --battlefield-cell-size: min(7.7vh, 6.3vw, 68px);
+  }
+
+  .game-layout {
+    grid-template-columns:
+      minmax(125px, 16vw)
+      minmax(0, 1fr)
+      minmax(125px, 16vw);
+  }
+
+  .hand-panel__header {
+    height: 28px;
+  }
+
+  .hand-fan {
+    height: calc(100% - 28px);
+  }
+}
+
+/* =========================================================
+   Narrow Desktop Windows
+========================================================= */
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  :root {
+    --battlefield-cell-size: min(7.8vh, 6vw, 68px);
+  }
+
+  .game-layout {
+    grid-template-columns:
+      minmax(115px, 15vw)
+      minmax(0, 1fr)
+      minmax(115px, 15vw);
+  }
 }
