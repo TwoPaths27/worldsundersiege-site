@@ -3113,3 +3113,146 @@ body.is-game-animating .hand-dock__toggle {
     min-height: 38px;
   }
 }
+
+/* =========================================================
+   Screen-fit HUD correction
+   - Sidebars use the full viewport height.
+   - Only the center battlefield reserves room for the hand.
+   - Chat is anchored to the lower-left.
+   - The hand displays full-size cards without clipping.
+========================================================= */
+
+@media (min-width: 761px) {
+  :root {
+    --hand-height: clamp(176px, 23vh, 190px);
+    --battlefield-cell-size: min(7.45vh, 5.45vw, 68px);
+  }
+
+  /* Let chat and match history reach the bottom of the screen. */
+  .game-layout {
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: var(--screen-gap);
+  }
+
+  /* Reserve the hand's space only beneath the center play area. */
+  .battlefield-column {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    padding-bottom: var(--hand-height);
+    overflow: hidden;
+  }
+
+  .battlefield-stage {
+    max-height: 100%;
+  }
+
+  /* Keep the Selected Unit box at the top and pin chat to the bottom. */
+  .game-layout > .side-panel:first-of-type > .panel-card:first-child {
+    flex: 0 0 auto;
+  }
+
+  .chat-panel {
+    flex: 0 0 clamp(270px, 43vh, 410px);
+    min-height: 220px;
+    margin-top: auto;
+    margin-bottom: 0;
+  }
+
+  /* The right log uses every pixel beneath the enlarged preview. */
+  .game-layout > .side-panel:last-of-type > .panel-card:first-child {
+    flex-basis: clamp(260px, 45vh, 410px);
+  }
+
+  .match-history-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 56px; /* keeps the last log line clear of Exit */
+  }
+
+  /* Center-only hand, with enough room for the original card dimensions. */
+  .hand-dock {
+    left: calc(var(--hud-side-width) + var(--screen-gap) * 2);
+    right: calc(var(--hud-side-width) + var(--screen-gap) * 2);
+    bottom: 0;
+    width: auto;
+    height: var(--hand-height);
+    overflow: visible;
+  }
+
+  .hand-panel {
+    box-sizing: border-box;
+    width: 100%;
+    height: calc(var(--hand-height) - 23px);
+    min-height: 0;
+    padding: 5px 14px 8px;
+    overflow: visible;
+  }
+
+  .hand-panel__header {
+    height: 24px;
+    min-height: 24px;
+    margin-bottom: 2px;
+  }
+
+  .hand-fan {
+    box-sizing: border-box;
+    height: calc(100% - 26px);
+    min-height: 128px;
+    align-items: flex-end;
+    padding: 0 24px 1px;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .hand-card {
+    flex: 0 0 92px;
+    width: 92px;
+    height: 128px;
+    margin-left: -18px;
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    margin-left: 0;
+    margin-right: 18px;
+    transform: translateY(-18px) scale(1.18);
+  }
+
+  .exit-game-button {
+    right: 8px;
+    bottom: 8px;
+  }
+}
+
+/* Slightly tighter fit on shorter desktop/laptop displays. */
+@media (min-width: 761px) and (max-height: 760px) {
+  :root {
+    --hand-height: 170px;
+    --battlefield-cell-size: min(7.05vh, 5.15vw, 62px);
+  }
+
+  .chat-panel {
+    flex-basis: clamp(235px, 39vh, 315px);
+  }
+
+  .game-layout > .side-panel:last-of-type > .panel-card:first-child {
+    flex-basis: clamp(225px, 39vh, 315px);
+  }
+
+  .hand-panel {
+    height: calc(var(--hand-height) - 23px);
+  }
+
+  .hand-card {
+    width: 88px;
+    height: 122px;
+    flex-basis: 88px;
+  }
+
+  .hand-fan {
+    min-height: 122px;
+  }
+}
