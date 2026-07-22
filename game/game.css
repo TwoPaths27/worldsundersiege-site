@@ -3762,3 +3762,42 @@ body.game-is-over .side-panel {
     animation: none;
   }
 }
+
+
+/* Unit exhausted state: no movement and no legal attack remaining */
+.unit-token.is-exhausted {
+  filter: grayscale(0.72) saturate(0.28) brightness(0.68);
+  opacity: 0.78;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.46);
+  animation: none;
+}
+
+.unit-token.is-exhausted::before {
+  content: "EXHAUSTED";
+  position: absolute;
+  inset: 50% 4px auto;
+  z-index: 3;
+  transform: translateY(-50%);
+  padding: 3px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+  background: rgba(10, 12, 16, 0.82);
+  color: #d7d9dd;
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+.unit-token.is-exhausted.has-attacked::after {
+  display: none;
+}
+
+.unit-token.is-exhausted.is-selected-unit {
+  transform: scale(1.01);
+  filter: grayscale(0.72) saturate(0.28) brightness(0.74);
+  box-shadow:
+    0 7px 14px rgba(0, 0, 0, 0.55),
+    0 0 9px rgba(205, 205, 205, 0.32);
+}

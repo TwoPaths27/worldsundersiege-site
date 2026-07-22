@@ -711,6 +711,24 @@ function createBattlefieldCell(x, y) {
   return cell;
 }
 
+function unitHasLegalAttackTarget(unit) {
+  if (!unit || unit.hasAttacked) {
+    return false;
+  }
+
+  return (
+    findAttackableUnits(unit).size > 0 ||
+    findAttackableStronghold(unit) !== null
+  );
+}
+
+function isUnitExhausted(unit) {
+  return (
+    unit.remainingSpeed <= 0 &&
+    !unitHasLegalAttackTarget(unit)
+  );
+}
+
 function createUnitToken(unit) {
   const token = document.createElement("div");
 
@@ -725,11 +743,16 @@ function createUnitToken(unit) {
     GameState.selectedUnitId === unit.id
   );
   token.classList.toggle("has-attacked", unit.hasAttacked);
+  const exhausted = isUnitExhausted(unit);
+  token.classList.toggle("is-exhausted", exhausted);
   token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
   );
-  token.title = `${unit.name} — Player ${unit.owner}`;
+  token.title = exhausted
+    ? `${unit.name} — Player ${unit.owner} — no actions remaining`
+    : `${unit.name} — Player ${unit.owner}`;
+  token.setAttribute("aria-disabled", String(exhausted));
 
   token.style.width = "calc(100% - 8px)";
   token.style.height = "calc(100% - 8px)";
