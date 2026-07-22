@@ -2868,3 +2868,248 @@ body.is-game-animating .hand-dock__toggle {
     height: clamp(66px, 7.9vh, 80px);
   }
 }
+
+
+/* =========================================================
+   Chat + Match History HUD Layout
+   Authoritative desktop overrides
+========================================================= */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (min-width: 761px) {
+  :root {
+    --hud-side-width: max(220px, 17vw);
+    --hand-height: clamp(142px, 16vh, 166px);
+  }
+
+  .game-layout {
+    grid-template-columns: var(--hud-side-width) minmax(0, 1fr) var(--hud-side-width);
+    height: calc(100dvh - var(--hand-height));
+  }
+
+  .game-layout > .side-panel {
+    overflow: hidden;
+  }
+
+  .game-layout > .side-panel:first-of-type,
+  .game-layout > .side-panel:last-of-type {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .game-layout > .side-panel:first-of-type > .panel-card:first-child {
+    flex: 0 0 auto;
+  }
+
+  .chat-panel {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .chat-panel h2 {
+    flex: 0 0 auto;
+  }
+
+  .chat-messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #555d6d;
+    border-radius: 8px;
+    background: rgba(12, 14, 19, 0.72);
+    scrollbar-width: thin;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-message {
+    margin: 0 0 8px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .chat-message--system {
+    color: #c4cad5;
+    font-style: italic;
+  }
+
+  .chat-message--player-1 strong { color: #70b7ff; }
+  .chat-message--player-2 strong { color: #ff7c7c; }
+
+  .chat-form {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .chat-input {
+    min-width: 0;
+    height: 34px;
+    padding: 0 9px;
+    color: #fff;
+    background: #171a21;
+    border: 1px solid #626978;
+    border-radius: 7px;
+    font: inherit;
+  }
+
+  .chat-input:focus {
+    outline: 2px solid #4a9eff;
+    outline-offset: 1px;
+  }
+
+  .chat-send-button {
+    height: 34px;
+    padding: 0 12px;
+    color: #fff;
+    background: #2f74ff;
+    border: 0;
+    border-radius: 7px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .chat-send-button:hover { background: #4b88ff; }
+
+  .game-layout > .side-panel:last-of-type > .panel-card:first-child {
+    flex: 0 0 clamp(250px, 43vh, 390px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .card-preview {
+    height: calc(100% - 36px);
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .match-history-panel {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .match-history-panel .turn-indicator {
+    flex: 0 0 auto;
+    margin-bottom: 9px;
+  }
+
+  .match-history-panel h2 {
+    flex: 0 0 auto;
+    margin-bottom: 7px;
+  }
+
+  .match-history-panel .game-log {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding-right: 5px;
+    scrollbar-width: thin;
+  }
+
+  .game-log__entry {
+    margin: 0 0 7px;
+    font-size: 12px;
+    line-height: 1.32;
+    overflow-wrap: anywhere;
+  }
+
+  .game-log__entry--player-one { color: #78baff; }
+  .game-log__entry--player-two { color: #ff8585; }
+  .game-log__entry--system { color: #f0cf68; }
+  .game-log__entry--neutral { color: #e6e8ec; }
+
+  /* The hand spans only the center play column, flush with both sidebars. */
+  .hand-dock {
+    left: calc(var(--hud-side-width) + var(--screen-gap) * 2);
+    right: calc(var(--hud-side-width) + var(--screen-gap) * 2);
+    width: auto;
+    height: var(--hand-height);
+  }
+
+  .hand-panel {
+    width: 100%;
+    height: calc(var(--hand-height) - 23px);
+    min-height: 0;
+    padding: 5px 14px 7px;
+  }
+
+  .hand-fan {
+    height: calc(100% - 22px);
+    min-height: 0;
+    align-items: flex-end;
+    padding: 5px 24px 2px;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  /* Restore the original readable card dimensions. */
+  .hand-card {
+    flex: 0 0 92px;
+    width: 92px;
+    height: 128px;
+    margin-left: -18px;
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    margin-left: 0;
+    margin-right: 18px;
+    transform: translateY(-22px) scale(1.22);
+  }
+
+  .exit-game-button {
+    right: 8px;
+    bottom: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .chat-panel,
+  .match-history-panel {
+    min-height: 280px;
+  }
+
+  .chat-messages,
+  .game-log {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .chat-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .chat-input,
+  .chat-send-button {
+    min-height: 38px;
+  }
+}

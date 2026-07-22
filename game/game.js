@@ -189,6 +189,10 @@ const elements = {
   cardPreview: document.querySelector("#cardPreview"),
   gameLog: document.querySelector("#gameLog"),
 
+  chatForm: document.querySelector("#chatForm"),
+  chatInput: document.querySelector("#chatInput"),
+  chatMessages: document.querySelector("#chatMessages"),
+
   handDock: document.querySelector("#handDock"),
   handPanel: document.querySelector("#handPanel"),
   toggleHandButton: document.querySelector("#toggleHandButton"),
@@ -273,6 +277,8 @@ function bindEvents() {
     }
   });
 
+  elements.chatForm.addEventListener("submit", handleChatSubmit);
+
   elements.toggleHandButton.addEventListener("click", () => {
     const isCollapsed =
       elements.handDock.classList.toggle("is-collapsed");
@@ -296,6 +302,34 @@ function bindEvents() {
       clearSelection();
     }
   });
+}
+
+function handleChatSubmit(event) {
+  event.preventDefault();
+
+  const message = elements.chatInput.value.trim();
+
+  if (!message) {
+    return;
+  }
+
+  appendChatMessage(getActivePlayer().name, message);
+  elements.chatInput.value = "";
+  elements.chatInput.focus();
+}
+
+function appendChatMessage(sender, message) {
+  const entry = document.createElement("p");
+  const senderLabel = document.createElement("strong");
+  const messageText = document.createElement("span");
+
+  entry.className = `chat-message chat-message--player-${GameState.activePlayer}`;
+  senderLabel.textContent = `${sender}: `;
+  messageText.textContent = message;
+
+  entry.append(senderLabel, messageText);
+  elements.chatMessages.appendChild(entry);
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
 }
 
 function openExitModal() {
@@ -1235,13 +1269,32 @@ function renderHandCardPreview(card) {
 function renderGameLog() {
   elements.gameLog.replaceChildren();
 
-  const visibleEntries = GameState.log.slice(-8).reverse();
+  const visibleEntries = GameState.log.slice(-60);
 
   for (const entry of visibleEntries) {
     const paragraph = document.createElement("p");
+    paragraph.className = `game-log__entry ${getLogEntryClass(entry)}`;
     paragraph.textContent = entry;
     elements.gameLog.appendChild(paragraph);
   }
+
+  elements.gameLog.scrollTop = elements.gameLog.scrollHeight;
+}
+
+function getLogEntryClass(entry) {
+  if (/Player 1|player-1/i.test(entry)) {
+    return "game-log__entry--player-one";
+  }
+
+  if (/Player 2|player-2/i.test(entry)) {
+    return "game-log__entry--player-two";
+  }
+
+  if (/turn|energy|battlefield initialized|deployed/i.test(entry)) {
+    return "game-log__entry--system";
+  }
+
+  return "game-log__entry--neutral";
 }
 
 function addLog(message) {

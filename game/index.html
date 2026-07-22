@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=8">
+  <link rel="stylesheet" href="./game.css?v=9">
 </head>
 <body>
   <main class="game-layout">
@@ -29,12 +29,24 @@
         </div>
       </section>
 
-      <section class="panel-card">
-        <h2>Game Log</h2>
+      <section class="panel-card chat-panel">
+        <h2>Game Chat</h2>
 
-        <div id="gameLog" class="game-log" aria-live="polite">
-          <p>Battlefield initialized.</p>
+        <div id="chatMessages" class="chat-messages" aria-live="polite" aria-label="Game chat messages">
+          <p class="chat-message chat-message--system">Chat connected. Be respectful and have fun.</p>
         </div>
+
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <label class="visually-hidden" for="chatInput">Type a chat message</label>
+          <input
+            id="chatInput"
+            class="chat-input"
+            type="text"
+            maxlength="240"
+            placeholder="Type a message…"
+          >
+          <button class="chat-send-button" type="submit">Send</button>
+        </form>
       </section>
     </aside>
 
@@ -293,29 +305,15 @@
         </div>
       </section>
 
-      <section class="panel-card">
-        <h2>Controls</h2>
-
+      <section class="panel-card match-history-panel">
         <div class="turn-indicator">
           <span>Turn</span>
           <strong id="turnNumber">1</strong>
         </div>
 
-        <div class="controls-help">
-          <p>
-            <strong>Select:</strong>
-            Click one of the active player's Units.
-          </p>
-
-          <p>
-            <strong>Move:</strong>
-            Click a highlighted battlefield space.
-          </p>
-
-          <p>
-            <strong>Cancel:</strong>
-            Click the selected Unit again or press Escape.
-          </p>
+        <h2>Game Log</h2>
+        <div id="gameLog" class="game-log" aria-live="polite">
+          <p class="game-log__entry game-log__entry--system">Battlefield initialized.</p>
         </div>
       </section>
     </aside>
