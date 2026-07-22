@@ -3256,3 +3256,56 @@ body.is-game-animating .hand-dock__toggle {
     min-height: 122px;
   }
 }
+
+/* =========================================================
+   Final left-column and hand-hover corrections
+   - Chat fills the full space beneath Selected Unit.
+   - Hand cards may rise above the fan without being clipped.
+========================================================= */
+
+@media (min-width: 761px) {
+  /* Remove the empty vertical gap in the left HUD column. */
+  .game-layout > .side-panel:first-of-type {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .game-layout > .side-panel:first-of-type > .panel-card:first-child {
+    flex: 0 0 auto;
+  }
+
+  .game-layout > .side-panel:first-of-type > .chat-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .chat-panel .chat-messages {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* A scroll container clips transformed children. Keep this fan visible
+     so hovered/selected cards can rise above the hand without losing their top. */
+  .hand-fan {
+    overflow: visible;
+  }
+
+  .hand-panel,
+  .hand-dock {
+    overflow: visible;
+  }
+
+  /* Give raised cards a little more breathing room while preserving size. */
+  .hand-panel {
+    padding-top: 6px;
+  }
+
+  .hand-card:hover,
+  .hand-card:focus-visible,
+  .hand-card.is-selected {
+    z-index: 20;
+  }
+}
