@@ -3416,8 +3416,60 @@ body.is-game-animating .hand-dock__toggle {
   position: relative;
   border-color: #ff5b5b !important;
   background: rgba(139, 31, 31, 0.78) !important;
-  box-shadow: inset 0 0 18px rgba(255, 68, 68, 0.45), 0 0 14px rgba(255, 68, 68, 0.65);
-  animation: attack-target-pulse 1s ease-in-out infinite;
+  box-shadow: inset 0 0 14px rgba(255, 68, 68, 0.38), 0 0 10px rgba(255, 68, 68, 0.5);
+  cursor: crosshair;
+  overflow: visible;
+}
+
+.cell-attack-target.is-attack-hovered {
+  z-index: 8;
+  animation: attack-target-hover-pulse .72s ease-in-out infinite;
+}
+
+.cell-attack-target.is-attack-hovered .unit-token {
+  animation: attack-unit-breathe .72s ease-in-out infinite;
+}
+
+.cell-attack-target::before,
+.stronghold.has-attack-preview::before {
+  content: attr(data-predicted-damage);
+  position: absolute;
+  z-index: 15;
+  left: 50%;
+  top: -9px;
+  transform: translate(-50%, -100%) scale(.92);
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 135, 135, .85);
+  border-radius: 999px;
+  background: rgba(72, 5, 5, .94);
+  color: #fff2f2;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(255, 52, 52, .72);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.cell-attack-target.is-attack-hovered::before,
+.stronghold.is-attack-hovered::before {
+  opacity: 1;
+  transform: translate(-50%, -100%) scale(1);
+}
+
+.cell-attack-target[data-lethal="LETHAL"]::before,
+.stronghold[data-lethal="LETHAL"]::before {
+  content: "LETHAL · " attr(data-predicted-damage);
+  border-color: #ffd36c;
+  background: rgba(87, 38, 0, .96);
+  color: #fff0ad;
+  box-shadow: 0 0 16px rgba(255, 183, 40, .82);
+}
+
+body.is-hovering-attack-target .unit-token.is-selected-unit {
+  animation: attacker-ready-lean .72s ease-in-out infinite;
 }
 
 .unit-token.is-attack-target {
@@ -3472,6 +3524,27 @@ body.is-game-animating .hand-dock__toggle {
   50% { box-shadow: inset 0 0 24px rgba(255,68,68,.62), 0 0 22px rgba(255,68,68,.85); }
 }
 
+
+@keyframes attack-target-hover-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: inset 0 0 14px rgba(255,68,68,.42), 0 0 10px rgba(255,68,68,.52);
+  }
+  50% {
+    transform: scale(1.035);
+    box-shadow: inset 0 0 28px rgba(255,68,68,.72), 0 0 26px rgba(255,68,68,.98);
+  }
+}
+
+@keyframes attack-unit-breathe {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.045); filter: brightness(1.22); }
+}
+
+@keyframes attacker-ready-lean {
+  0%, 100% { transform: translateY(-5px) rotate(0deg) scale(1.025); }
+  50% { transform: translateY(-7px) rotate(-1.5deg) scale(1.045); }
+}
 @keyframes energy-frame-spent {
   0% { transform: scale(1); box-shadow: 0 0 0 transparent; }
   28% {
@@ -3488,6 +3561,9 @@ body.is-game-animating .hand-dock__toggle {
 
 @media (prefers-reduced-motion: reduce) {
   .cell-attack-target,
+  .cell-attack-target.is-attack-hovered,
+  .cell-attack-target.is-attack-hovered .unit-token,
+  body.is-hovering-attack-target .unit-token.is-selected-unit,
   .energy-frame-pulse { animation-duration: 1ms !important; }
 }
 
@@ -3507,11 +3583,18 @@ body.is-game-animating .hand-dock__toggle {
     0 0 0 2px rgba(255, 55, 55, .28),
     0 0 24px rgba(255, 55, 55, .9),
     inset 0 0 20px rgba(255, 55, 55, .35) !important;
-  animation: stronghold-target-pulse 1s ease-in-out infinite;
+  position: relative;
+  overflow: visible;
 }
 
-.stronghold.is-attack-target:hover {
+.stronghold.is-attack-target:hover,
+.stronghold.is-attack-hovered {
   filter: brightness(1.18);
+  animation: stronghold-target-pulse .72s ease-in-out infinite;
+}
+
+.stronghold.is-attack-hovered .stronghold__health {
+  animation: stronghold-health-warning .72s ease-in-out infinite;
 }
 
 .stronghold.is-attack-target:focus-visible {
@@ -3556,6 +3639,11 @@ body.game-is-over .side-panel {
     transform: scale(1.025);
     box-shadow: 0 0 30px rgba(255,55,55,.98), inset 0 0 24px rgba(255,55,55,.42);
   }
+}
+
+@keyframes stronghold-health-warning {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.12); filter: brightness(1.45); }
 }
 
 @keyframes stronghold-screen-shake {

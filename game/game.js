@@ -398,6 +398,48 @@ function renderGame() {
   renderGameLog();
 }
 
+function setAttackHoverState(isHovering) {
+  document.body.classList.toggle("is-hovering-attack-target", isHovering);
+}
+
+function clearAttackHoverState() {
+  setAttackHoverState(false);
+}
+
+function configureStrongholdAttackPreview(stronghold, targetPlayerId) {
+  const attacker = getSelectedUnit();
+  const isTarget =
+    attacker &&
+    !GameState.gameOver &&
+    GameState.attackableStrongholdPlayerId === targetPlayerId;
+
+  stronghold.classList.toggle("has-attack-preview", Boolean(isTarget));
+
+  if (isTarget) {
+    stronghold.dataset.predictedDamage = `−${attacker.currentAttack} HP`;
+    stronghold.dataset.lethal =
+      GameState.players[targetPlayerId].strongholdHP <= attacker.currentAttack
+        ? "LETHAL"
+        : "";
+  } else {
+    delete stronghold.dataset.predictedDamage;
+    delete stronghold.dataset.lethal;
+  }
+
+  stronghold.onmouseenter = () => {
+    if (stronghold.classList.contains("is-attack-target")) {
+      stronghold.classList.add("is-attack-hovered");
+      setAttackHoverState(true);
+    }
+  };
+  stronghold.onmouseleave = () => {
+    stronghold.classList.remove("is-attack-hovered");
+    clearAttackHoverState();
+  };
+  stronghold.onfocus = stronghold.onmouseenter;
+  stronghold.onblur = stronghold.onmouseleave;
+}
+
 function renderStatusBar() {
   const playerOne = GameState.players[1];
   const playerTwo = GameState.players[2];
@@ -428,6 +470,9 @@ function renderStatusBar() {
     "is-attack-target",
     GameState.attackableStrongholdPlayerId === 2 && !GameState.gameOver
   );
+
+  configureStrongholdAttackPreview(elements.playerStronghold, 1);
+  configureStrongholdAttackPreview(elements.enemyStronghold, 2);
 
   elements.playerStronghold.setAttribute(
     "aria-disabled",
@@ -527,8 +572,28 @@ function createBattlefieldCell(x, y) {
     }
 
     if (isAttackTarget) {
+      const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
+
       cell.classList.add("cell-attack", "cell-attack-target");
-      cell.title = `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage`;
+      cell.dataset.predictedDamage = `−${selectedUnit.currentAttack} HP`;
+      cell.dataset.lethal = isLethal ? "LETHAL" : "";
+      cell.title = isLethal
+        ? `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage — lethal`
+        : `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage`;
+
+      const beginAttackPreview = () => {
+        cell.classList.add("is-attack-hovered");
+        setAttackHoverState(true);
+      };
+      const endAttackPreview = () => {
+        cell.classList.remove("is-attack-hovered");
+        clearAttackHoverState();
+      };
+
+      cell.addEventListener("mouseenter", beginAttackPreview);
+      cell.addEventListener("mouseleave", endAttackPreview);
+      cell.addEventListener("focus", beginAttackPreview);
+      cell.addEventListener("blur", endAttackPreview);
     }
   } else {
     const coordinateLabel = document.createElement("span");
@@ -614,6 +679,8 @@ function createUnitToken(unit) {
 }
 
 function handleBattlefieldClick(x, y) {
+  clearAttackHoverState();
+
   if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
@@ -1094,6 +1161,8 @@ function findAttackableStronghold(unit) {
 }
 
 function handleStrongholdClick(targetPlayerId) {
+  clearAttackHoverState();
+
   if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
