@@ -188,6 +188,7 @@ const elements = {
   gameLog: document.querySelector("#gameLog"),
 
   handDock: document.querySelector("#handDock"),
+  handPanel: document.querySelector("#handPanel"),
   toggleHandButton: document.querySelector("#toggleHandButton"),
   handOwnerLabel: document.querySelector("#handOwnerLabel"),
   handCount: document.querySelector("#handCount"),
@@ -344,6 +345,15 @@ function renderStatusBar() {
     "is-active-player",
     GameState.activePlayer === 2
   );
+
+  elements.handPanel.classList.toggle(
+    "is-player-one-turn",
+    GameState.activePlayer === 1
+  );
+  elements.handPanel.classList.toggle(
+    "is-player-two-turn",
+    GameState.activePlayer === 2
+  );
 }
 function renderBattlefield() {
   elements.battlefield.replaceChildren();
@@ -432,6 +442,11 @@ function createUnitToken(unit) {
   const token = document.createElement("div");
 
   token.dataset.unitId = unit.id;
+  token.className = "unit-token";
+  token.classList.toggle(
+    "is-selected-unit",
+    GameState.selectedUnitId === unit.id
+  );
   token.title = `${unit.name} — Player ${unit.owner}`;
 
   token.style.width = "calc(100% - 8px)";
@@ -938,13 +953,21 @@ function renderHand() {
     cardButton.dataset.cardId = card.id;
 
     const isSelected = GameState.selectedCardId === card.id;
+    const isPlayable = card.cost <= player.energy;
 
     cardButton.classList.toggle("is-selected", isSelected);
+    cardButton.classList.toggle("is-playable", isPlayable);
+    cardButton.classList.toggle("is-unplayable", !isPlayable);
     cardButton.setAttribute("aria-pressed", String(isSelected));
     cardButton.setAttribute(
       "aria-label",
-      `${card.name}, cost ${card.cost}`
+      `${card.name}, cost ${card.cost}, ${
+        isPlayable ? "playable" : `needs ${card.cost - player.energy} more Energy`
+      }`
     );
+    cardButton.title = isPlayable
+      ? `${card.name} can be played for ${card.cost} Energy`
+      : `${card.name} requires ${card.cost} Energy; you have ${player.energy}`;
 
     const cost = document.createElement("span");
     cost.className = "hand-card__cost";
