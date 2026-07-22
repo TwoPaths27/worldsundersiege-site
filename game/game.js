@@ -56,6 +56,8 @@ const GameState = {
   selectedCardId: null,
   reachableSpaces: new Map(),
   nextUnitId: 1,
+  isAnimating: false,
+  lastSpawnedUnitId: null,
 
   players: {
     1: {
@@ -408,6 +410,17 @@ function createBattlefieldCell(x, y) {
   ) {
     cell.classList.add("cell-recruit-available");
     cell.title = `Recruit ${selectedCard.name} here for ${selectedCard.cost} Energy`;
+
+    const ghost = createRecruitGhost(selectedCard, GameState.activePlayer);
+    cell.appendChild(ghost);
+
+    cell.addEventListener("mouseenter", () => {
+      cell.classList.add("is-recruit-preview");
+    });
+
+    cell.addEventListener("mouseleave", () => {
+      cell.classList.remove("is-recruit-preview");
+    });
   }
 
   if (occupant) {
@@ -443,6 +456,10 @@ function createUnitToken(unit) {
 
   token.dataset.unitId = unit.id;
   token.className = "unit-token";
+  token.classList.toggle(
+    "unit-spawn",
+    GameState.lastSpawnedUnitId === unit.id
+  );
   token.classList.toggle(
     "is-selected-unit",
     GameState.selectedUnitId === unit.id
@@ -491,6 +508,10 @@ function createUnitToken(unit) {
 }
 
 function handleBattlefieldClick(x, y) {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   const clickedUnit = getUnitAt(x, y);
   const selectedUnit = getSelectedUnit();
   const selectedCard = getSelectedCard();
@@ -529,6 +550,10 @@ function handleBattlefieldClick(x, y) {
 }
 
 function selectUnit(unitId) {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   const unit = getUnitById(unitId);
 
   if (!unit) {
@@ -548,6 +573,10 @@ function selectUnit(unitId) {
 }
 
 function selectCard(cardId) {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   const player = getActivePlayer();
 
   const card = player.hand.find(
@@ -581,7 +610,11 @@ function selectCard(cardId) {
   renderGame();
 }
 
-function recruitSelectedCard(x, y) {
+async function recruitSelectedCard(x, y) {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   const card = getSelectedCard();
 
   if (!card) {
@@ -622,38 +655,187 @@ function recruitSelectedCard(x, y) {
     return;
   }
 
-  player.energy -= card.cost;
-
-  const cardIndex = player.hand.findIndex(
-    (handCard) => handCard.id === card.id
+  const sourceCard = elements.hand.querySelector(
+    `[data-card-id="${CSS.escape(card.id)}"]`
   );
+  const destinationCell = getBattlefieldCell(x, y);
 
-  if (cardIndex >= 0) {
-    player.hand.splice(cardIndex, 1);
+  GameState.isAnimating = true;
+  setInteractionLock(true);
+
+  try {
+    await animateCardToCell(sourceCard, destinationCell);
+
+    player.energy -= card.cost;
+
+    const cardIndex = player.hand.findIndex(
+      (handCard) => handCard.id === card.id
+    );
+
+    if (cardIndex >= 0) {
+      player.hand.splice(cardIndex, 1);
+    }
+
+    const unit = createUnit({
+      id: `player-${GameState.activePlayer}-recruit-${GameState.nextUnitId}`,
+      name: card.name,
+      owner: GameState.activePlayer,
+      x,
+      y,
+      attack: card.attack,
+      hp: card.hp,
+      range: card.range,
+      speed: card.speed,
+      cost: card.cost,
+    });
+
+    GameState.nextUnitId += 1;
+    GameState.units.push(unit);
+    GameState.selectedCardId = null;
+    GameState.lastSpawnedUnitId = unit.id;
+
+    addLog(`⚔ ${player.name} recruited ${card.name}.`);
+    addLog(`🔋 −${card.cost} Energy.`);
+    addLog(`📍 Deployed to ${formatCoordinate(x, y)}.`);
+
+    renderGame();
+    flashRecruitingCell(x, y, GameState.activePlayer);
+    pulseActiveEnergy(GameState.activePlayer);
+
+    window.setTimeout(() => {
+      if (GameState.lastSpawnedUnitId === unit.id) {
+        GameState.lastSpawnedUnitId = null;
+      }
+    }, 650);
+  } finally {
+    GameState.isAnimating = false;
+    setInteractionLock(false);
+  }
+}
+
+function createRecruitGhost(card, owner) {
+  const ghost = document.createElement("div");
+  ghost.className = `recruit-ghost recruit-ghost--player-${owner}`;
+  ghost.setAttribute("aria-hidden", "true");
+
+  const name = document.createElement("strong");
+  name.textContent = card.name;
+
+  const stats = document.createElement("span");
+  stats.textContent = `ATK ${card.attack} · HP ${card.hp}`;
+
+  ghost.append(name, stats);
+  return ghost;
+}
+
+function getBattlefieldCell(x, y) {
+  return elements.battlefield.querySelector(
+    `.battlefield-cell[data-x="${x}"][data-y="${y}"]`
+  );
+}
+
+function setInteractionLock(isLocked) {
+  document.body.classList.toggle("is-game-animating", isLocked);
+  elements.endTurnButton.disabled = isLocked;
+  elements.toggleHandButton.disabled = isLocked;
+}
+
+async function animateCardToCell(sourceCard, destinationCell) {
+  if (!sourceCard || !destinationCell) {
+    await wait(180);
+    return;
   }
 
-  const unit = createUnit({
-    id: `player-${GameState.activePlayer}-recruit-${GameState.nextUnitId}`,
-    name: card.name,
-    owner: GameState.activePlayer,
-    x,
-    y,
-    attack: card.attack,
-    hp: card.hp,
-    range: card.range,
-    speed: card.speed,
-    cost: card.cost,
-  });
+  const sourceRect = sourceCard.getBoundingClientRect();
+  const destinationRect = destinationCell.getBoundingClientRect();
+  const flyingCard = sourceCard.cloneNode(true);
 
-  GameState.nextUnitId += 1;
-  GameState.units.push(unit);
-  GameState.selectedCardId = null;
+  flyingCard.classList.remove("is-selected", "is-playable", "is-unplayable");
+  flyingCard.classList.add("recruit-flying-card");
+  flyingCard.setAttribute("aria-hidden", "true");
+  flyingCard.style.left = `${sourceRect.left}px`;
+  flyingCard.style.top = `${sourceRect.top}px`;
+  flyingCard.style.width = `${sourceRect.width}px`;
+  flyingCard.style.height = `${sourceRect.height}px`;
 
-  addLog(
-    `${player.name} spent ${card.cost} Energy and recruited ${card.name} at ${formatCoordinate(x, y)}.`
+  document.body.appendChild(flyingCard);
+  sourceCard.classList.add("is-being-recruited");
+
+  const destinationX =
+    destinationRect.left + destinationRect.width / 2 - sourceRect.width / 2;
+  const destinationY =
+    destinationRect.top + destinationRect.height / 2 - sourceRect.height / 2;
+  const deltaX = destinationX - sourceRect.left;
+  const deltaY = destinationY - sourceRect.top;
+  const destinationScale = Math.min(
+    0.72,
+    destinationRect.width / sourceRect.width,
+    destinationRect.height / sourceRect.height
   );
 
-  renderGame();
+  try {
+    const animation = flyingCard.animate(
+      [
+        { transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)", opacity: 1 },
+        { transform: `translate3d(${deltaX * 0.55}px, ${deltaY * 0.35 - 45}px, 0) scale(1.08) rotate(-2deg)`, opacity: 1, offset: 0.55 },
+        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${destinationScale}) rotate(1deg)`, opacity: 0.12 },
+      ],
+      {
+        duration: 520,
+        easing: "cubic-bezier(.2,.8,.2,1)",
+        fill: "forwards",
+      }
+    );
+
+    await animation.finished;
+  } catch (error) {
+    await wait(520);
+  } finally {
+    flyingCard.remove();
+    sourceCard.classList.remove("is-being-recruited");
+  }
+}
+
+function flashRecruitingCell(x, y, playerId) {
+  const cell = getBattlefieldCell(x, y);
+
+  if (!cell) {
+    return;
+  }
+
+  cell.classList.add(
+    "recruit-flash",
+    playerId === 1 ? "recruit-flash--player-one" : "recruit-flash--player-two"
+  );
+
+  window.setTimeout(() => {
+    cell.classList.remove(
+      "recruit-flash",
+      "recruit-flash--player-one",
+      "recruit-flash--player-two"
+    );
+  }, 650);
+}
+
+function pulseActiveEnergy(playerId) {
+  const energyElement =
+    playerId === 1
+      ? elements.playerCurrentEnergy
+      : elements.enemyCurrentEnergy;
+
+  energyElement.classList.remove("energy-spent-pulse");
+  void energyElement.offsetWidth;
+  energyElement.classList.add("energy-spent-pulse");
+
+  window.setTimeout(() => {
+    energyElement.classList.remove("energy-spent-pulse");
+  }, 600);
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
 }
 
 function getRecruitingSpacesForPlayer(playerId) {
@@ -663,6 +845,10 @@ function getRecruitingSpacesForPlayer(playerId) {
 }
 
 function clearSelection() {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   GameState.selectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.reachableSpaces = new Map();
@@ -786,6 +972,10 @@ function getOrthogonalNeighbors(x, y) {
 }
 
 function endTurn() {
+  if (GameState.isAnimating) {
+    return;
+  }
+
   const previousPlayer = GameState.activePlayer;
   const nextPlayer = previousPlayer === 1 ? 2 : 1;
 
@@ -929,6 +1119,14 @@ function renderHand() {
   const player = getActivePlayer();
   const cardCount = player.hand.length;
 
+  const handHeading = elements.handPanel.querySelector(".hand-panel__header h2");
+
+  if (handHeading) {
+    handHeading.textContent = `${player.name} Hand`;
+  }
+
+  // Kept for screen readers and older HTML builds. The compact desktop
+  // layout visually hides this duplicate owner line.
   elements.handOwnerLabel.textContent = player.name;
   elements.handCount.textContent =
     `${cardCount} ${cardCount === 1 ? "card" : "cards"}`;
