@@ -398,13 +398,97 @@ function renderGame() {
   renderGameLog();
 }
 
+let activeAttackPreviewTarget = null;
+
+function getAttackPreviewBadge() {
+  let badge = document.getElementById("attackDamagePreviewBadge");
+
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.id = "attackDamagePreviewBadge";
+    badge.className = "attack-damage-preview-badge";
+    badge.setAttribute("role", "status");
+    badge.setAttribute("aria-live", "polite");
+    document.body.appendChild(badge);
+  }
+
+  return badge;
+}
+
+function positionAttackPreviewBadge(target) {
+  const badge = getAttackPreviewBadge();
+  const rect = target.getBoundingClientRect();
+  const margin = 12;
+  const viewportPadding = 8;
+
+  // Measure after text/class changes so the fallback position is accurate.
+  const badgeRect = badge.getBoundingClientRect();
+  const preferredTop = rect.top - badgeRect.height - margin;
+  const placeBelow = preferredTop < viewportPadding;
+
+  let left = rect.left + rect.width / 2;
+  let top = placeBelow
+    ? rect.bottom + margin
+    : preferredTop;
+
+  const halfWidth = badgeRect.width / 2;
+  left = Math.max(
+    viewportPadding + halfWidth,
+    Math.min(window.innerWidth - viewportPadding - halfWidth, left)
+  );
+
+  top = Math.max(
+    viewportPadding,
+    Math.min(window.innerHeight - viewportPadding - badgeRect.height, top)
+  );
+
+  badge.style.left = `${left}px`;
+  badge.style.top = `${top}px`;
+  badge.classList.toggle("is-below-target", placeBelow);
+}
+
+function showAttackPreviewBadge(target, damage, isLethal) {
+  const badge = getAttackPreviewBadge();
+  activeAttackPreviewTarget = target;
+
+  badge.textContent = isLethal
+    ? `LETHAL · −${damage} HP`
+    : `−${damage} HP`;
+  badge.classList.toggle("is-lethal", isLethal);
+  badge.classList.add("is-visible");
+
+  requestAnimationFrame(() => positionAttackPreviewBadge(target));
+}
+
+function hideAttackPreviewBadge() {
+  activeAttackPreviewTarget = null;
+
+  const badge = document.getElementById("attackDamagePreviewBadge");
+  if (badge) {
+    badge.classList.remove("is-visible", "is-lethal", "is-below-target");
+  }
+}
+
 function setAttackHoverState(isHovering) {
   document.body.classList.toggle("is-hovering-attack-target", isHovering);
 }
 
 function clearAttackHoverState() {
   setAttackHoverState(false);
+  hideAttackPreviewBadge();
 }
+
+window.addEventListener("resize", () => {
+  if (activeAttackPreviewTarget) {
+    positionAttackPreviewBadge(activeAttackPreviewTarget);
+  }
+});
+
+window.addEventListener("scroll", () => {
+  if (activeAttackPreviewTarget) {
+    positionAttackPreviewBadge(activeAttackPreviewTarget);
+  }
+}, true);
 
 function configureStrongholdAttackPreview(stronghold, targetPlayerId) {
   const attacker = getSelectedUnit();
@@ -430,6 +514,11 @@ function configureStrongholdAttackPreview(stronghold, targetPlayerId) {
     if (stronghold.classList.contains("is-attack-target")) {
       stronghold.classList.add("is-attack-hovered");
       setAttackHoverState(true);
+      showAttackPreviewBadge(
+        stronghold,
+        attacker.currentAttack,
+        GameState.players[targetPlayerId].strongholdHP <= attacker.currentAttack
+      );
     }
   };
   stronghold.onmouseleave = () => {
@@ -584,6 +673,11 @@ function createBattlefieldCell(x, y) {
       const beginAttackPreview = () => {
         cell.classList.add("is-attack-hovered");
         setAttackHoverState(true);
+        showAttackPreviewBadge(
+          cell,
+          selectedUnit.currentAttack,
+          isLethal
+        );
       };
       const endAttackPreview = () => {
         cell.classList.remove("is-attack-hovered");
