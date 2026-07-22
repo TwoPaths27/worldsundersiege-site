@@ -55,6 +55,7 @@ const GameState = {
   selectedUnitId: null,
   selectedCardId: null,
   reachableSpaces: new Map(),
+  attackableUnitIds: new Set(),
   nextUnitId: 1,
   isAnimating: false,
   lastSpawnedUnitId: null,
@@ -65,6 +66,7 @@ const GameState = {
       energy: 1,
       maxEnergy: 1,
       strongholdHP: 30,
+      discardCount: 0,
       hand: [
   createCard({
     id: "p1-swordsman",
@@ -103,6 +105,7 @@ const GameState = {
       energy: 0,
       maxEnergy: 0,
       strongholdHP: 30,
+      discardCount: 0,
       hand: [
   createCard({
     id: "p2-guard",
@@ -177,6 +180,8 @@ const elements = {
   playerMaxEnergy: document.querySelector("#playerMaxEnergy"),
   enemyCurrentEnergy: document.querySelector("#enemyCurrentEnergy"),
   enemyMaxEnergy: document.querySelector("#enemyMaxEnergy"),
+  playerDiscardCount: document.querySelector("#playerDiscardCount"),
+  enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
 
   endTurnButton: document.querySelector("#endTurnButton"),
 
@@ -374,6 +379,8 @@ function renderStatusBar() {
   elements.playerMaxEnergy.textContent = String(playerOne.maxEnergy);
   elements.enemyCurrentEnergy.textContent = String(playerTwo.energy);
   elements.enemyMaxEnergy.textContent = String(playerTwo.maxEnergy);
+  elements.playerDiscardCount.textContent = String(playerOne.discardCount);
+  elements.enemyDiscardCount.textContent = String(playerTwo.discardCount);
 
   elements.playerStronghold.classList.toggle(
     "is-active-player",
@@ -429,6 +436,11 @@ function createBattlefieldCell(x, y) {
     selectedCard.type === "Unit" &&
     getActivePlayer().energy >= selectedCard.cost;
 
+  const isAttackTarget =
+    occupant &&
+    selectedUnit &&
+    GameState.attackableUnitIds.has(occupant.id);
+
   if (ENEMY_RECRUITING_SPACES.has(coordinateKey)) {
     cell.classList.add("cell-recruit-enemy");
     cell.dataset.recruitOwner = "2";
@@ -465,6 +477,11 @@ function createBattlefieldCell(x, y) {
     if (selectedUnit?.id === occupant.id) {
       cell.classList.add("cell-selected");
     }
+
+    if (isAttackTarget) {
+      cell.classList.add("cell-attack", "cell-attack-target");
+      cell.title = `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage`;
+    }
   } else {
     const coordinateLabel = document.createElement("span");
 
@@ -499,6 +516,11 @@ function createUnitToken(unit) {
   token.classList.toggle(
     "is-selected-unit",
     GameState.selectedUnitId === unit.id
+  );
+  token.classList.toggle("has-attacked", unit.hasAttacked);
+  token.classList.toggle(
+    "is-attack-target",
+    GameState.attackableUnitIds.has(unit.id)
   );
   token.title = `${unit.name} — Player ${unit.owner}`;
 
@@ -567,9 +589,20 @@ function handleBattlefieldClick(x, y) {
     }
 
     if (clickedUnit.owner !== GameState.activePlayer) {
+      if (
+        selectedUnit &&
+        GameState.attackableUnitIds.has(clickedUnit.id)
+      ) {
+        attackUnit(selectedUnit, clickedUnit);
+        return;
+      }
+
       addLog(
-        `${clickedUnit.name} belongs to Player ${clickedUnit.owner}.`
+        selectedUnit?.hasAttacked
+          ? `${selectedUnit.name} has already attacked this turn.`
+          : `${clickedUnit.name} is not within attack range.`
       );
+      renderGame();
       return;
     }
 
@@ -603,8 +636,13 @@ function selectUnit(unitId) {
   GameState.selectedCardId = null;
   GameState.selectedUnitId = unit.id;
   GameState.reachableSpaces = findReachableSpaces(unit);
+  GameState.attackableUnitIds = findAttackableUnits(unit);
 
-  addLog(`${unit.name} selected.`);
+  addLog(
+    unit.hasAttacked
+      ? `${unit.name} selected. Its attack has already been used this turn.`
+      : `${unit.name} selected.`
+  );
   renderGame();
 }
 
@@ -631,6 +669,7 @@ function selectCard(cardId) {
 
   GameState.selectedUnitId = null;
   GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
   GameState.selectedCardId = card.id;
 
   if (player.energy < card.cost) {
@@ -728,6 +767,7 @@ async function recruitSelectedCard(x, y) {
     GameState.nextUnitId += 1;
     GameState.units.push(unit);
     GameState.selectedCardId = null;
+    GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
 
     addLog(`⚔ ${player.name} recruited ${card.name}.`);
@@ -858,14 +898,33 @@ function pulseActiveEnergy(playerId) {
     playerId === 1
       ? elements.playerCurrentEnergy
       : elements.enemyCurrentEnergy;
+  const energyFrame = energyElement.closest(".battlefield-energy");
 
   energyElement.classList.remove("energy-spent-pulse");
+  energyFrame?.classList.remove(
+    "energy-frame-pulse",
+    "energy-frame-pulse--player-one",
+    "energy-frame-pulse--player-two"
+  );
+
   void energyElement.offsetWidth;
+
   energyElement.classList.add("energy-spent-pulse");
+  energyFrame?.classList.add(
+    "energy-frame-pulse",
+    playerId === 1
+      ? "energy-frame-pulse--player-one"
+      : "energy-frame-pulse--player-two"
+  );
 
   window.setTimeout(() => {
     energyElement.classList.remove("energy-spent-pulse");
-  }, 600);
+    energyFrame?.classList.remove(
+      "energy-frame-pulse",
+      "energy-frame-pulse--player-one",
+      "energy-frame-pulse--player-two"
+    );
+  }, 700);
 }
 
 function wait(milliseconds) {
@@ -888,6 +947,7 @@ function clearSelection() {
   GameState.selectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
 
   renderGame();
 }
@@ -928,12 +988,151 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   if (unit.remainingSpeed > 0) {
     GameState.reachableSpaces = findReachableSpaces(unit);
+    GameState.attackableUnitIds = findAttackableUnits(unit);
   } else {
     GameState.selectedUnitId = null;
     GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = new Set();
   }
 
   renderGame();
+}
+
+function findAttackableUnits(unit) {
+  const targets = new Set();
+
+  if (!unit || unit.hasAttacked) {
+    return targets;
+  }
+
+  for (const candidate of GameState.units) {
+    if (candidate.owner === unit.owner) {
+      continue;
+    }
+
+    const distance =
+      Math.abs(candidate.x - unit.x) +
+      Math.abs(candidate.y - unit.y);
+
+    if (distance > 0 && distance <= unit.currentRange) {
+      targets.add(candidate.id);
+    }
+  }
+
+  return targets;
+}
+
+async function attackUnit(attacker, defender) {
+  if (GameState.isAnimating || !attacker || !defender) {
+    return;
+  }
+
+  if (attacker.hasAttacked) {
+    addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return;
+  }
+
+  if (!GameState.attackableUnitIds.has(defender.id)) {
+    addLog(`${defender.name} is outside ${attacker.name}'s attack range.`);
+    renderGame();
+    return;
+  }
+
+  const attackerToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(attacker.id)}"]`
+  );
+  const defenderToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(defender.id)}"]`
+  );
+
+  GameState.isAnimating = true;
+  setInteractionLock(true);
+
+  try {
+    await animateAttack(attackerToken, defenderToken, attacker, defender);
+
+    defender.currentHP -= attacker.currentAttack;
+    attacker.hasAttacked = true;
+
+    addLog(
+      `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`
+    );
+
+    if (defender.currentHP <= 0) {
+      GameState.players[defender.owner].discardCount += 1;
+      GameState.units = GameState.units.filter((unit) => unit.id !== defender.id);
+      addLog(`💀 Player ${defender.owner}'s ${defender.name} was destroyed.`);
+    } else {
+      addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+    }
+
+    GameState.attackableUnitIds = findAttackableUnits(attacker);
+    GameState.reachableSpaces = findReachableSpaces(attacker);
+    renderGame();
+  } finally {
+    GameState.isAnimating = false;
+    setInteractionLock(false);
+  }
+}
+
+async function animateAttack(attackerToken, defenderToken, attacker, defender) {
+  if (!attackerToken || !defenderToken) {
+    await wait(260);
+    return;
+  }
+
+  const attackerRect = attackerToken.getBoundingClientRect();
+  const defenderRect = defenderToken.getBoundingClientRect();
+  const deltaX = (defenderRect.left + defenderRect.width / 2) -
+    (attackerRect.left + attackerRect.width / 2);
+  const deltaY = (defenderRect.top + defenderRect.height / 2) -
+    (attackerRect.top + attackerRect.height / 2);
+  const length = Math.max(1, Math.hypot(deltaX, deltaY));
+  const lungeDistance = Math.min(30, length * 0.32);
+  const lungeX = deltaX / length * lungeDistance;
+  const lungeY = deltaY / length * lungeDistance;
+
+  const damageNumber = document.createElement("span");
+  damageNumber.className = "floating-damage-number";
+  damageNumber.textContent = `−${attacker.currentAttack}`;
+  damageNumber.style.left = `${defenderRect.left + defenderRect.width / 2}px`;
+  damageNumber.style.top = `${defenderRect.top + defenderRect.height / 2}px`;
+  document.body.appendChild(damageNumber);
+
+  const animations = [
+    attackerToken.animate(
+      [
+        { transform: "translate3d(0,0,0) scale(1)" },
+        { transform: `translate3d(${lungeX}px,${lungeY}px,0) scale(1.08)`, offset: 0.46 },
+        { transform: "translate3d(0,0,0) scale(1)" },
+      ],
+      { duration: 360, easing: "cubic-bezier(.2,.8,.25,1)" }
+    ).finished,
+    defenderToken.animate(
+      [
+        { transform: "translateX(0)", filter: "brightness(1)" },
+        { transform: "translateX(-5px)", filter: "brightness(2.3) saturate(1.6)", offset: 0.45 },
+        { transform: "translateX(5px)", filter: "brightness(1.6)", offset: 0.65 },
+        { transform: "translateX(0)", filter: "brightness(1)" },
+      ],
+      { duration: 430, easing: "ease-out" }
+    ).finished,
+    damageNumber.animate(
+      [
+        { opacity: 0, transform: "translate(-50%, -20%) scale(.65)" },
+        { opacity: 1, transform: "translate(-50%, -70%) scale(1.25)", offset: 0.25 },
+        { opacity: 0, transform: "translate(-50%, -145%) scale(1)" },
+      ],
+      { duration: 620, easing: "ease-out", fill: "forwards" }
+    ).finished,
+  ];
+
+  try {
+    await Promise.allSettled(animations);
+  } finally {
+    damageNumber.remove();
+  }
 }
 
 function findReachableSpaces(unit) {
@@ -1082,6 +1281,10 @@ function renderSelectedUnitPanel() {
   speed.textContent =
     `Remaining Speed: ${unit.remainingSpeed} / ${unit.currentSpeed}`;
 
+  const attackStatus = document.createElement("p");
+  attackStatus.className = unit.hasAttacked ? "unit-action-used" : "unit-action-ready";
+  attackStatus.textContent = unit.hasAttacked ? "Attack: Used" : "Attack: Ready";
+
   const cost = document.createElement("p");
   cost.textContent = `Cost: ${unit.currentCost}`;
 
@@ -1093,6 +1296,7 @@ function renderSelectedUnitPanel() {
     hp,
     range,
     speed,
+    attackStatus,
     cost
   );
 }

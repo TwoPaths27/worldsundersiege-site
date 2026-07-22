@@ -3407,3 +3407,86 @@ body.is-game-animating .hand-dock__toggle {
     --battlefield-cell-size: min(7.7vh, 5.7vw, 70px);
   }
 }
+
+
+/* =========================================================
+   Combat feedback + Energy frame pulse
+========================================================= */
+.cell-attack-target {
+  position: relative;
+  border-color: #ff5b5b !important;
+  background: rgba(139, 31, 31, 0.78) !important;
+  box-shadow: inset 0 0 18px rgba(255, 68, 68, 0.45), 0 0 14px rgba(255, 68, 68, 0.65);
+  animation: attack-target-pulse 1s ease-in-out infinite;
+}
+
+.unit-token.is-attack-target {
+  cursor: crosshair;
+}
+
+.unit-token.has-attacked {
+  filter: saturate(0.55) brightness(0.76);
+}
+
+.unit-token.has-attacked::after {
+  content: "ATTACK USED";
+  position: absolute;
+  inset: auto 3px 3px;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.76);
+  color: #d8d8d8;
+  font-size: 7px;
+  letter-spacing: .04em;
+  line-height: 1;
+}
+
+.unit-action-ready { color: #8ef0a9; font-weight: 700; }
+.unit-action-used { color: #ff9a9a; font-weight: 700; }
+
+.floating-damage-number {
+  position: fixed;
+  z-index: 500;
+  pointer-events: none;
+  color: #ffefef;
+  font-size: clamp(24px, 3vw, 42px);
+  font-weight: 900;
+  text-shadow: 0 2px 2px #610000, 0 0 14px rgba(255, 38, 38, .95);
+}
+
+.energy-frame-pulse {
+  position: relative;
+  animation: energy-frame-spent 680ms cubic-bezier(.2,.9,.25,1.2);
+}
+
+.energy-frame-pulse--player-one {
+  --energy-pulse-color: rgba(70, 169, 255, .98);
+}
+
+.energy-frame-pulse--player-two {
+  --energy-pulse-color: rgba(255, 78, 78, .98);
+}
+
+@keyframes attack-target-pulse {
+  0%, 100% { box-shadow: inset 0 0 12px rgba(255,68,68,.35), 0 0 8px rgba(255,68,68,.45); }
+  50% { box-shadow: inset 0 0 24px rgba(255,68,68,.62), 0 0 22px rgba(255,68,68,.85); }
+}
+
+@keyframes energy-frame-spent {
+  0% { transform: scale(1); box-shadow: 0 0 0 transparent; }
+  28% {
+    transform: scale(1.08);
+    border-color: var(--energy-pulse-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--energy-pulse-color) 45%, transparent),
+                0 0 22px 7px color-mix(in srgb, var(--energy-pulse-color) 75%, transparent),
+                inset 0 0 12px color-mix(in srgb, var(--energy-pulse-color) 35%, transparent);
+    filter: brightness(1.45);
+  }
+  62% { transform: scale(.98); }
+  100% { transform: scale(1); box-shadow: 0 0 0 transparent; filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-attack-target,
+  .energy-frame-pulse { animation-duration: 1ms !important; }
+}
