@@ -3309,3 +3309,101 @@ body.is-game-animating .hand-dock__toggle {
     z-index: 20;
   }
 }
+
+
+/* =========================================================
+   Compact battlefield utility zones + collapsed-hand zoom
+   - Deck, discard, banish, and army spaces use slim card-like rectangles.
+   - Collapsing the hand gives the center board more room and scales it up.
+========================================================= */
+
+@media (min-width: 761px) {
+  /* Slim vertical rectangles, matching the card-slot shape. */
+  .zone-group {
+    grid-template-columns: repeat(2, 48px);
+    grid-template-rows: repeat(2, 72px);
+    gap: 6px;
+    width: max-content;
+    height: max-content;
+    justify-self: center;
+    align-self: center;
+  }
+
+  .game-zone--pile {
+    width: 48px;
+    height: 72px;
+    min-width: 48px;
+    min-height: 72px;
+    padding: 4px 2px;
+    border-radius: 9px;
+    font-size: 8px;
+    line-height: 1.05;
+  }
+
+  .game-zone--pile span {
+    margin-top: 3px;
+    font-size: 8px;
+  }
+
+  .army-zones {
+    grid-template-columns: repeat(3, 48px);
+    gap: 6px;
+    width: max-content;
+    height: 72px;
+    justify-self: center;
+    align-self: center;
+  }
+
+  .game-zone--army {
+    width: 48px;
+    height: 72px;
+    min-width: 48px;
+    min-height: 72px;
+    padding: 4px 2px;
+    border-radius: 9px;
+    font-size: 8px;
+    line-height: 1.05;
+  }
+
+  /* Animate the board into the extra space when the hand is hidden. */
+  .battlefield-stage,
+  .battlefield,
+  .stronghold-lane,
+  .battlefield-cell,
+  .game-zone,
+  .stronghold {
+    transition:
+      width 180ms ease,
+      height 180ms ease,
+      min-height 180ms ease,
+      grid-template-columns 180ms ease,
+      grid-template-rows 180ms ease,
+      transform 180ms ease;
+  }
+
+  body.is-hand-collapsed {
+    --battlefield-cell-size: min(8.2vh, 6vw, 76px);
+  }
+
+  body.is-hand-collapsed .battlefield-column {
+    padding-bottom: 34px;
+  }
+
+  body.is-hand-collapsed .battlefield-stage {
+    transform: translateY(-2px);
+  }
+
+  body.is-hand-collapsed .hand-dock {
+    height: 34px;
+  }
+
+  body.is-hand-collapsed .hand-dock__toggle {
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 760px) {
+  body.is-hand-collapsed {
+    --battlefield-cell-size: min(7.7vh, 5.7vw, 70px);
+  }
+}

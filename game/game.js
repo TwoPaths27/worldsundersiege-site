@@ -283,6 +283,8 @@ function bindEvents() {
     const isCollapsed =
       elements.handDock.classList.toggle("is-collapsed");
 
+    document.body.classList.toggle("is-hand-collapsed", isCollapsed);
+
     elements.toggleHandButton.setAttribute(
       "aria-expanded",
       String(!isCollapsed)
