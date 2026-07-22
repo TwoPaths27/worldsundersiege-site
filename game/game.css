@@ -2331,3 +2331,48 @@ body.modal-open {
     pointer-events: auto;
   }
 }
+
+/* =========================================================
+   Recruiting Selection Highlight
+========================================================= */
+
+.battlefield-cell.cell-recruit-available {
+  z-index: 2;
+  border-color: #ffe36e;
+  box-shadow:
+    0 0 0 2px rgba(255, 227, 110, 0.35),
+    0 0 18px rgba(255, 227, 110, 0.95),
+    inset 0 0 18px rgba(255, 227, 110, 0.22);
+  animation: recruit-space-pulse 1.15s ease-in-out infinite alternate;
+}
+
+.battlefield-cell.cell-recruit-available::before {
+  content: "DEPLOY";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  color: #fff4b0;
+  font-size: clamp(7px, 1vh, 10px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+
+@keyframes recruit-space-pulse {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battlefield-cell.cell-recruit-available {
+    animation: none;
+  }
+}

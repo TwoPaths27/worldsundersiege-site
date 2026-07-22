@@ -55,6 +55,7 @@ const GameState = {
   selectedUnitId: null,
   selectedCardId: null,
   reachableSpaces: new Map(),
+  nextUnitId: 1,
 
   players: {
     1: {
@@ -371,15 +372,33 @@ function createBattlefieldCell(x, y) {
   const selectedUnit = getSelectedUnit();
   const coordinateKey = getCoordinateKey(x, y);
   const moveDistance = GameState.reachableSpaces.get(coordinateKey);
-  if (ENEMY_RECRUITING_SPACES.has(coordinateKey)) {
-  cell.classList.add("cell-recruit-enemy");
-  cell.dataset.recruitOwner = "2";
-}
+  const selectedCard = getSelectedCard();
+  const activeRecruitingSpaces = getRecruitingSpacesForPlayer(
+    GameState.activePlayer
+  );
+  const canRecruitSelectedCard =
+    selectedCard &&
+    selectedCard.type === "Unit" &&
+    getActivePlayer().energy >= selectedCard.cost;
 
-if (PLAYER_RECRUITING_SPACES.has(coordinateKey)) {
-  cell.classList.add("cell-recruit-player");
-  cell.dataset.recruitOwner = "1";
-}
+  if (ENEMY_RECRUITING_SPACES.has(coordinateKey)) {
+    cell.classList.add("cell-recruit-enemy");
+    cell.dataset.recruitOwner = "2";
+  }
+
+  if (PLAYER_RECRUITING_SPACES.has(coordinateKey)) {
+    cell.classList.add("cell-recruit-player");
+    cell.dataset.recruitOwner = "1";
+  }
+
+  if (
+    canRecruitSelectedCard &&
+    activeRecruitingSpaces.has(coordinateKey) &&
+    !occupant
+  ) {
+    cell.classList.add("cell-recruit-available");
+    cell.title = `Recruit ${selectedCard.name} here for ${selectedCard.cost} Energy`;
+  }
 
   if (occupant) {
     cell.appendChild(createUnitToken(occupant));
@@ -459,6 +478,12 @@ function createUnitToken(unit) {
 function handleBattlefieldClick(x, y) {
   const clickedUnit = getUnitAt(x, y);
   const selectedUnit = getSelectedUnit();
+  const selectedCard = getSelectedCard();
+
+  if (selectedCard) {
+    recruitSelectedCard(x, y);
+    return;
+  }
 
   if (clickedUnit) {
     if (
@@ -528,8 +553,98 @@ function selectCard(cardId) {
   GameState.reachableSpaces = new Map();
   GameState.selectedCardId = card.id;
 
-  addLog(`${card.name} selected.`);
+  if (player.energy < card.cost) {
+    addLog(
+      `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
+    );
+  } else {
+    addLog(
+      `${card.name} selected. Choose a highlighted recruiting space.`
+    );
+  }
+
   renderGame();
+}
+
+function recruitSelectedCard(x, y) {
+  const card = getSelectedCard();
+
+  if (!card) {
+    return;
+  }
+
+  const player = getActivePlayer();
+  const destinationKey = getCoordinateKey(x, y);
+  const recruitingSpaces = getRecruitingSpacesForPlayer(
+    GameState.activePlayer
+  );
+
+  if (card.type !== "Unit") {
+    addLog(`${card.name} cannot be recruited as a Unit.`);
+    renderGame();
+    return;
+  }
+
+  if (player.energy < card.cost) {
+    addLog(
+      `${card.name} costs ${card.cost} Energy, but ${player.name} only has ${player.energy}.`
+    );
+    renderGame();
+    return;
+  }
+
+  if (!recruitingSpaces.has(destinationKey)) {
+    addLog(
+      `Choose one of ${player.name}'s highlighted recruiting spaces.`
+    );
+    renderGame();
+    return;
+  }
+
+  if (getUnitAt(x, y)) {
+    addLog("That recruiting space is occupied.");
+    renderGame();
+    return;
+  }
+
+  player.energy -= card.cost;
+
+  const cardIndex = player.hand.findIndex(
+    (handCard) => handCard.id === card.id
+  );
+
+  if (cardIndex >= 0) {
+    player.hand.splice(cardIndex, 1);
+  }
+
+  const unit = createUnit({
+    id: `player-${GameState.activePlayer}-recruit-${GameState.nextUnitId}`,
+    name: card.name,
+    owner: GameState.activePlayer,
+    x,
+    y,
+    attack: card.attack,
+    hp: card.hp,
+    range: card.range,
+    speed: card.speed,
+    cost: card.cost,
+  });
+
+  GameState.nextUnitId += 1;
+  GameState.units.push(unit);
+  GameState.selectedCardId = null;
+
+  addLog(
+    `${player.name} spent ${card.cost} Energy and recruited ${card.name} at ${formatCoordinate(x, y)}.`
+  );
+
+  renderGame();
+}
+
+function getRecruitingSpacesForPlayer(playerId) {
+  return playerId === 1
+    ? PLAYER_RECRUITING_SPACES
+    : ENEMY_RECRUITING_SPACES;
 }
 
 function clearSelection() {
