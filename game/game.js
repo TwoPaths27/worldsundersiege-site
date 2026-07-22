@@ -310,7 +310,15 @@ function renderGame() {
   renderStatusBar();
   renderBattlefield();
   renderSelectedUnitPanel();
-  renderCardPreview();
+
+  const selectedCard = getSelectedCard();
+
+  if (selectedCard) {
+    renderHandCardPreview(selectedCard);
+  } else {
+    renderCardPreview();
+  }
+
   renderStrongholds();
   renderHand();
   renderGameLog();
@@ -491,6 +499,7 @@ function selectUnit(unitId) {
     return;
   }
 
+  GameState.selectedCardId = null;
   GameState.selectedUnitId = unit.id;
   GameState.reachableSpaces = findReachableSpaces(unit);
 
@@ -498,9 +507,36 @@ function selectUnit(unitId) {
   renderGame();
 }
 
-function clearSelection() {
+function selectCard(cardId) {
+  const player = getActivePlayer();
+
+  const card = player.hand.find(
+    (handCard) => handCard.id === cardId
+  );
+
+  if (!card) {
+    return;
+  }
+
+  if (GameState.selectedCardId === card.id) {
+    GameState.selectedCardId = null;
+    renderGame();
+    return;
+  }
+
   GameState.selectedUnitId = null;
   GameState.reachableSpaces = new Map();
+  GameState.selectedCardId = card.id;
+
+  addLog(`${card.name} selected.`);
+  renderGame();
+}
+
+function clearSelection() {
+  GameState.selectedUnitId = null;
+  GameState.selectedCardId = null;
+  GameState.reachableSpaces = new Map();
+
   renderGame();
 }
 
@@ -625,6 +661,7 @@ function endTurn() {
 
   GameState.activePlayer = nextPlayer;
   GameState.selectedUnitId = null;
+  GameState.selectedCardId = null;
   GameState.reachableSpaces = new Map();
 
   if (nextPlayer === 1) {
@@ -784,6 +821,11 @@ function renderHand() {
     cardButton.type = "button";
     cardButton.className = "hand-card";
     cardButton.dataset.cardId = card.id;
+
+    const isSelected = GameState.selectedCardId === card.id;
+
+    cardButton.classList.toggle("is-selected", isSelected);
+    cardButton.setAttribute("aria-pressed", String(isSelected));
     cardButton.setAttribute(
       "aria-label",
       `${card.name}, cost ${card.cost}`
@@ -805,17 +847,28 @@ function renderHand() {
 
     cardButton.append(cost, stats, name);
 
+    cardButton.addEventListener("click", () => {
+      selectCard(card.id);
+    });
+
     cardButton.addEventListener("mouseenter", () => {
       renderHandCardPreview(card);
     });
 
     cardButton.addEventListener("mouseleave", () => {
-      renderCardPreview();
+      const selectedCard = getSelectedCard();
+
+      if (selectedCard) {
+        renderHandCardPreview(selectedCard);
+      } else {
+        renderCardPreview();
+      }
     });
 
     elements.hand.appendChild(cardButton);
   }
 }
+
 function renderHandCardPreview(card) {
   elements.cardPreview.replaceChildren();
   elements.cardPreview.className = "card-preview";
