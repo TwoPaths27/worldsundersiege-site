@@ -56,6 +56,9 @@ const GameState = {
   selectedCardId: null,
   reachableSpaces: new Map(),
   attackableUnitIds: new Set(),
+  attackableStrongholdPlayerId: null,
+  gameOver: false,
+  winnerPlayerId: null,
   nextUnitId: 1,
   isAnimating: false,
   lastSpawnedUnitId: null,
@@ -65,7 +68,7 @@ const GameState = {
       name: "Player 1",
       energy: 1,
       maxEnergy: 1,
-      strongholdHP: 30,
+      strongholdHP: 15,
       discardCount: 0,
       hand: [
   createCard({
@@ -104,7 +107,7 @@ const GameState = {
       name: "Player 2",
       energy: 0,
       maxEnergy: 0,
-      strongholdHP: 30,
+      strongholdHP: 15,
       discardCount: 0,
       hand: [
   createCard({
@@ -209,6 +212,12 @@ const elements = {
   exitModal: document.querySelector("#exitModal"),
   cancelExitButton: document.querySelector("#cancelExitButton"),
   confirmExitButton: document.querySelector("#confirmExitButton"),
+
+  victoryModal: document.querySelector("#victoryModal"),
+  victoryTitle: document.querySelector("#victoryTitle"),
+  victoryMessage: document.querySelector("#victoryMessage"),
+  playAgainButton: document.querySelector("#playAgainButton"),
+  victoryHomeButton: document.querySelector("#victoryHomeButton"),
 };
 
 initializeGame();
@@ -283,6 +292,26 @@ function bindEvents() {
   });
 
   elements.chatForm.addEventListener("submit", handleChatSubmit);
+
+  elements.playerStronghold.addEventListener("click", () => handleStrongholdClick(1));
+  elements.enemyStronghold.addEventListener("click", () => handleStrongholdClick(2));
+  elements.playerStronghold.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleStrongholdClick(1);
+    }
+  });
+  elements.enemyStronghold.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleStrongholdClick(2);
+    }
+  });
+
+  elements.playAgainButton.addEventListener("click", () => window.location.reload());
+  elements.victoryHomeButton.addEventListener("click", () => {
+    window.location.href = "https://worldsundersiege.com";
+  });
 
   elements.toggleHandButton.addEventListener("click", () => {
     const isCollapsed =
@@ -390,6 +419,25 @@ function renderStatusBar() {
     "is-active-player",
     GameState.activePlayer === 2
   );
+
+  elements.playerStronghold.classList.toggle(
+    "is-attack-target",
+    GameState.attackableStrongholdPlayerId === 1 && !GameState.gameOver
+  );
+  elements.enemyStronghold.classList.toggle(
+    "is-attack-target",
+    GameState.attackableStrongholdPlayerId === 2 && !GameState.gameOver
+  );
+
+  elements.playerStronghold.setAttribute(
+    "aria-disabled",
+    String(GameState.gameOver || GameState.attackableStrongholdPlayerId !== 1)
+  );
+  elements.enemyStronghold.setAttribute(
+    "aria-disabled",
+    String(GameState.gameOver || GameState.attackableStrongholdPlayerId !== 2)
+  );
+  elements.endTurnButton.disabled = GameState.gameOver || GameState.isAnimating;
 
   elements.handPanel.classList.toggle(
     "is-player-one-turn",
@@ -566,7 +614,7 @@ function createUnitToken(unit) {
 }
 
 function handleBattlefieldClick(x, y) {
-  if (GameState.isAnimating) {
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -619,7 +667,7 @@ function handleBattlefieldClick(x, y) {
 }
 
 function selectUnit(unitId) {
-  if (GameState.isAnimating) {
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -637,6 +685,7 @@ function selectUnit(unitId) {
   GameState.selectedUnitId = unit.id;
   GameState.reachableSpaces = findReachableSpaces(unit);
   GameState.attackableUnitIds = findAttackableUnits(unit);
+  GameState.attackableStrongholdPlayerId = findAttackableStronghold(unit);
 
   addLog(
     unit.hasAttacked
@@ -647,7 +696,7 @@ function selectUnit(unitId) {
 }
 
 function selectCard(cardId) {
-  if (GameState.isAnimating) {
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -670,6 +719,7 @@ function selectCard(cardId) {
   GameState.selectedUnitId = null;
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
   GameState.selectedCardId = card.id;
 
   if (player.energy < card.cost) {
@@ -940,7 +990,7 @@ function getRecruitingSpacesForPlayer(playerId) {
 }
 
 function clearSelection() {
-  if (GameState.isAnimating) {
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -948,6 +998,7 @@ function clearSelection() {
   GameState.selectedCardId = null;
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
 
   renderGame();
 }
@@ -989,10 +1040,12 @@ function moveSelectedUnit(destinationX, destinationY) {
   if (unit.remainingSpeed > 0) {
     GameState.reachableSpaces = findReachableSpaces(unit);
     GameState.attackableUnitIds = findAttackableUnits(unit);
+    GameState.attackableStrongholdPlayerId = findAttackableStronghold(unit);
   } else {
     GameState.selectedUnitId = null;
     GameState.reachableSpaces = new Map();
     GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
   }
 
   renderGame();
@@ -1020,6 +1073,174 @@ function findAttackableUnits(unit) {
   }
 
   return targets;
+}
+
+function findAttackableStronghold(unit) {
+  if (!unit || unit.hasAttacked || GameState.gameOver) {
+    return null;
+  }
+
+  const enemyPlayerId = unit.owner === 1 ? 2 : 1;
+  const strongholdY = enemyPlayerId === 2 ? -1 : BOARD_ROWS;
+  const strongholdColumns = [2, 3, 4];
+
+  const minimumDistance = Math.min(
+    ...strongholdColumns.map((column) =>
+      Math.abs(unit.x - column) + Math.abs(unit.y - strongholdY)
+    )
+  );
+
+  return minimumDistance <= unit.currentRange ? enemyPlayerId : null;
+}
+
+function handleStrongholdClick(targetPlayerId) {
+  if (GameState.gameOver || GameState.isAnimating) {
+    return;
+  }
+
+  const attacker = getSelectedUnit();
+
+  if (!attacker) {
+    addLog("Select one of your Units before attacking a Stronghold.");
+    renderGame();
+    return;
+  }
+
+  if (targetPlayerId === attacker.owner) {
+    addLog("You cannot attack your own Stronghold.");
+    return;
+  }
+
+  if (attacker.hasAttacked) {
+    addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return;
+  }
+
+  if (GameState.attackableStrongholdPlayerId !== targetPlayerId) {
+    addLog(`The enemy Stronghold is outside ${attacker.name}'s attack range.`);
+    renderGame();
+    return;
+  }
+
+  attackStronghold(attacker, targetPlayerId);
+}
+
+async function attackStronghold(attacker, targetPlayerId) {
+  const targetStronghold = targetPlayerId === 1
+    ? elements.playerStronghold
+    : elements.enemyStronghold;
+  const attackerToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(attacker.id)}"]`
+  );
+
+  GameState.isAnimating = true;
+  setInteractionLock(true);
+
+  try {
+    await animateStrongholdAttack(attackerToken, targetStronghold, attacker);
+
+    const targetPlayer = GameState.players[targetPlayerId];
+    targetPlayer.strongholdHP = Math.max(0, targetPlayer.strongholdHP - attacker.currentAttack);
+    attacker.hasAttacked = true;
+
+    addLog(
+      `🏰 Player ${attacker.owner}'s ${attacker.name} struck Player ${targetPlayerId}'s Stronghold for ${attacker.currentAttack} damage.`
+    );
+    addLog(`❤ Player ${targetPlayerId}'s Stronghold has ${targetPlayer.strongholdHP} HP remaining.`);
+
+    GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
+    renderGame();
+
+    if (targetPlayer.strongholdHP <= 0) {
+      endGame(attacker.owner);
+    }
+  } finally {
+    GameState.isAnimating = false;
+    setInteractionLock(GameState.gameOver);
+  }
+}
+
+async function animateStrongholdAttack(attackerToken, stronghold, attacker) {
+  if (!stronghold) {
+    await wait(260);
+    return;
+  }
+
+  const strongholdRect = stronghold.getBoundingClientRect();
+  const damageNumber = document.createElement("span");
+  damageNumber.className = "floating-damage-number floating-damage-number--stronghold";
+  damageNumber.textContent = `−${attacker.currentAttack}`;
+  damageNumber.style.left = `${strongholdRect.left + strongholdRect.width / 2}px`;
+  damageNumber.style.top = `${strongholdRect.top + strongholdRect.height / 2}px`;
+  document.body.appendChild(damageNumber);
+
+  const animations = [];
+
+  if (attackerToken) {
+    const attackerRect = attackerToken.getBoundingClientRect();
+    const deltaX = (strongholdRect.left + strongholdRect.width / 2) -
+      (attackerRect.left + attackerRect.width / 2);
+    const deltaY = (strongholdRect.top + strongholdRect.height / 2) -
+      (attackerRect.top + attackerRect.height / 2);
+    const length = Math.max(1, Math.hypot(deltaX, deltaY));
+    animations.push(attackerToken.animate(
+      [
+        { transform: "translate3d(0,0,0) scale(1)" },
+        { transform: `translate3d(${deltaX / length * 34}px,${deltaY / length * 34}px,0) scale(1.1)`, offset: .48 },
+        { transform: "translate3d(0,0,0) scale(1)" },
+      ],
+      { duration: 400, easing: "cubic-bezier(.2,.8,.25,1)" }
+    ).finished);
+  }
+
+  animations.push(stronghold.animate(
+    [
+      { transform: "translateX(0) scale(1)", filter: "brightness(1)" },
+      { transform: "translateX(-7px) scale(1.025)", filter: "brightness(2.2)", offset: .35 },
+      { transform: "translateX(7px) scale(.99)", filter: "brightness(1.5)", offset: .58 },
+      { transform: "translateX(0) scale(1)", filter: "brightness(1)" },
+    ],
+    { duration: 520, easing: "ease-out" }
+  ).finished);
+
+  animations.push(damageNumber.animate(
+    [
+      { opacity: 0, transform: "translate(-50%, -10%) scale(.65)" },
+      { opacity: 1, transform: "translate(-50%, -80%) scale(1.35)", offset: .28 },
+      { opacity: 0, transform: "translate(-50%, -165%) scale(1)" },
+    ],
+    { duration: 720, easing: "ease-out", fill: "forwards" }
+  ).finished);
+
+  document.body.classList.add("stronghold-impact");
+  try {
+    await Promise.allSettled(animations);
+  } finally {
+    document.body.classList.remove("stronghold-impact");
+    damageNumber.remove();
+  }
+}
+
+function endGame(winnerPlayerId) {
+  GameState.gameOver = true;
+  GameState.winnerPlayerId = winnerPlayerId;
+  GameState.selectedUnitId = null;
+  GameState.selectedCardId = null;
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+
+  addLog(`🏆 Player ${winnerPlayerId} destroyed the enemy Stronghold and won the match!`);
+  renderGame();
+
+  elements.victoryTitle.textContent = `Player ${winnerPlayerId} Wins!`;
+  elements.victoryMessage.textContent =
+    `Player ${winnerPlayerId} reduced the opposing Stronghold to 0 HP.`;
+  elements.victoryModal.hidden = false;
+  document.body.classList.add("modal-open", "game-is-over");
+  elements.playAgainButton.focus();
 }
 
 async function attackUnit(attacker, defender) {
@@ -1068,6 +1289,7 @@ async function attackUnit(attacker, defender) {
     }
 
     GameState.attackableUnitIds = findAttackableUnits(attacker);
+    GameState.attackableStrongholdPlayerId = findAttackableStronghold(attacker);
     GameState.reachableSpaces = findReachableSpaces(attacker);
     renderGame();
   } finally {

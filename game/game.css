@@ -3490,3 +3490,91 @@ body.is-game-animating .hand-dock__toggle {
   .cell-attack-target,
   .energy-frame-pulse { animation-duration: 1ms !important; }
 }
+
+
+/* =========================================================
+   Stronghold combat + victory state
+========================================================= */
+.stronghold[role="button"] {
+  cursor: default;
+  user-select: none;
+}
+
+.stronghold.is-attack-target {
+  cursor: crosshair;
+  border-color: #ff6666 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 55, 55, .28),
+    0 0 24px rgba(255, 55, 55, .9),
+    inset 0 0 20px rgba(255, 55, 55, .35) !important;
+  animation: stronghold-target-pulse 1s ease-in-out infinite;
+}
+
+.stronghold.is-attack-target:hover {
+  filter: brightness(1.18);
+}
+
+.stronghold.is-attack-target:focus-visible {
+  outline: 3px solid #ff8b8b;
+  outline-offset: 3px;
+}
+
+body.stronghold-impact .battlefield-stage {
+  animation: stronghold-screen-shake 420ms ease-out;
+}
+
+.floating-damage-number--stronghold {
+  color: #fff0b7;
+  text-shadow: 0 2px 2px #6b2600, 0 0 18px rgba(255, 116, 20, .98);
+}
+
+.victory-modal__dialog {
+  text-align: center;
+  border-color: #d8b94d;
+  box-shadow: 0 0 36px rgba(239, 197, 63, .32);
+}
+
+.victory-modal__crest {
+  margin-bottom: 8px;
+  font-size: 48px;
+  line-height: 1;
+  animation: victory-crest-arrive 520ms cubic-bezier(.2,.9,.25,1.25);
+}
+
+body.game-is-over .battlefield-column,
+body.game-is-over .hand-dock,
+body.game-is-over .side-panel {
+  filter: saturate(.72) brightness(.78);
+}
+
+@keyframes stronghold-target-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(255,55,55,.45), inset 0 0 12px rgba(255,55,55,.2);
+  }
+  50% {
+    transform: scale(1.025);
+    box-shadow: 0 0 30px rgba(255,55,55,.98), inset 0 0 24px rgba(255,55,55,.42);
+  }
+}
+
+@keyframes stronghold-screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 1px); }
+  40% { transform: translate(5px, -2px); }
+  60% { transform: translate(-3px, 2px); }
+  80% { transform: translate(3px, -1px); }
+}
+
+@keyframes victory-crest-arrive {
+  from { opacity: 0; transform: translateY(-18px) scale(.5) rotate(-8deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stronghold.is-attack-target,
+  body.stronghold-impact .battlefield-stage,
+  .victory-modal__crest {
+    animation-duration: 1ms !important;
+  }
+}

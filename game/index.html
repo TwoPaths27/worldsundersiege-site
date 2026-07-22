@@ -95,6 +95,8 @@
         id="enemyStronghold"
         class="stronghold stronghold--enemy"
         data-owner="2"
+        role="button"
+        tabindex="0"
       >
         <div>
           <span class="stronghold__owner">Player 2</span>
@@ -103,7 +105,7 @@
 
         <div class="stronghold__health">
           <span>HP</span>
-          <strong id="enemyStrongholdHP">30</strong>
+          <strong id="enemyStrongholdHP">15</strong>
         </div>
       </section>
     </div>
@@ -244,6 +246,8 @@
         id="playerStronghold"
         class="stronghold stronghold--player"
         data-owner="1"
+        role="button"
+        tabindex="0"
       >
         <div>
           <span class="stronghold__owner">Player 1</span>
@@ -252,7 +256,7 @@
 
         <div class="stronghold__health">
           <span>HP</span>
-          <strong id="playerStrongholdHP">30</strong>
+          <strong id="playerStrongholdHP">15</strong>
         </div>
       </section>
     </div>
@@ -371,6 +375,32 @@
         </button>
         <button id="confirmExitButton" class="modal-button modal-button--confirm" type="button">
           Yes
+        </button>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="victoryModal" class="exit-modal victory-modal" hidden>
+    <div class="exit-modal__backdrop"></div>
+
+    <section
+      class="exit-modal__dialog victory-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="victoryTitle"
+      aria-describedby="victoryMessage"
+    >
+      <div class="victory-modal__crest" aria-hidden="true">🏆</div>
+      <h2 id="victoryTitle">Victory!</h2>
+      <p id="victoryMessage">The enemy Stronghold has fallen.</p>
+
+      <div class="exit-modal__actions">
+        <button id="playAgainButton" class="modal-button modal-button--confirm" type="button">
+          Play Again
+        </button>
+        <button id="victoryHomeButton" class="modal-button modal-button--cancel" type="button">
+          Return Home
         </button>
       </div>
     </section>
