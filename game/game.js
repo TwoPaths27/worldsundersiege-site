@@ -856,6 +856,12 @@ async function recruitSelectedCard(x, y) {
   setInteractionLock(true);
 
   try {
+    pulseActiveEnergy(GameState.activePlayer);
+    await animateEnergyToCard(
+      GameState.activePlayer,
+      sourceCard,
+      card.cost
+    );
     await animateCardToCell(sourceCard, destinationCell);
 
     player.energy -= card.cost;
@@ -893,7 +899,6 @@ async function recruitSelectedCard(x, y) {
 
     renderGame();
     flashRecruitingCell(x, y, GameState.activePlayer);
-    pulseActiveEnergy(GameState.activePlayer);
 
     window.setTimeout(() => {
       if (GameState.lastSpawnedUnitId === unit.id) {
@@ -931,6 +936,103 @@ function setInteractionLock(isLocked) {
   document.body.classList.toggle("is-game-animating", isLocked);
   elements.endTurnButton.disabled = isLocked;
   elements.toggleHandButton.disabled = isLocked;
+}
+
+async function animateEnergyToCard(playerId, targetCard, energyCost) {
+  const energyElement =
+    playerId === 1
+      ? elements.playerCurrentEnergy
+      : elements.enemyCurrentEnergy;
+  const energyFrame = energyElement.closest(".battlefield-energy");
+
+  if (!energyFrame || !targetCard || energyCost <= 0) {
+    await wait(120);
+    return;
+  }
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+
+  if (reduceMotion) {
+    targetCard.classList.add("energy-absorbed");
+    await wait(80);
+    targetCard.classList.remove("energy-absorbed");
+    return;
+  }
+
+  const sourceRect = energyFrame.getBoundingClientRect();
+  const targetRect = targetCard.getBoundingClientRect();
+  const sourceX = sourceRect.left + sourceRect.width / 2;
+  const sourceY = sourceRect.top + sourceRect.height / 2;
+  const targetX = targetRect.left + targetRect.width / 2;
+  const targetY = targetRect.top + targetRect.height / 2;
+  const orbCount = Math.max(1, Math.min(energyCost, 8));
+  const travelPromises = [];
+
+  targetCard.classList.add("is-receiving-energy");
+
+  for (let index = 0; index < orbCount; index += 1) {
+    const orb = document.createElement("span");
+    const angle = (index / Math.max(orbCount, 1)) * Math.PI * 2;
+    const spreadX = Math.cos(angle) * 11;
+    const spreadY = Math.sin(angle) * 8;
+    const deltaX = targetX - sourceX;
+    const deltaY = targetY - sourceY;
+    const arcDirection = playerId === 1 ? -1 : 1;
+    const arcHeight = Math.min(150, Math.max(65, Math.abs(deltaY) * 0.24));
+    const delay = index * 95;
+
+    orb.className = `energy-transfer-orb energy-transfer-orb--player-${playerId}`;
+    orb.setAttribute("aria-hidden", "true");
+    orb.style.left = `${sourceX - 7 + spreadX}px`;
+    orb.style.top = `${sourceY - 7 + spreadY}px`;
+    document.body.appendChild(orb);
+
+    const animation = orb.animate(
+      [
+        {
+          transform: "translate3d(0, 0, 0) scale(.45)",
+          opacity: 0,
+          offset: 0,
+        },
+        {
+          transform: `translate3d(${spreadX * 0.8}px, ${spreadY * 0.8}px, 0) scale(1.15)`,
+          opacity: 1,
+          offset: 0.12,
+        },
+        {
+          transform: `translate3d(${deltaX * 0.48}px, ${deltaY * 0.42 + arcDirection * arcHeight}px, 0) scale(.9)`,
+          opacity: 1,
+          offset: 0.56,
+        },
+        {
+          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(.2)`,
+          opacity: 0,
+          offset: 1,
+        },
+      ],
+      {
+        duration: 580,
+        delay,
+        easing: "cubic-bezier(.18,.75,.2,1)",
+        fill: "forwards",
+      }
+    );
+
+    travelPromises.push(
+      animation.finished
+        .catch(() => wait(580 + delay))
+        .finally(() => orb.remove())
+    );
+  }
+
+  await Promise.all(travelPromises);
+
+  targetCard.classList.remove("is-receiving-energy");
+  targetCard.classList.add("energy-absorbed");
+  await wait(230);
+  targetCard.classList.remove("energy-absorbed");
 }
 
 async function animateCardToCell(sourceCard, destinationCell) {

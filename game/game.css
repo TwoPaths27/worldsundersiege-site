@@ -3666,3 +3666,80 @@ body.game-is-over .side-panel {
     animation-duration: 1ms !important;
   }
 }
+
+
+/* =========================================================
+   Energy transfer: resource sparks feed the played card
+========================================================= */
+.energy-transfer-orb {
+  position: fixed;
+  z-index: 10020;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.86);
+  border-radius: 50%;
+  pointer-events: none;
+  transform-origin: center;
+  filter: brightness(1.35);
+}
+
+.energy-transfer-orb::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+}
+
+.energy-transfer-orb--player-1 {
+  background: rgba(69, 170, 255, .96);
+  box-shadow:
+    0 0 8px rgba(88, 185, 255, 1),
+    0 0 22px rgba(45, 137, 255, .95),
+    0 0 38px rgba(45, 137, 255, .55);
+}
+
+.energy-transfer-orb--player-2 {
+  background: rgba(255, 77, 77, .96);
+  box-shadow:
+    0 0 8px rgba(255, 105, 105, 1),
+    0 0 22px rgba(255, 55, 55, .95),
+    0 0 38px rgba(255, 55, 55, .55);
+}
+
+.hand-card.is-receiving-energy {
+  z-index: 12;
+  filter: brightness(1.18) saturate(1.2);
+  box-shadow:
+    0 14px 28px rgba(0,0,0,.7),
+    0 0 18px rgba(255, 226, 125, .55);
+}
+
+.hand-card.energy-absorbed {
+  z-index: 12;
+  animation: card-energy-absorb 230ms cubic-bezier(.2,.9,.25,1.35) both;
+}
+
+@keyframes card-energy-absorb {
+  0% {
+    filter: brightness(1.1) saturate(1.1);
+    box-shadow: 0 0 12px rgba(255, 226, 125, .45);
+  }
+  45% {
+    transform: translateY(-32px) scale(1.43);
+    filter: brightness(2.15) saturate(1.45);
+    box-shadow:
+      0 16px 32px rgba(0,0,0,.72),
+      0 0 16px rgba(255,255,255,.98),
+      0 0 38px rgba(255, 218, 92, .92);
+  }
+  100% {
+    filter: brightness(1.12) saturate(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energy-transfer-orb { display: none !important; }
+  .hand-card.energy-absorbed { animation-duration: 1ms !important; }
+}
