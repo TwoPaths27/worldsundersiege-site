@@ -15,7 +15,7 @@ let armies = [];
 let activeDeckId = null;
 let selectedCard = null;
 let selectedForm = 0;
-const purchaseSound = new Audio("buy-card.mp3");
+const purchaseSound = new Audio("sounds/drop-coin.mp3");
 purchaseSound.preload = "auto";
 purchaseSound.volume = 0.75;
 const $ = id => document.getElementById(id);
@@ -157,9 +157,48 @@ function matches(c){
 }
 function deckUseLabel(c){if(isStronghold(c))return stronghold===c.id?'Selected':'Not selected';if(isArmy(c))return armies.includes(c.id)?'Selected':'Not selected';return `Deck ${printingQty(c.id)}`;}
 function addLabel(c){if(isStronghold(c))return stronghold?'Replace Stronghold':'Select Stronghold';if(isArmy(c))return 'Add Army';return `Add ${c.name}`;}
-function renderBrowser(){const list=DB.filter(matches);els.visibleCount.textContent=`${list.length} shown`;els.emptyBrowser.hidden=list.length>0;els.cardBrowser.innerHTML='';list.forEach(c=>{const have=owned(c.id);const div=document.createElement('article');div.className=`browser-card ${have?'':'unowned'} ${c.isSecret?'secret':''}`;div.dataset.id=c.id;div.title=`${c.name} · ${c.id} · ${c.rarity} · Owned ${have} · ${deckUseLabel(c)}`;const price=purchasePrice(c), limit=ownershipLimit(c), purchasable=canPurchase(c);
-const purchaseMarkup=!els.buySingles.checked||c.isSecret?'':(purchasable?`<div class="buy-overlay"><strong>${price.toLocaleString()} Gold</strong><span>Owned ${have}/${limit}</span><button class="buy-card-btn" ${window.WUSCollection.load().gold<price?'disabled':''}>Buy Copy</button></div>`:(price!==null?`<div class="buy-overlay maxed"><strong>Maximum Owned</strong><span>${have}/${limit} copies</span></div>`:''));
-div.innerHTML=`<img class="browser-thumb" src="card-back.png" alt="${c.name}">${purchaseMarkup}<div class="browser-card-controls"><span class="browser-quantity">${isStronghold(c)?(stronghold===c.id?'Selected':'Stronghold'):isArmy(c)?(armies.includes(c.id)?'Selected':'Army'):`${printingQty(c.id)} / ${have}`}</span><button class="browser-add" aria-label="${addLabel(c)}" ${canAdd(c)?'':'disabled'}>+</button></div>`;setImg(div.querySelector('img'),c.image);div.onclick=()=>selectCard(c);div.ondblclick=()=>addCard(c.id);div.onmouseenter=()=>selectCard(c);div.querySelector('.browser-add').onclick=e=>{e.stopPropagation();addCard(c.id)};div.querySelector('.buy-card-btn')?.addEventListener('click',e=>{e.stopPropagation();selectCard(c);buyCard(c)});els.cardBrowser.append(div);});if(selectedCard)document.querySelector(`[data-id="${selectedCard.id}"]`)?.classList.add('selected');}
+function renderBrowser(){
+  const list=DB.filter(matches);
+  const buying=els.buySingles.checked;
+  const gold=window.WUSCollection?.load().gold||0;
+  els.visibleCount.textContent=`${list.length} shown`;
+  els.emptyBrowser.hidden=list.length>0;
+  els.cardBrowser.innerHTML='';
+  list.forEach(c=>{
+    const have=owned(c.id);
+    const price=purchasePrice(c);
+    const limit=ownershipLimit(c);
+    const purchasable=canPurchase(c);
+    const div=document.createElement('article');
+    div.className=`browser-card ${have?'':'unowned'} ${c.isSecret?'secret':''} ${buying?'buying-card':''}`;
+    div.dataset.id=c.id;
+    div.title=`${c.name} · ${c.id} · ${c.rarity} · Owned ${have} · ${deckUseLabel(c)}`;
+
+    let actionMarkup;
+    if(buying){
+      let label="Unavailable";
+      let disabled=true;
+      if(price!==null&&have>=limit) label="Max Owned";
+      else if(purchasable){
+        label=`Buy · ${price.toLocaleString()} Gold`;
+        disabled=gold<price;
+      }
+      actionMarkup=`<button class="buy-card-btn browser-action-btn" type="button" ${disabled?'disabled':''}>${label}</button>`;
+    }else{
+      actionMarkup=`<button class="browser-add browser-action-btn" type="button" aria-label="${addLabel(c)}" ${canAdd(c)?'':'disabled'}>+</button>`;
+    }
+
+    div.innerHTML=`<img class="browser-thumb" src="card-back.png" alt="${c.name}"><div class="browser-card-controls"><span class="browser-quantity">${buying?`Owned ${have}/${limit}`:(isStronghold(c)?(stronghold===c.id?'Selected':'Stronghold'):isArmy(c)?(armies.includes(c.id)?'Selected':'Army'):`${printingQty(c.id)} / ${have}`)}</span>${actionMarkup}</div>`;
+    setImg(div.querySelector('img'),c.image);
+    div.onclick=()=>selectCard(c);
+    div.ondblclick=()=>{if(!buying)addCard(c.id);};
+    div.onmouseenter=()=>selectCard(c);
+    div.querySelector('.browser-add')?.addEventListener('click',e=>{e.stopPropagation();addCard(c.id);});
+    div.querySelector('.buy-card-btn')?.addEventListener('click',e=>{e.stopPropagation();selectCard(c);buyCard(c);});
+    els.cardBrowser.append(div);
+  });
+  if(selectedCard)document.querySelector(`[data-id="${selectedCard.id}"]`)?.classList.add('selected');
+}
 function resetFilters(){
   els.searchCards.value="";
   ["typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter"].forEach(id=>els[id].value="All");
