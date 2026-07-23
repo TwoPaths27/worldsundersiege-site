@@ -955,3 +955,85 @@
     setTimeout(() => restoreOpening(savedOpening), 0);
   }
 })();
+
+
+const __zoomModal = document.getElementById("cardZoomModal");
+const __zoomImg = document.getElementById("cardZoomImage");
+const __zoomClose = document.getElementById("cardZoomClose");
+const __zoomPrevious = document.getElementById("cardZoomPrevious");
+const __zoomNext = document.getElementById("cardZoomNext");
+const __zoomCounter = document.getElementById("cardZoomCounter");
+
+if (__zoomModal) {
+  let __zoomCards = [];
+  let __zoomIndex = 0;
+  let __zoomTouchStartX = null;
+  let __zoomTouchStartY = null;
+
+  function __collectZoomCards() {
+    const revealed = [...document.querySelectorAll(".card-grid .pack-card.revealed img")];
+    return revealed.length ? revealed : [...document.querySelectorAll(".card-grid img")];
+  }
+
+  function __showZoomCard(index) {
+    if (!__zoomCards.length) return;
+    __zoomIndex = (index + __zoomCards.length) % __zoomCards.length;
+    const image = __zoomCards[__zoomIndex];
+    __zoomImg.src = image.currentSrc || image.src;
+    __zoomImg.alt = image.alt || "Card";
+    __zoomCounter.textContent = `${__zoomIndex + 1} / ${__zoomCards.length}`;
+    const showNavigation = __zoomCards.length > 1;
+    __zoomPrevious.hidden = !showNavigation;
+    __zoomNext.hidden = !showNavigation;
+  }
+
+  function __openZoom(image) {
+    __zoomCards = __collectZoomCards();
+    __zoomIndex = Math.max(0, __zoomCards.indexOf(image));
+    __showZoomCard(__zoomIndex);
+    __zoomModal.hidden = false;
+    document.body.classList.add("card-zoom-open");
+  }
+
+  function __closeZoom() {
+    __zoomModal.hidden = true;
+    document.body.classList.remove("card-zoom-open");
+  }
+
+  document.addEventListener("click", event => {
+    const image = event.target.closest(".card-grid .pack-card.revealed img");
+    if (!image) return;
+    __openZoom(image);
+  });
+
+  __zoomPrevious?.addEventListener("click", () => __showZoomCard(__zoomIndex - 1));
+  __zoomNext?.addEventListener("click", () => __showZoomCard(__zoomIndex + 1));
+  __zoomClose?.addEventListener("click", __closeZoom);
+  __zoomModal.querySelector(".card-zoom-backdrop")?.addEventListener("click", __closeZoom);
+
+  __zoomModal.addEventListener("touchstart", event => {
+    const touch = event.changedTouches[0];
+    __zoomTouchStartX = touch.clientX;
+    __zoomTouchStartY = touch.clientY;
+  }, { passive: true });
+
+  __zoomModal.addEventListener("touchend", event => {
+    if (__zoomTouchStartX === null || __zoomTouchStartY === null) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - __zoomTouchStartX;
+    const deltaY = touch.clientY - __zoomTouchStartY;
+    __zoomTouchStartX = null;
+    __zoomTouchStartY = null;
+
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    __showZoomCard(__zoomIndex + (deltaX < 0 ? 1 : -1));
+  }, { passive: true });
+
+  document.addEventListener("keydown", event => {
+    if (__zoomModal.hidden) return;
+    if (event.key === "ArrowLeft") __showZoomCard(__zoomIndex - 1);
+    if (event.key === "ArrowRight") __showZoomCard(__zoomIndex + 1);
+    if (event.key === "Escape") __closeZoom();
+  });
+}
+
