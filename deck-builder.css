@@ -305,3 +305,14 @@ body.builder-locked{overflow:hidden}
   max-width:100%;
   font-size:11px;
 }
+
+
+/* Keep purchasable Buy buttons bright even when the card itself is unowned/dimmed. */
+.browser-card.unowned.buying-card .buy-card-btn:not(:disabled){
+  opacity:1 !important;
+  filter:none !important;
+  background:linear-gradient(180deg,#d6a63a,#9a681d) !important;
+  border-color:#ffd86a !important;
+  color:#fff !important;
+  box-shadow:0 0 8px rgba(255,198,62,.75);
+}
