@@ -136,3 +136,44 @@ body.asset-locked { overflow: hidden; }
 }
 
 @media(max-width:680px){.best-pull-card{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.best-pull-card .summary-card{max-width:none}}
+
+/* Larger revealed cards on phones and narrow portrait screens. */
+@media (max-width: 900px) {
+  .reveal-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .reveal-panel {
+    padding: 14px;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .preview-panel {
+    display: block;
+  }
+
+  .preview-frame {
+    width: min(72vw, 330px);
+    max-width: none;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .stage {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .reveal-panel {
+    padding: 10px;
+  }
+
+  .card-grid {
+    gap: 10px;
+  }
+}
