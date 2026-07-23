@@ -105,17 +105,18 @@
     cardFlip: "sounds/card-flip.mp3",
     superRare: "sounds/super-rare.mp3",
     ultraRare: "sounds/ultra-rare.mp3",
-    secretRare: ["sounds/secret-rare-1.mp3", "sounds/secret-rare-2.mp3"]
+    secretRare: Object.freeze({
+      dark: "sounds/secret-rare-dark.mp3",
+      braam: "sounds/secret-rare-braam.mp3",
+      sparkle: "sounds/secret-rare-sparkle.mp3"
+    })
   });
 
-  const soundVolumes = Object.freeze({
-    packRip: 0.72,
-    packPop: 0.24,
-    cardFlip: 0.32,
-    superRare: 0.42,
-    ultraRare: 0.52,
-    secretRare: 0.58
-  });
+  // All exported files are loudness-normalized. Single sounds therefore share
+  // one playback level. Each Secret Rare layer is reduced so the combined
+  // three-sound reveal stays close to the same perceived level without clipping.
+  const SOUND_VOLUME = 0.5;
+  const SECRET_LAYER_VOLUME = 0.29;
 
   function playSound(path, volume = 0.5, playbackRate = 1) {
     if (!path) return;
@@ -127,35 +128,39 @@
   }
 
   function playPackPop() {
-    const variedRate = 0.95 + Math.random() * 0.1;
-    playSound(soundPaths.packPop, soundVolumes.packPop, variedRate);
+    // A tiny pitch change keeps repeated booster-box bursts from sounding copied.
+    const variedRate = 0.98 + Math.random() * 0.04;
+    playSound(soundPaths.packPop, SOUND_VOLUME, variedRate);
+  }
+
+  function playSecretRareSound() {
+    // Ominous opening, then the impact, then the magical rise.
+    playSound(soundPaths.secretRare.dark, SECRET_LAYER_VOLUME);
+    window.setTimeout(() => {
+      playSound(soundPaths.secretRare.braam, SECRET_LAYER_VOLUME);
+    }, 250);
+    window.setTimeout(() => {
+      playSound(soundPaths.secretRare.sparkle, SECRET_LAYER_VOLUME);
+    }, 800);
   }
 
   function playRaritySound(rarity) {
     if (rarity === "Super Rare") {
-      playSound(soundPaths.superRare, soundVolumes.superRare);
+      playSound(soundPaths.superRare, SOUND_VOLUME);
       return;
     }
 
     if (rarity === "Ultra Rare") {
-      playSound(soundPaths.ultraRare, soundVolumes.ultraRare);
+      playSound(soundPaths.ultraRare, SOUND_VOLUME);
       return;
     }
 
     if (rarity === "Secret Rare") {
-      const secretOne = new Audio(soundPaths.secretRare[0]);
-      const secretTwo = new Audio(soundPaths.secretRare[1]);
-      secretOne.preload = "auto";
-      secretTwo.preload = "auto";
-      secretOne.volume = soundVolumes.secretRare;
-      secretTwo.volume = soundVolumes.secretRare;
-      secretOne.currentTime = 0;
-      secretTwo.currentTime = 0;
-      Promise.allSettled([secretOne.play(), secretTwo.play()]);
+      playSecretRareSound();
       return;
     }
 
-    playSound(soundPaths.cardFlip, soundVolumes.cardFlip, 0.98 + Math.random() * 0.04);
+    playSound(soundPaths.cardFlip, SOUND_VOLUME, 0.98 + Math.random() * 0.04);
   }
 
   function preloadSounds() {
@@ -165,7 +170,7 @@
       soundPaths.cardFlip,
       soundPaths.superRare,
       soundPaths.ultraRare,
-      ...soundPaths.secretRare
+      ...Object.values(soundPaths.secretRare)
     ];
     paths.forEach(path => {
       const audio = new Audio();
@@ -753,7 +758,7 @@
     }
     selectedBoxPack = null;
     renderPack(currentPack);
-    playSound(soundPaths.packRip, soundVolumes.packRip);
+    playSound(soundPaths.packRip, SOUND_VOLUME);
     boosterButton.classList.add("opening");
     clickHint.textContent = "Opening…";
     setTimeout(() => {
