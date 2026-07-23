@@ -101,6 +101,7 @@
 
   const soundPaths = Object.freeze({
     purchase: "sounds/drop-coin.mp3",
+    boxSummary: "sounds/box-summary.mp3",
     packRip: "sounds/pack-rip.mp3",
     packPop: "sounds/card-flip.mp3",
     cardFlip: "sounds/card-flip.mp3",
@@ -168,6 +169,7 @@
   function preloadSounds() {
     const paths = [
       soundPaths.purchase,
+      soundPaths.boxSummary,
       soundPaths.packRip,
       soundPaths.packPop,
       soundPaths.cardFlip,
