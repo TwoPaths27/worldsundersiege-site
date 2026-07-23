@@ -208,80 +208,65 @@
   function showGoldSpendAnimation(amount) {
     if (!amount) return;
 
-    if (!document.getElementById("goldSpendAnimationStyles")) {
-      const style = document.createElement("style");
-      style.id = "goldSpendAnimationStyles";
-      style.textContent = `
-        .gold-spend-float {
-          position: fixed;
-          z-index: 9999;
-          pointer-events: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.28rem;
-          color: #ff3b3b;
-          font-weight: 900;
-          font-size: clamp(1rem, 2.6vw, 1.35rem);
-          line-height: 1;
-          text-shadow:
-            0 2px 2px rgba(0, 0, 0, 0.85),
-            0 0 8px rgba(255, 0, 0, 0.35);
-          transform: translate(-50%, -8px) scale(0.92);
-          opacity: 0;
-          animation: goldSpendDrop 1.15s ease-out forwards;
-        }
-
-        .gold-spend-symbol {
-          color: #f5c542;
-          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
-        }
-
-        @keyframes goldSpendDrop {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -8px) scale(0.92);
-          }
-          16% {
-            opacity: 1;
-            transform: translate(-50%, 2px) scale(1.08);
-          }
-          72% {
-            opacity: 1;
-            transform: translate(-50%, 38px) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(-50%, 58px) scale(0.96);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .gold-spend-float {
-            animation-duration: 0.35s;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
     const visibleBalance = goldBalances.find(element => {
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
-      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        style.opacity !== "0"
+      );
     });
 
-    if (!visibleBalance) return;
+    const fallbackButton = openingMode === "box" ? beginBoxButton : (anotherButton || beginButton);
+    const anchor = visibleBalance || fallbackButton;
+    const rect = anchor?.getBoundingClientRect();
 
-    const rect = visibleBalance.getBoundingClientRect();
     const effect = document.createElement("div");
-    effect.className = "gold-spend-float";
     effect.setAttribute("aria-hidden", "true");
-    effect.style.left = `${rect.left + rect.width / 2}px`;
-    effect.style.top = `${rect.bottom + 2}px`;
-    effect.innerHTML = `<span>-${amount.toLocaleString()}</span><span class="gold-spend-symbol">🪙</span>`;
+    effect.innerHTML = `<span>-${amount.toLocaleString()}</span><span style="color:#f5c542">🪙</span>`;
+
+    Object.assign(effect.style, {
+      position: "fixed",
+      zIndex: "2147483647",
+      pointerEvents: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.3rem",
+      left: `${Math.min(window.innerWidth - 70, Math.max(70, rect ? rect.left + rect.width / 2 : window.innerWidth / 2))}px`,
+      top: `${Math.min(window.innerHeight - 90, Math.max(70, rect ? rect.bottom + 4 : window.innerHeight * 0.25))}px`,
+      color: "#ff3030",
+      fontWeight: "900",
+      fontSize: "clamp(1.2rem, 4vw, 1.7rem)",
+      lineHeight: "1",
+      whiteSpace: "nowrap",
+      textShadow: "0 2px 3px rgba(0,0,0,.95), 0 0 10px rgba(255,0,0,.7)",
+      transform: "translate(-50%, 0) scale(.9)",
+      opacity: "0"
+    });
 
     document.body.appendChild(effect);
-    effect.addEventListener("animationend", () => effect.remove(), { once: true });
+
+    const animation = effect.animate(
+      [
+        { opacity: 0, transform: "translate(-50%, -6px) scale(.9)" },
+        { opacity: 1, transform: "translate(-50%, 4px) scale(1.15)", offset: 0.18 },
+        { opacity: 1, transform: "translate(-50%, 44px) scale(1)", offset: 0.78 },
+        { opacity: 0, transform: "translate(-50%, 62px) scale(.96)" }
+      ],
+      {
+        duration: 1200,
+        easing: "ease-out",
+        fill: "forwards"
+      }
+    );
+
+    animation.finished
+      .catch(() => {})
+      .finally(() => effect.remove());
+
     window.setTimeout(() => effect.remove(), 1600);
   }
 
