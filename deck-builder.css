@@ -316,3 +316,17 @@ body.builder-locked{overflow:hidden}
   color:#fff !important;
   box-shadow:0 0 8px rgba(255,198,62,.75);
 }
+
+
+/* Let the full card collection participate in normal page scrolling. */
+.browser-panel{
+  max-height:none !important;
+  overflow:visible !important;
+}
+
+.card-browser{
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  overflow:visible !important;
+}
