@@ -261,3 +261,15 @@ body.builder-locked{overflow:hidden}
   .deck-sort-label { width: 100%; }
   .toolbar-actions { align-items: stretch; }
 }
+
+.filter-toggles{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+
+
+/* Deck export and paste dialogs */
+.deck-paste-card{width:min(620px,calc(100vw - 32px))}
+.deck-paste-text{width:100%;min-height:260px;resize:vertical;background:#111a29;border:1px solid var(--line);color:#fff;border-radius:8px;padding:12px;font:14px/1.45 monospace;box-sizing:border-box}
+.deck-paste-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.missing-cards-list{display:grid;gap:8px;max-height:360px;overflow:auto;margin:16px 0}
+.missing-card-row{display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#111a29}
+.missing-card-row strong{overflow-wrap:anywhere}
+.missing-card-row span{color:var(--muted);font-size:13px}

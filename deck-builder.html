@@ -19,6 +19,8 @@
       <label class="deck-name-label">Deck Name<input id="deckName" maxlength="48" value="New Deck"></label>
       <button id="newDeckBtn" class="secondary-btn">New</button>
       <button id="saveDeckBtn" class="primary-btn">Save Deck</button>
+      <button id="exportDeckBtn" class="secondary-btn" type="button">Export Deck</button>
+      <button id="pasteDeckBtn" class="secondary-btn" type="button">Paste Deck</button>
       <button id="saveAsDeckBtn" class="secondary-btn">Save As</button>
       <button id="renameDeckBtn" class="secondary-btn" disabled>Rename</button>
       <select id="savedDecks" aria-label="Saved decks"><option value="">Load saved deck…</option></select>
@@ -89,7 +91,10 @@
           <select id="rangeFilter"><option value="All">Any Range</option></select>
           <select id="spdFilter"><option value="All">Any Speed</option></select>
         </div>
-        <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
+        <div class="filter-toggles">
+          <label class="toggle"><input id="ownedOnly" type="checkbox"> Show owned cards only</label>
+          <label class="toggle"><input id="buySingles" type="checkbox"> Buy Singles</label>
+        </div>
         <button id="resetFilters" class="secondary-btn full">Reset Filters</button>
       </div>
       <div id="cardBrowser" class="card-browser"></div>
@@ -124,6 +129,30 @@
       <select id="managerDeckSelect"><option value="">Choose a saved deck…</option></select>
       <button id="managerLoadDeck" class="secondary-btn manager-main-btn" type="button" disabled>Load Selected Deck</button>
       <p id="managerEmptyMessage" class="modal-note" hidden>You do not have any saved decks yet.</p>
+    </div>
+  </div>
+
+  <div id="pasteDeckModal" class="builder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pasteDeckTitle">
+    <div class="builder-modal-card deck-paste-card panel-dark">
+      <span class="eyebrow">Deck Import</span>
+      <h2 id="pasteDeckTitle">Paste Deck</h2>
+      <p>Paste card image file names below. Put each copy on its own line.</p>
+      <textarea id="pasteDeckText" class="deck-paste-text" placeholder="BOA-001 King Arthur.jpg&#10;BOA-002 Merlin.jpg"></textarea>
+      <p id="pasteDeckStatus" class="modal-note" hidden></p>
+      <div class="deck-paste-actions">
+        <button id="cancelPasteDeckBtn" class="secondary-btn" type="button">Cancel</button>
+        <button id="importPastedDeckBtn" class="primary-btn" type="button">Add Pasted Deck</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="missingCardsModal" class="builder-modal" hidden role="dialog" aria-modal="true" aria-labelledby="missingCardsTitle">
+    <div class="builder-modal-card deck-paste-card panel-dark">
+      <span class="eyebrow">Deck Import</span>
+      <h2 id="missingCardsTitle">Cards Not Added</h2>
+      <p>The rest of the deck was added. These cards could not be added:</p>
+      <div id="missingCardsList" class="missing-cards-list"></div>
+      <button id="closeMissingCardsBtn" class="primary-btn manager-main-btn" type="button">Close</button>
     </div>
   </div>
 

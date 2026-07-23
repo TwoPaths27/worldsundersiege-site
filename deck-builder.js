@@ -15,8 +15,11 @@ let armies = [];
 let activeDeckId = null;
 let selectedCard = null;
 let selectedForm = 0;
+const purchaseSound = new Audio("buy-card.mp3");
+purchaseSound.preload = "auto";
+purchaseSound.volume = 0.75;
 const $ = id => document.getElementById(id);
-const ids = ["deckName","newDeckBtn","saveDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage"];
+const ids = ["deckName","newDeckBtn","saveDeckBtn","exportDeckBtn","pasteDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","buySingles","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage","pasteDeckModal","pasteDeckText","pasteDeckStatus","cancelPasteDeckBtn","importPastedDeckBtn","missingCardsModal","missingCardsList","closeMissingCardsBtn"];
 const els = Object.fromEntries(ids.map(id=>[id,$(id)]));
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const owned=id=>window.WUSCollection?.getOwned(id)||0;
@@ -69,7 +72,7 @@ async function setImg(img,path){img.src="card-back.png";try{img.src=window.WUSAs
 function formData(card){return card.forms?.[selectedForm]||card;}
 function purchasePrice(card){return card?.isSecret||card?.rarity==="Secret Rare"?null:(BUY_PRICE[card?.rarity]??null);}
 function ownershipLimit(card){return window.WUSCollection?.getLimit(card) ?? card.copyLimit ?? 3;}
-function canPurchase(card){const price=purchasePrice(card);return price!==null&&owned(card.id)<ownershipLimit(card);}
+function canPurchase(card){const price=purchasePrice(card);return els.buySingles.checked&&price!==null&&owned(card.id)<ownershipLimit(card);}
 function buyCard(card){
   const price=purchasePrice(card);
   if(price===null||!window.WUSCollection)return;
@@ -82,13 +85,16 @@ function buyCard(card){
     return;
   }
   els.purchasePanel.classList.remove("purchase-error");
+  try{purchaseSound.currentTime=0;purchaseSound.play().catch(()=>{});}catch{}
   renderPreview();renderDeck();renderBrowser();
 }
 function selectCard(card){selectedCard=card;selectedForm=0;renderPreview();document.querySelectorAll('.browser-card').forEach(e=>e.classList.toggle('selected',e.dataset.id===card.id));}
 function renderPreview(){const c=selectedCard;if(!c)return;const f=formData(c);setImg(els.previewImage,f.image||c.image);els.previewName.textContent=f.name||c.name;els.previewOwned.textContent=`Owned ${owned(c.id)} / ${c.copyLimit}`;els.previewMeta.textContent=`${c.id} · ${c.rarity} · ${c.types.join(" / ")}${c.isSecret?" · Secret printing":""}`;els.previewStats.innerHTML=[["COST",f.cost],["ATK",f.atk],["HP",f.hp],["RNG",f.range],["SPD",f.spd]].map(([k,v])=>v===null||v===undefined?'':`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join('');els.previewCharacteristics.innerHTML=(f.characteristics||[]).map(x=>`<span class="tag">${x}</span>`).join('');els.previewEffect.hidden=!(f.effectName||f.effectText);els.previewEffectName.textContent=f.effectName||'Effect';els.previewEffectText.textContent=f.effectText||'No additional effect.';
 const price=purchasePrice(c), have=owned(c.id), limit=ownershipLimit(c), gold=window.WUSCollection?.load().gold||0;
 els.purchasePanel.classList.remove("purchase-error");
-if(c.isSecret||c.rarity==="Secret Rare"){
+if(!els.buySingles.checked){
+  els.purchasePanel.hidden=true;
+}else if(c.isSecret||c.rarity==="Secret Rare"){
   els.purchasePanel.hidden=false;els.purchasePanel.innerHTML='<strong>Secret Rare</strong><span>Only obtainable from booster packs.</span>';
 }else if(price!==null&&have<limit){
   els.purchasePanel.hidden=false;els.purchasePanel.innerHTML=`<div><strong>Buy another copy</strong><span>${price.toLocaleString()} Gold · Owned ${have}/${limit}</span></div><button id="previewBuyButton" class="primary-btn" ${gold<price?'disabled':''}>Buy</button>`;
@@ -152,13 +158,15 @@ function matches(c){
 function deckUseLabel(c){if(isStronghold(c))return stronghold===c.id?'Selected':'Not selected';if(isArmy(c))return armies.includes(c.id)?'Selected':'Not selected';return `Deck ${printingQty(c.id)}`;}
 function addLabel(c){if(isStronghold(c))return stronghold?'Replace Stronghold':'Select Stronghold';if(isArmy(c))return 'Add Army';return `Add ${c.name}`;}
 function renderBrowser(){const list=DB.filter(matches);els.visibleCount.textContent=`${list.length} shown`;els.emptyBrowser.hidden=list.length>0;els.cardBrowser.innerHTML='';list.forEach(c=>{const have=owned(c.id);const div=document.createElement('article');div.className=`browser-card ${have?'':'unowned'} ${c.isSecret?'secret':''}`;div.dataset.id=c.id;div.title=`${c.name} · ${c.id} · ${c.rarity} · Owned ${have} · ${deckUseLabel(c)}`;const price=purchasePrice(c), limit=ownershipLimit(c), purchasable=canPurchase(c);
-const purchaseMarkup=c.isSecret?'':(purchasable?`<div class="buy-overlay"><strong>${price.toLocaleString()} Gold</strong><span>Owned ${have}/${limit}</span><button class="buy-card-btn" ${window.WUSCollection.load().gold<price?'disabled':''}>Buy Copy</button></div>`:(price!==null?`<div class="buy-overlay maxed"><strong>Maximum Owned</strong><span>${have}/${limit} copies</span></div>`:''));
+const purchaseMarkup=!els.buySingles.checked||c.isSecret?'':(purchasable?`<div class="buy-overlay"><strong>${price.toLocaleString()} Gold</strong><span>Owned ${have}/${limit}</span><button class="buy-card-btn" ${window.WUSCollection.load().gold<price?'disabled':''}>Buy Copy</button></div>`:(price!==null?`<div class="buy-overlay maxed"><strong>Maximum Owned</strong><span>${have}/${limit} copies</span></div>`:''));
 div.innerHTML=`<img class="browser-thumb" src="card-back.png" alt="${c.name}">${purchaseMarkup}<div class="browser-card-controls"><span class="browser-quantity">${isStronghold(c)?(stronghold===c.id?'Selected':'Stronghold'):isArmy(c)?(armies.includes(c.id)?'Selected':'Army'):`${printingQty(c.id)} / ${have}`}</span><button class="browser-add" aria-label="${addLabel(c)}" ${canAdd(c)?'':'disabled'}>+</button></div>`;setImg(div.querySelector('img'),c.image);div.onclick=()=>selectCard(c);div.ondblclick=()=>addCard(c.id);div.onmouseenter=()=>selectCard(c);div.querySelector('.browser-add').onclick=e=>{e.stopPropagation();addCard(c.id)};div.querySelector('.buy-card-btn')?.addEventListener('click',e=>{e.stopPropagation();selectCard(c);buyCard(c)});els.cardBrowser.append(div);});if(selectedCard)document.querySelector(`[data-id="${selectedCard.id}"]`)?.classList.add('selected');}
 function resetFilters(){
   els.searchCards.value="";
   ["typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter"].forEach(id=>els[id].value="All");
   els.ownedOnly.checked=false;
+  els.buySingles.checked=false;
   renderBrowser();
+  renderPreview();
 }
 function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();}
 const allImagePaths=[...new Set(DB.flatMap(card=>[card.image,...(card.forms||[]).map(form=>form.image)].filter(Boolean)))];
@@ -194,6 +202,88 @@ els.assetGateDownload.onclick=installAssetsFromGate;
 els.managerDeckSelect.onchange=()=>{els.managerLoadDeck.disabled=!els.managerDeckSelect.value;};
 els.managerNewDeck.onclick=()=>{newDeck();closeDeckManager();};
 els.managerLoadDeck.onclick=()=>loadDeckById(els.managerDeckSelect.value);
+function cardFileName(card){
+  const source=String(card?.image||"").replace(/\\/g,"/");
+  return decodeURIComponent(source.split("/").pop()||"").trim();
+}
+function exportedDeckFileNames(){
+  const names=[];
+  if(stronghold&&byId[stronghold])names.push(cardFileName(byId[stronghold]));
+  armies.forEach(id=>{if(byId[id])names.push(cardFileName(byId[id]));});
+  sortedDeckEntries().forEach(([id,qty])=>{
+    const card=byId[id];
+    if(!card)return;
+    for(let i=0;i<qty;i++)names.push(cardFileName(card));
+  });
+  return names.filter(Boolean);
+}
+async function copyDeckExport(){
+  const text=exportedDeckFileNames().join("\n");
+  if(!text){alert("There are no cards in this deck to export.");return;}
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch{
+    const box=document.createElement("textarea");box.value=text;box.style.position="fixed";box.style.opacity="0";document.body.append(box);box.select();document.execCommand("copy");box.remove();
+  }
+  const original=els.exportDeckBtn.textContent;els.exportDeckBtn.textContent="Copied!";setTimeout(()=>{els.exportDeckBtn.textContent=original;},1200);
+}
+function normalizePastedFileName(value){
+  return decodeURIComponent(String(value||"").trim().replace(/^['\"]|['\"]$/g,"").replace(/\\/g,"/").split("/").pop()||"").toLowerCase();
+}
+function pastedFileNames(text){
+  return String(text||"").split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
+}
+function showPasteDeckModal(){
+  els.pasteDeckText.value="";els.pasteDeckStatus.hidden=true;els.pasteDeckStatus.textContent="";els.pasteDeckModal.hidden=false;lockPage(true);setTimeout(()=>els.pasteDeckText.focus(),0);
+}
+function closePasteDeckModal(){els.pasteDeckModal.hidden=true;lockPage(false);}
+function closeMissingCardsModal(){els.missingCardsModal.hidden=true;lockPage(false);}
+function showMissingCards(missing){
+  els.missingCardsList.innerHTML=missing.map(item=>`<div class="missing-card-row"><strong>${item.file}</strong><span>${item.reason}</span></div>`).join("");
+  els.missingCardsModal.hidden=false;lockPage(true);
+}
+function importPastedDeck(){
+  const lines=pastedFileNames(els.pasteDeckText.value);
+  if(!lines.length){els.pasteDeckStatus.textContent="Paste at least one card file name.";els.pasteDeckStatus.hidden=false;return;}
+  const fileMap=new Map();
+  DB.forEach(card=>{
+    const file=normalizePastedFileName(cardFileName(card));
+    if(file&&!fileMap.has(file))fileMap.set(file,card);
+  });
+  const requested=new Map(),unknown=[];
+  lines.forEach(file=>{
+    const card=fileMap.get(normalizePastedFileName(file));
+    if(!card)unknown.push({file,reason:"File name not found"});
+    else requested.set(card.id,(requested.get(card.id)||0)+1);
+  });
+  const nextMain={},nextArmies=[];let nextStronghold=null;const missing=[...unknown];
+  requested.forEach((qty,id)=>{
+    const card=byId[id],available=owned(id),allowed=Math.min(qty,available);
+    if(allowed<qty)missing.push({file:cardFileName(card),reason:`Not owned: missing ${qty-allowed} cop${qty-allowed===1?'y':'ies'}`});
+    if(!allowed)return;
+    if(isStronghold(card)){
+      if(!nextStronghold)nextStronghold=id;
+      else missing.push({file:cardFileName(card),reason:"Only 1 Stronghold can be added"});
+      if(allowed>1)missing.push({file:cardFileName(card),reason:`Only 1 Stronghold can be added; ${allowed-1} extra cop${allowed-1===1?'y was':'ies were'} skipped`});
+      return;
+    }
+    if(isArmy(card)){
+      if(nextArmies.length<ARMY_LIMIT)nextArmies.push(id);
+      else missing.push({file:cardFileName(card),reason:"Only 3 different Armies can be added"});
+      if(allowed>1)missing.push({file:cardFileName(card),reason:`Army cards can only be added once; ${allowed-1} extra cop${allowed-1===1?'y was':'ies were'} skipped`});
+      return;
+    }
+    const sharedAlready=Object.entries(nextMain).reduce((sum,[otherId,count])=>sum+(byId[otherId]?.gameplayId===card.gameplayId?count:0),0);
+    const room=Math.max(0,Math.min(card.copyLimit-sharedAlready,MAIN_DECK_LIMIT-Object.values(nextMain).reduce((a,b)=>a+b,0)));
+    const addQty=Math.min(allowed,room);
+    if(addQty)nextMain[id]=addQty;
+    if(addQty<allowed)missing.push({file:cardFileName(card),reason:`Deck rules skipped ${allowed-addQty} cop${allowed-addQty===1?'y':'ies'}`});
+  });
+  mainDeck=nextMain;stronghold=nextStronghold;armies=nextArmies;activeDeckId=null;els.deckName.value="Pasted Deck";saveActive();populateSaved();renderDeck();renderBrowser();
+  els.pasteDeckModal.hidden=true;
+  if(missing.length)showMissingCards(missing);else{lockPage(false);alert("Deck pasted successfully.");}
+}
+
 function saveDeck({forceNew=false,nameOverride=null}={}){
   const decks=loadDecks();
   const id=forceNew||!activeDeckId?`deck-${Date.now()}`:activeDeckId;
@@ -217,13 +307,20 @@ function renameDeck(){
 els.newDeckBtn.onclick=newDeck;
 els.clearDeckBtn.onclick=()=>{if(confirm('Remove the main deck, Stronghold, and all Armies?')){mainDeck={};stronghold=null;armies=[];saveActive();renderDeck();renderBrowser();}};
 els.saveDeckBtn.onclick=()=>saveDeck();
+els.exportDeckBtn.onclick=copyDeckExport;
+els.pasteDeckBtn.onclick=showPasteDeckModal;
+els.cancelPasteDeckBtn.onclick=closePasteDeckModal;
+els.importPastedDeckBtn.onclick=importPastedDeck;
+els.closeMissingCardsBtn.onclick=closeMissingCardsModal;
+els.pasteDeckModal.addEventListener("click",e=>{if(e.target===els.pasteDeckModal)closePasteDeckModal();});
+els.missingCardsModal.addEventListener("click",e=>{if(e.target===els.missingCardsModal)closeMissingCardsModal();});
 els.saveAsDeckBtn.onclick=saveDeckAs;
 els.renameDeckBtn.onclick=renameDeck;
 els.savedDecks.onchange=()=>{const id=els.savedDecks.value;if(id)loadDeckById(id);};
 els.deleteDeckBtn.onclick=()=>{if(!activeDeckId||!confirm('Delete this saved deck?'))return;const decks=loadDecks();delete decks[activeDeckId];storeDecks(decks);newDeck();};
 els.deckSort.addEventListener("change",renderDeck);["searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly"].forEach(id=>{
   els[id].addEventListener(id==="searchCards"?"input":"change",renderBrowser);
-});els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
+});els.buySingles.addEventListener("change",()=>{renderBrowser();renderPreview();});els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
 function init(){populateFilters();populateSaved();mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);checkAssetsBeforeEntry();}
 init();
 })();
