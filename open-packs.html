@@ -89,7 +89,7 @@
     </section>
 
     <section id="revealStage" class="stage reveal-stage" hidden aria-live="polite">
-      <aside class="preview-panel panel">
+      <aside class="preview-panel panel" hidden aria-hidden="true">
         <h2>Card Preview</h2>
         <div class="preview-frame"><img id="previewImage" src="logo.png" alt="Card preview"></div>
         <p id="previewName" class="preview-name">Reveal or hover over a card.</p>
@@ -103,6 +103,7 @@
         </div>
         <p id="revealInstruction" class="instruction">Click any card to flip it. The final two cards are your Rare-or-higher slots.</p>
         <div id="cardGrid" class="card-grid"></div>
+        <p id="cardZoomHint" class="card-zoom-hint" hidden>Click a card to zoom.</p>
         <div id="collectionResult" class="collection-result" hidden></div>
         <div class="reveal-purchase-bar">
           <div class="stage-wallet compact" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>

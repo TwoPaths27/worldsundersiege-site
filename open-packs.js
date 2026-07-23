@@ -42,6 +42,7 @@
   const previewImage = document.getElementById("previewImage");
   const previewName = document.getElementById("previewName");
   const previewRarity = document.getElementById("previewRarity");
+  const cardZoomHint = document.getElementById("cardZoomHint");
   const clickHint = boosterButton.querySelector(".click-hint");
   const boosterHeading = document.getElementById("boosterHeading");
   const boosterInstruction = document.getElementById("boosterInstruction");
@@ -627,6 +628,7 @@
     currentPackSaved = false;
     currentPackCollectionResult = null;
     if (collectionResult) { collectionResult.hidden = true; collectionResult.replaceChildren(); }
+    if (cardZoomHint) cardZoomHint.hidden = true;
     previewImage.src = "logo.png";
     previewName.textContent = "Reveal or hover over a card.";
     previewRarity.textContent = "";
@@ -652,7 +654,8 @@
     const revealed = grid.querySelectorAll(".revealed").length;
     if (revealed === total) {
       status.textContent = openingMode === "box" ? `Pack ${Math.min(boxSession.openedPacks + 1, BOX_PACK_COUNT)} complete!` : "Pack complete!";
-      instruction.textContent = openingMode === "box" ? "Hover over any card to inspect it, then return to the remaining packs." : "Hover over any card to inspect it, or continue opening.";
+      instruction.textContent = openingMode === "box" ? "Return to the remaining packs or open the next pack." : "Continue opening when you are ready.";
+      if (cardZoomHint) cardZoomHint.hidden = false;
       revealAllButton.hidden = true;
       const collectionUpdate = saveCurrentPackToCollection();
       renderCollectionResult(collectionUpdate);
@@ -673,6 +676,7 @@
       }
     } else {
       status.textContent = `${revealed} of ${total} cards revealed`;
+      if (cardZoomHint) cardZoomHint.hidden = true;
     }
   }
 
