@@ -1643,8 +1643,10 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   if (isLocalVictory) {
     playGameAudio(endGameAudio.victory);
   } else {
-    // These two tracks are intentionally layered and must begin together.
-    playGameAudioGroup(endGameAudio.defeatVoice, endGameAudio.defeatStinger);
+    // Let the collapse rumble breathe before the defeat music starts.
+    window.setTimeout(() => {
+      playGameAudioGroup(endGameAudio.defeatVoice, endGameAudio.defeatStinger);
+    }, 1000);
   }
 
   window.setTimeout(() => elements.playAgainButton.focus(), 80);
