@@ -101,7 +101,7 @@
 
   const soundPaths = Object.freeze({
     packRip: "sounds/pack-rip.mp3",
-    packPop: "sounds/pack-pop.mp3",
+    packPop: "sounds/card-flip.mp3",
     cardFlip: "sounds/card-flip.mp3",
     superRare: "sounds/super-rare.mp3",
     ultraRare: "sounds/ultra-rare.mp3",
