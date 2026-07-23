@@ -3,6 +3,8 @@
 
   const BOX_PACK_COUNT = 24;
   const ECONOMY = Object.freeze({ enabled: true, packCost: 0, boxCost: 0 });
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const normalViewportContent = viewportMeta?.getAttribute("content") || "width=device-width, initial-scale=1";
 
   const siteCardsById = new Map(
     (typeof cards !== "undefined" ? cards : [])
@@ -454,7 +456,25 @@
 
   function showStage(stage) {
     Object.values(stages).forEach(item => { item.hidden = item !== stage; });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const useDesktopRevealView =
+      stage === stages.reveal &&
+      window.matchMedia("(max-width: 900px)").matches;
+
+    if (viewportMeta) {
+      viewportMeta.setAttribute(
+        "content",
+        useDesktopRevealView
+          ? "width=980, initial-scale=1"
+          : normalViewportContent
+      );
+    }
+
+    document.body.classList.toggle("reveal-desktop-view", useDesktopRevealView);
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   function startOpening(mode) {
