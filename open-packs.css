@@ -215,3 +215,14 @@ body.asset-locked { overflow: hidden; }
     gap: 5px !important;
   }
 }
+
+/* Prevent taps on pack-opening controls from being interpreted as double-tap zoom. */
+.booster-button,
+.pack-card,
+#revealAllButton,
+#openAllPacksButton,
+#openNextPackButton,
+#returnToPacksButton {
+  touch-action: manipulation;
+}
+

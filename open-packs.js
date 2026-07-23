@@ -454,11 +454,28 @@
     return [...commons, ...uncommons, ...premiums];
   }
 
+  function resetMobilePageZoom() {
+    if (!viewportMeta || !window.matchMedia("(max-width: 900px)").matches) return;
+
+    viewportMeta.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"
+    );
+
+    window.setTimeout(() => {
+      viewportMeta.setAttribute("content", normalViewportContent);
+    }, 350);
+  }
+
   function showStage(stage) {
     Object.values(stages).forEach(item => { item.hidden = item !== stage; });
 
+    if (stage === stages.reveal) {
+      resetMobilePageZoom();
+    }
+
     window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
   }
 
