@@ -108,3 +108,29 @@ body.asset-locked { overflow: hidden; }
 @keyframes openAllFlash{0%{opacity:0;transform:scale(.3)}35%{opacity:1;transform:scale(1.9)}100%{opacity:0;transform:scale(3)}}
 @media(max-width:680px){.open-all-animation{grid-template-columns:repeat(4,minmax(42px,68px));gap:9px;min-height:130px}.box-packs-actions .primary-button{width:100%}}
 @media(prefers-reduced-motion:reduce){.open-all-pack,.open-all-animation.is-opening .open-all-pack,.open-all-pack.bursting{animation:none}.open-all-progress span{transition:none}}
+
+/* Mobile pack-opening header: hide the logo text and size the banner to the links only. */
+@media (max-width: 680px) {
+  .site-header {
+    padding: 7px 10px;
+    gap: 0;
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .site-header .brand {
+    display: none;
+  }
+
+  .site-header nav {
+    width: 100%;
+    justify-content: center;
+    gap: 4px 12px;
+    line-height: 1.15;
+  }
+
+  .site-header nav a {
+    font-size: 0.78rem;
+    padding: 3px 0;
+  }
+}
