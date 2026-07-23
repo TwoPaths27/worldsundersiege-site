@@ -102,6 +102,59 @@
   let currentPackCollectionResult = null;
   let currentPackSaved = false;
   let openingAllPacks = false;
+  let currentPackNewIndexes = new Set();
+  let boxNewCardIds = new Set();
+
+  const NEW_CARD_STORAGE_PREFIX = "wus-new-cards-";
+
+  function getNewCardStorageKey(openingId) {
+    return openingId ? `${NEW_CARD_STORAGE_PREFIX}${openingId}` : "";
+  }
+
+  function loadBoxNewCardIds(openingId) {
+    boxNewCardIds = new Set();
+    const key = getNewCardStorageKey(openingId);
+    if (!key) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key));
+      if (Array.isArray(saved)) boxNewCardIds = new Set(saved);
+    } catch {}
+  }
+
+  function saveBoxNewCardIds(openingId) {
+    const key = getNewCardStorageKey(openingId);
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify([...boxNewCardIds]));
+  }
+
+  function clearBoxNewCardIds(openingId) {
+    const key = getNewCardStorageKey(openingId);
+    if (key) localStorage.removeItem(key);
+    boxNewCardIds = new Set();
+  }
+
+  function markCurrentPackNewCards(pack) {
+    currentPackNewIndexes = new Set();
+    if (!window.WUSCollection) return;
+    const opening = WUSCollection.getActiveOpening();
+    const ownedCards = WUSCollection.load().cards || {};
+    const seenThisPack = new Set();
+
+    pack.forEach((card, index) => {
+      if ((Number(ownedCards[card.id]) || 0) > 0 || seenThisPack.has(card.id)) return;
+      if (openingMode === "box" && boxNewCardIds.has(card.id)) return;
+      currentPackNewIndexes.add(index);
+      seenThisPack.add(card.id);
+    });
+  }
+
+  function recordNewCardsFromSettlement(settled, openingId) {
+    if (!settled?.result?.results) return;
+    settled.result.results.forEach(entry => {
+      if (entry?.result === "added" && entry.owned === 1 && entry.card?.id) boxNewCardIds.add(entry.card.id);
+    });
+    saveBoxNewCardIds(openingId);
+  }
 
   const soundPaths = Object.freeze({
     purchase: "sounds/drop-coin.mp3",
@@ -334,6 +387,10 @@
       refreshGold();
       return;
     }
+    if (mode === "box") {
+      clearBoxNewCardIds(result.opening.id);
+      saveBoxNewCardIds(result.opening.id);
+    }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
     playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
     showGoldSpendAnimation(cost > 0 ? cost : (mode === "box" ? 4200 : 200));
@@ -377,7 +434,10 @@
     }
 
     openingMode = opening.mode;
-    if (opening.mode === "box") syncBoxSession(opening);
+    if (opening.mode === "box") {
+      syncBoxSession(opening);
+      loadBoxNewCardIds(opening.id);
+    }
     if (opening.currentPack?.cardIds?.length) {
       currentPack = cardIdsToCards(opening.currentPack.cardIds);
       currentPackSaved = false;
@@ -403,6 +463,7 @@
     const settled = WUSCollection.settlePendingPack(opening.id, currentPack);
     if (!settled.ok) return currentPackCollectionResult;
     currentPackCollectionResult = settled.result || { added: 0, converted: 0, goldEarned: 0 };
+    if (openingMode === "box") recordNewCardsFromSettlement(settled, opening.id);
     currentPackSaved = true;
     if (openingMode === "box" && settled.opening) syncBoxSession(settled.opening);
     refreshGold();
@@ -568,6 +629,7 @@
 
         const settled = WUSCollection.settlePendingPack(opening.id, pack);
         if (!settled.ok) throw new Error("A booster pack could not be added to the collection.");
+        recordNewCardsFromSettlement(settled, opening.id);
         if (settled.opening) syncBoxSession(settled.opening);
 
         const completed = offset + 1;
@@ -662,7 +724,9 @@
     button.className = `pack-card${index >= 10 ? " premium-card" : ""}`;
     button.dataset.rarity = card.rarity;
     button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}"></span></span>`;
+    const newBadge = currentPackNewIndexes.has(index) ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : "";
+    button.classList.toggle("is-new-card", currentPackNewIndexes.has(index));
+    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${newBadge}</span></span>`;
 
     const image = button.querySelector("img");
     const front = button.querySelector(".card-front");
@@ -675,6 +739,7 @@
   }
 
   function renderPack(pack) {
+    markCurrentPackNewCards(pack);
     grid.replaceChildren(...pack.map(createCard));
     status.textContent = "The cards are face down";
     instruction.textContent = "Click any card to flip it. The final two cards are your Rare-or-higher slots.";
@@ -742,12 +807,14 @@
     return { "Secret Rare": 5, "Ultra Rare": 4, "Super Rare": 3, Rare: 2, Uncommon: 1, Common: 0 }[rarity] ?? 0;
   }
 
-  async function createSummaryCard(card, compact = false) {
+  async function createSummaryCard(card, compact = false, isNew = false) {
     const item = document.createElement("button");
     item.type = "button";
     item.className = compact ? "summary-card compact" : "summary-card";
+    if (isNew) item.classList.add("is-new-card");
     item.dataset.rarity = card.rarity;
-    item.innerHTML = `<span class="summary-image-wrap"><img alt="${card.id} ${card.name}"></span><span class="summary-card-name">${card.id}<br>${card.name}</span><span class="summary-card-rarity">${card.rarity}</span>`;
+    const newBadge = isNew ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : "";
+    item.innerHTML = `<span class="summary-image-wrap"><img alt="${card.id} ${card.name}">${newBadge}</span><span class="summary-card-name">${card.id}<br>${card.name}</span><span class="summary-card-rarity">${card.rarity}</span>`;
     const image = item.querySelector("img");
     try { image.src = await resolvedImage(card); } catch { image.src = card.image; }
     item.addEventListener("mouseenter", () => preview(card));
@@ -756,7 +823,19 @@
     return item;
   }
 
+  function getFirstNewPullIndexes() {
+    const indexes = new Set();
+    const seen = new Set();
+    boxSession.pulls.forEach((card, index) => {
+      if (!boxNewCardIds.has(card.id) || seen.has(card.id)) return;
+      seen.add(card.id);
+      indexes.add(index);
+    });
+    return indexes;
+  }
+
   async function renderBoxSummary() {
+    const firstNewPullIndexes = getFirstNewPullIndexes();
     boxTotalCards.textContent = String(boxSession.pulls.length);
     const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret Rare"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
@@ -773,18 +852,21 @@
     }), economyStat);
 
     const premiums = boxSession.pulls
-      .filter(card => rarityRank(card.rarity) >= rarityRank("Rare"))
-      .sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity));
+      .map((card, index) => ({ card, index }))
+      .filter(entry => rarityRank(entry.card.rarity) >= rarityRank("Rare"))
+      .sort((a, b) => rarityRank(b.card.rarity) - rarityRank(a.card.rarity));
 
-    const premiumCards = await Promise.all(premiums.map(card => createSummaryCard(card)));
+    const premiumCards = await Promise.all(premiums.map(entry => createSummaryCard(entry.card, false, firstNewPullIndexes.has(entry.index))));
     boxPremiumGrid.replaceChildren(...premiumCards);
 
     const highlightRarity = ["Secret Rare", "Ultra Rare", "Super Rare", "Rare"]
       .find(rarity => boxSession.pulls.some(card => card.rarity === rarity));
 
     if (highlightRarity) {
-      const highlightedPulls = boxSession.pulls.filter(card => card.rarity === highlightRarity);
-      const highlightedCards = await Promise.all(highlightedPulls.map(card => createSummaryCard(card)));
+      const highlightedPulls = boxSession.pulls
+        .map((card, index) => ({ card, index }))
+        .filter(entry => entry.card.rarity === highlightRarity);
+      const highlightedCards = await Promise.all(highlightedPulls.map(entry => createSummaryCard(entry.card, false, firstNewPullIndexes.has(entry.index))));
       bestPullHeading.textContent = `${highlightRarity} Pulls`;
       bestPullCard.replaceChildren(...highlightedCards);
       bestPullSection.hidden = false;
@@ -984,7 +1066,8 @@
     if (boxAllPulls.dataset.loaded !== "true") {
       boxRevealDetailsButton.disabled = true;
       boxRevealDetailsButton.textContent = "Loading All Pulls…";
-      const allCards = await Promise.all(boxSession.pulls.map(card => createSummaryCard(card, true)));
+      const firstNewPullIndexes = getFirstNewPullIndexes();
+      const allCards = await Promise.all(boxSession.pulls.map((card, index) => createSummaryCard(card, true, firstNewPullIndexes.has(index))));
       boxAllPulls.replaceChildren(...allCards);
       boxAllPulls.dataset.loaded = "true";
       boxRevealDetailsButton.disabled = false;
