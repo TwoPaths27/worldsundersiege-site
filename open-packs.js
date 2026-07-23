@@ -102,59 +102,6 @@
   let currentPackCollectionResult = null;
   let currentPackSaved = false;
   let openingAllPacks = false;
-  let currentPackNewIndexes = new Set();
-  let boxNewCardIds = new Set();
-
-  const NEW_CARD_STORAGE_PREFIX = "wus-new-cards-";
-
-  function getNewCardStorageKey(openingId) {
-    return openingId ? `${NEW_CARD_STORAGE_PREFIX}${openingId}` : "";
-  }
-
-  function loadBoxNewCardIds(openingId) {
-    boxNewCardIds = new Set();
-    const key = getNewCardStorageKey(openingId);
-    if (!key) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem(key));
-      if (Array.isArray(saved)) boxNewCardIds = new Set(saved);
-    } catch {}
-  }
-
-  function saveBoxNewCardIds(openingId) {
-    const key = getNewCardStorageKey(openingId);
-    if (!key) return;
-    localStorage.setItem(key, JSON.stringify([...boxNewCardIds]));
-  }
-
-  function clearBoxNewCardIds(openingId) {
-    const key = getNewCardStorageKey(openingId);
-    if (key) localStorage.removeItem(key);
-    boxNewCardIds = new Set();
-  }
-
-  function markCurrentPackNewCards(pack) {
-    currentPackNewIndexes = new Set();
-    if (!window.WUSCollection) return;
-    const opening = WUSCollection.getActiveOpening();
-    const ownedCards = WUSCollection.load().cards || {};
-    const seenThisPack = new Set();
-
-    pack.forEach((card, index) => {
-      if ((Number(ownedCards[card.id]) || 0) > 0 || seenThisPack.has(card.id)) return;
-      if (openingMode === "box" && boxNewCardIds.has(card.id)) return;
-      currentPackNewIndexes.add(index);
-      seenThisPack.add(card.id);
-    });
-  }
-
-  function recordNewCardsFromSettlement(settled, openingId) {
-    if (!settled?.result?.results) return;
-    settled.result.results.forEach(entry => {
-      if (entry?.result === "added" && entry.owned === 1 && entry.card?.id) boxNewCardIds.add(entry.card.id);
-    });
-    saveBoxNewCardIds(openingId);
-  }
 
   const soundPaths = Object.freeze({
     purchase: "sounds/drop-coin.mp3",
@@ -387,10 +334,6 @@
       refreshGold();
       return;
     }
-    if (mode === "box") {
-      clearBoxNewCardIds(result.opening.id);
-      saveBoxNewCardIds(result.opening.id);
-    }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
     playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
     showGoldSpendAnimation(cost > 0 ? cost : (mode === "box" ? 4200 : 200));
@@ -398,15 +341,63 @@
     window.setTimeout(() => restoreOpening(result.opening), 1000);
   }
 
+  const NEW_PULL_STORAGE_PREFIX = "wus-new-pulls-v1:";
+
+  function getNewPullStorageKey(openingId) {
+    return openingId ? `${NEW_PULL_STORAGE_PREFIX}${openingId}` : "";
+  }
+
+  function loadNewPullIndexes(openingId) {
+    if (!openingId) return new Set();
+    try {
+      const raw = JSON.parse(localStorage.getItem(getNewPullStorageKey(openingId)) || "[]");
+      return new Set(Array.isArray(raw) ? raw.filter(Number.isInteger) : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function saveNewPullIndexes(openingId, indexes) {
+    if (!openingId) return;
+    try {
+      localStorage.setItem(getNewPullStorageKey(openingId), JSON.stringify([...indexes].sort((a, b) => a - b)));
+    } catch {}
+  }
+
+  function flagNewCardsForPendingPack(pack, opening) {
+    const ownedCards = window.WUSCollection?.load?.().cards || {};
+    const pullOffset = opening?.pulls?.length || 0;
+    const newIndexes = loadNewPullIndexes(opening?.id);
+    const firstNewCopyInPack = new Set();
+
+    return (pack || []).map((card, index) => {
+      const ownedBeforePack = Math.max(0, Number(ownedCards[card.id]) || 0);
+      const isNewPull = ownedBeforePack === 0 && !firstNewCopyInPack.has(card.id);
+      if (isNewPull) {
+        firstNewCopyInPack.add(card.id);
+        newIndexes.add(pullOffset + index);
+      }
+      return { ...card, _isNewPull: isNewPull };
+    }).map((card, index, flaggedPack) => {
+      if (index === flaggedPack.length - 1) saveNewPullIndexes(opening?.id, newIndexes);
+      return card;
+    });
+  }
+
   function cardIdsToCards(ids) {
     return (ids || []).map(id => packCards.find(card => card.id === id)).filter(Boolean);
+  }
+
+  function openingPullsToCards(opening) {
+    const newIndexes = loadNewPullIndexes(opening?.id);
+    return cardIdsToCards(opening?.pulls).map((card, index) => ({ ...card, _isNewPull: newIndexes.has(index) }));
   }
 
   function syncBoxSession(opening) {
     if (!opening) return;
     boxSession = {
       openedPacks: opening.openedPacks || 0,
-      pulls: cardIdsToCards(opening.pulls),
+      pulls: openingPullsToCards(opening),
       packs: (opening.packs || []).map(pack => cardIdsToCards(pack.cardIds)),
       collectionAdded: opening.collectionAdded || 0,
       duplicatesConverted: opening.duplicatesConverted || 0,
@@ -434,12 +425,9 @@
     }
 
     openingMode = opening.mode;
-    if (opening.mode === "box") {
-      syncBoxSession(opening);
-      loadBoxNewCardIds(opening.id);
-    }
+    if (opening.mode === "box") syncBoxSession(opening);
     if (opening.currentPack?.cardIds?.length) {
-      currentPack = cardIdsToCards(opening.currentPack.cardIds);
+      currentPack = flagNewCardsForPendingPack(cardIdsToCards(opening.currentPack.cardIds), opening);
       currentPackSaved = false;
       currentPackCollectionResult = null;
       if (opening.mode === "box") selectedBoxPack = opening.currentPack.packIndex;
@@ -463,7 +451,6 @@
     const settled = WUSCollection.settlePendingPack(opening.id, currentPack);
     if (!settled.ok) return currentPackCollectionResult;
     currentPackCollectionResult = settled.result || { added: 0, converted: 0, goldEarned: 0 };
-    if (openingMode === "box") recordNewCardsFromSettlement(settled, opening.id);
     currentPackSaved = true;
     if (openingMode === "box" && settled.opening) syncBoxSession(settled.opening);
     refreshGold();
@@ -622,14 +609,13 @@
         const opening = WUSCollection.getActiveOpening();
         if (!opening || opening.mode !== "box") throw new Error("The booster box session could not be found.");
 
-        const pack = buildPack();
+        const pack = flagNewCardsForPendingPack(buildPack(), opening);
         const packIndex = opening.openedPacks;
         const saved = WUSCollection.savePendingPack(opening.id, packIndex, pack.map(card => card.id));
         if (!saved.ok) throw new Error("A booster pack could not be saved.");
 
         const settled = WUSCollection.settlePendingPack(opening.id, pack);
         if (!settled.ok) throw new Error("A booster pack could not be added to the collection.");
-        recordNewCardsFromSettlement(settled, opening.id);
         if (settled.opening) syncBoxSession(settled.opening);
 
         const completed = offset + 1;
@@ -724,9 +710,7 @@
     button.className = `pack-card${index >= 10 ? " premium-card" : ""}`;
     button.dataset.rarity = card.rarity;
     button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-    const newBadge = currentPackNewIndexes.has(index) ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : "";
-    button.classList.toggle("is-new-card", currentPackNewIndexes.has(index));
-    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${newBadge}</span></span>`;
+    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${card._isNewPull ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : ''}</span></span>`;
 
     const image = button.querySelector("img");
     const front = button.querySelector(".card-front");
@@ -739,7 +723,6 @@
   }
 
   function renderPack(pack) {
-    markCurrentPackNewCards(pack);
     grid.replaceChildren(...pack.map(createCard));
     status.textContent = "The cards are face down";
     instruction.textContent = "Click any card to flip it. The final two cards are your Rare-or-higher slots.";
@@ -807,14 +790,12 @@
     return { "Secret Rare": 5, "Ultra Rare": 4, "Super Rare": 3, Rare: 2, Uncommon: 1, Common: 0 }[rarity] ?? 0;
   }
 
-  async function createSummaryCard(card, compact = false, isNew = false) {
+  async function createSummaryCard(card, compact = false) {
     const item = document.createElement("button");
     item.type = "button";
     item.className = compact ? "summary-card compact" : "summary-card";
-    if (isNew) item.classList.add("is-new-card");
     item.dataset.rarity = card.rarity;
-    const newBadge = isNew ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : "";
-    item.innerHTML = `<span class="summary-image-wrap"><img alt="${card.id} ${card.name}">${newBadge}</span><span class="summary-card-name">${card.id}<br>${card.name}</span><span class="summary-card-rarity">${card.rarity}</span>`;
+    item.innerHTML = `<span class="summary-image-wrap"><img alt="${card.id} ${card.name}">${card._isNewPull ? '<span class="new-card-badge summary-new-card-badge" aria-label="New card">NEW!</span>' : ''}</span><span class="summary-card-name">${card.id}<br>${card.name}</span><span class="summary-card-rarity">${card.rarity}</span>`;
     const image = item.querySelector("img");
     try { image.src = await resolvedImage(card); } catch { image.src = card.image; }
     item.addEventListener("mouseenter", () => preview(card));
@@ -823,19 +804,7 @@
     return item;
   }
 
-  function getFirstNewPullIndexes() {
-    const indexes = new Set();
-    const seen = new Set();
-    boxSession.pulls.forEach((card, index) => {
-      if (!boxNewCardIds.has(card.id) || seen.has(card.id)) return;
-      seen.add(card.id);
-      indexes.add(index);
-    });
-    return indexes;
-  }
-
   async function renderBoxSummary() {
-    const firstNewPullIndexes = getFirstNewPullIndexes();
     boxTotalCards.textContent = String(boxSession.pulls.length);
     const order = ["Common", "Uncommon", "Rare", "Super Rare", "Ultra Rare", "Secret Rare"];
     const counts = Object.fromEntries(order.map(rarity => [rarity, 0]));
@@ -852,21 +821,18 @@
     }), economyStat);
 
     const premiums = boxSession.pulls
-      .map((card, index) => ({ card, index }))
-      .filter(entry => rarityRank(entry.card.rarity) >= rarityRank("Rare"))
-      .sort((a, b) => rarityRank(b.card.rarity) - rarityRank(a.card.rarity));
+      .filter(card => rarityRank(card.rarity) >= rarityRank("Rare"))
+      .sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity));
 
-    const premiumCards = await Promise.all(premiums.map(entry => createSummaryCard(entry.card, false, firstNewPullIndexes.has(entry.index))));
+    const premiumCards = await Promise.all(premiums.map(card => createSummaryCard(card)));
     boxPremiumGrid.replaceChildren(...premiumCards);
 
     const highlightRarity = ["Secret Rare", "Ultra Rare", "Super Rare", "Rare"]
       .find(rarity => boxSession.pulls.some(card => card.rarity === rarity));
 
     if (highlightRarity) {
-      const highlightedPulls = boxSession.pulls
-        .map((card, index) => ({ card, index }))
-        .filter(entry => entry.card.rarity === highlightRarity);
-      const highlightedCards = await Promise.all(highlightedPulls.map(entry => createSummaryCard(entry.card, false, firstNewPullIndexes.has(entry.index))));
+      const highlightedPulls = boxSession.pulls.filter(card => card.rarity === highlightRarity);
+      const highlightedCards = await Promise.all(highlightedPulls.map(card => createSummaryCard(card)));
       bestPullHeading.textContent = `${highlightRarity} Pulls`;
       bestPullCard.replaceChildren(...highlightedCards);
       bestPullSection.hidden = false;
@@ -1001,9 +967,9 @@
     const opening = WUSCollection.getActiveOpening();
     if (!opening) { showEconomyMessage("No saved purchase was found. Return to the selection screen and purchase a pack.", true); return; }
     if (opening.currentPack?.cardIds?.length) {
-      currentPack = cardIdsToCards(opening.currentPack.cardIds);
+      currentPack = flagNewCardsForPendingPack(cardIdsToCards(opening.currentPack.cardIds), opening);
     } else {
-      currentPack = buildPack();
+      currentPack = flagNewCardsForPendingPack(buildPack(), opening);
       const packIndex = opening.mode === "box" ? opening.openedPacks : 0;
       WUSCollection.savePendingPack(opening.id, packIndex, currentPack.map(card => card.id));
     }
@@ -1066,8 +1032,7 @@
     if (boxAllPulls.dataset.loaded !== "true") {
       boxRevealDetailsButton.disabled = true;
       boxRevealDetailsButton.textContent = "Loading All Pulls…";
-      const firstNewPullIndexes = getFirstNewPullIndexes();
-      const allCards = await Promise.all(boxSession.pulls.map((card, index) => createSummaryCard(card, true, firstNewPullIndexes.has(index))));
+      const allCards = await Promise.all(boxSession.pulls.map(card => createSummaryCard(card, true)));
       boxAllPulls.replaceChildren(...allCards);
       boxAllPulls.dataset.loaded = "true";
       boxRevealDetailsButton.disabled = false;
