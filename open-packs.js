@@ -708,6 +708,7 @@
     boxRevealDetailsButton.disabled = false;
     boxRevealDetailsButton.textContent = "Show All Pulls";
     showStage(stages.summary);
+    playSound(soundPaths.boxSummary, SOUND_VOLUME);
   }
 
   function showAssetGate(show) {
