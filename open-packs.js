@@ -357,6 +357,23 @@
 
   function restoreOpening(opening) {
     if (!opening) return;
+
+    const singlePackComplete =
+      opening.mode === "single" &&
+      !opening.currentPack?.cardIds?.length &&
+      (opening.openedPacks || 0) >= 1;
+
+    if (singlePackComplete) {
+      WUSCollection.clearActiveOpening(opening.id);
+      openingMode = "single";
+      currentPack = [];
+      currentPackSaved = false;
+      currentPackCollectionResult = null;
+      showStage(stages.intro);
+      refreshGold();
+      return;
+    }
+
     openingMode = opening.mode;
     if (opening.mode === "box") syncBoxSession(opening);
     if (opening.currentPack?.cardIds?.length) {
