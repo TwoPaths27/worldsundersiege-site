@@ -18,6 +18,21 @@ let selectedForm = 0;
 const purchaseSound = new Audio("sounds/drop-coin.mp3");
 purchaseSound.preload = "auto";
 purchaseSound.volume = 0.75;
+
+const addCardSound = new Audio("sounds/universfield-computer-mouse-click-352734.mp3");
+addCardSound.preload = "auto";
+addCardSound.volume = 0.75;
+
+const removeCardSound = new Audio("sounds/dragon-studio-simple-whoosh-382724.mp3");
+removeCardSound.preload = "auto";
+removeCardSound.volume = 0.75;
+
+function playDeckSound(sound){
+  try{
+    sound.currentTime = 0;
+    sound.play().catch(()=>{});
+  }catch{}
+}
 const $ = id => document.getElementById(id);
 const ids = ["deckName","newDeckBtn","saveDeckBtn","exportDeckBtn","pasteDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","buySingles","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage","pasteDeckModal","pasteDeckText","pasteDeckStatus","cancelPasteDeckBtn","importPastedDeckBtn","missingCardsModal","missingCardsList","closeMissingCardsBtn"];
 const els = Object.fromEntries(ids.map(id=>[id,$(id)]));
@@ -103,8 +118,38 @@ if(!els.buySingles.checked){
   els.purchasePanel.hidden=false;els.purchasePanel.innerHTML='<strong>Maximum Owned</strong><span>No more copies can be purchased.</span>';
 }else els.purchasePanel.hidden=true;
 if(c.forms){els.formTabs.hidden=false;els.formTabs.innerHTML=c.forms.map((x,i)=>`<button class="form-tab ${i===selectedForm?'active':''}" data-form="${i}">${x.name}</button>`).join('');els.formTabs.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedForm=Number(b.dataset.form);renderPreview();});}else{els.formTabs.hidden=true;els.formTabs.innerHTML='';}}
-function addCard(id){const c=byId[id];if(!c||!canAdd(c))return;if(isStronghold(c))stronghold=id;else if(isArmy(c))armies.push(id);else mainDeck[id]=(mainDeck[id]||0)+1;saveActive();renderDeck();renderBrowser();}
-function removeCard(id){const c=byId[id];if(!c)return;if(isStronghold(c)){if(stronghold===id)stronghold=null;}else if(isArmy(c)){armies=armies.filter(x=>x!==id);}else if(mainDeck[id]){mainDeck[id]-=1;if(mainDeck[id]<=0)delete mainDeck[id];}saveActive();renderDeck();renderBrowser();}
+function addCard(id){
+  const c=byId[id];
+  if(!c||!canAdd(c))return;
+  if(isStronghold(c))stronghold=id;
+  else if(isArmy(c))armies.push(id);
+  else mainDeck[id]=(mainDeck[id]||0)+1;
+  playDeckSound(addCardSound);
+  saveActive();
+  renderDeck();
+  renderBrowser();
+}
+function removeCard(id){
+  const c=byId[id];
+  if(!c)return;
+  let removed=false;
+  if(isStronghold(c)){
+    if(stronghold===id){stronghold=null;removed=true;}
+  }else if(isArmy(c)){
+    const before=armies.length;
+    armies=armies.filter(x=>x!==id);
+    removed=armies.length<before;
+  }else if(mainDeck[id]){
+    mainDeck[id]-=1;
+    if(mainDeck[id]<=0)delete mainDeck[id];
+    removed=true;
+  }
+  if(!removed)return;
+  playDeckSound(removeCardSound);
+  saveActive();
+  renderDeck();
+  renderBrowser();
+}
 function slotMarkup(card,kind,index){if(!card)return `<div class="special-slot empty"><span>${kind==='Stronghold'?'Choose 1 Stronghold':`Army Slot ${index+1}`}</span><small>${kind==='Stronghold'?'This is your deck’s main card.':'Choose a different Army card.'}</small></div>`;return `<article class="special-slot filled ${card.isSecret?'secret':''}" data-special-id="${card.id}"><img src="card-back.png" alt=""><div><strong>${card.name}</strong><small>${card.id} · ${card.rarity}</small><small>Owned ${owned(card.id)}</small></div><button class="special-remove" aria-label="Remove ${card.name}">×</button></article>`;}
 function renderSpecialSections(){const sh=stronghold?byId[stronghold]:null;els.strongholdSlot.innerHTML=slotMarkup(sh,"Stronghold",0);if(sh){const row=els.strongholdSlot.querySelector('[data-special-id]');setImg(row.querySelector('img'),sh.image);row.onmouseenter=()=>selectCard(sh);row.querySelector('button').onclick=()=>removeCard(sh.id);}els.armySlots.innerHTML=Array.from({length:ARMY_LIMIT},(_,i)=>slotMarkup(armies[i]?byId[armies[i]]:null,"Army",i)).join('');els.armySlots.querySelectorAll('[data-special-id]').forEach(row=>{const c=byId[row.dataset.specialId];setImg(row.querySelector('img'),c.image);row.onmouseenter=()=>selectCard(c);row.querySelector('button').onclick=()=>removeCard(c.id);});}
 const RARITY_ORDER={"Common":0,"Uncommon":1,"Rare":2,"Super Rare":3,"Ultra Rare":4,"Secret Rare":5};

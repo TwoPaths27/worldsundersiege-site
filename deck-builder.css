@@ -330,3 +330,31 @@ body.builder-locked{overflow:hidden}
   max-height:none !important;
   overflow:visible !important;
 }
+
+
+/* Keep Your Cards in its own scroll area while leaving room below the last row. */
+.browser-panel{
+  max-height:650px !important;
+  overflow:hidden !important;
+}
+
+.card-browser{
+  height:390px !important;
+  min-height:390px !important;
+  max-height:390px !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  padding-bottom:90px !important;
+  scroll-padding-bottom:90px;
+  box-sizing:border-box;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (min-width:1251px){
+  .card-browser{
+    height:500px !important;
+    min-height:500px !important;
+    max-height:500px !important;
+  }
+}
