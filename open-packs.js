@@ -132,10 +132,26 @@
   function playRaritySound(rarity) {
     if (rarity === "Super Rare") {
       playSound(soundPaths.superRare, soundVolumes.superRare);
-    } else if (rarity === "Ultra Rare") {
+      return;
+    }
+
+    if (rarity === "Ultra Rare") {
       playSound(soundPaths.ultraRare, soundVolumes.ultraRare);
-    } else if (rarity === "Secret Rare") {
-      soundPaths.secretRare.forEach(path => playSound(path, soundVolumes.secretRare));
+      return;
+    }
+
+    if (rarity === "Secret Rare") {
+      const audio1 = new Audio(soundPaths.secretRare[0]);
+      const audio2 = new Audio(soundPaths.secretRare[1]);
+
+      [audio1, audio2].forEach(audio => {
+        audio.preload = "auto";
+        audio.volume = soundVolumes.secretRare;
+        audio.currentTime = 0;
+      });
+
+      audio1.play().catch(() => {});
+      audio2.play().catch(() => {});
     }
   }
 
