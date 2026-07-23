@@ -220,7 +220,7 @@
       return;
     }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
-    if (cost > 0) playSound(soundPaths.purchase, SOUND_VOLUME);
+    playSound(soundPaths.purchase, SOUND_VOLUME);
     refreshGold();
     restoreOpening(result.opening);
   }
