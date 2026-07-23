@@ -102,6 +102,7 @@
   const soundPaths = Object.freeze({
     packRip: "sounds/pack-rip.mp3",
     packPop: "sounds/pack-pop.mp3",
+    cardFlip: "sounds/card-flip.mp3",
     superRare: "sounds/super-rare.mp3",
     ultraRare: "sounds/ultra-rare.mp3",
     secretRare: ["sounds/secret-rare-1.mp3", "sounds/secret-rare-2.mp3"]
@@ -110,6 +111,7 @@
   const soundVolumes = Object.freeze({
     packRip: 0.72,
     packPop: 0.24,
+    cardFlip: 0.32,
     superRare: 0.42,
     ultraRare: 0.52,
     secretRare: 0.58
@@ -141,24 +143,26 @@
     }
 
     if (rarity === "Secret Rare") {
-      const audio1 = new Audio(soundPaths.secretRare[0]);
-      const audio2 = new Audio(soundPaths.secretRare[1]);
-
-      [audio1, audio2].forEach(audio => {
-        audio.preload = "auto";
-        audio.volume = soundVolumes.secretRare;
-        audio.currentTime = 0;
-      });
-
-      audio1.play().catch(() => {});
-      audio2.play().catch(() => {});
+      const secretOne = new Audio(soundPaths.secretRare[0]);
+      const secretTwo = new Audio(soundPaths.secretRare[1]);
+      secretOne.preload = "auto";
+      secretTwo.preload = "auto";
+      secretOne.volume = soundVolumes.secretRare;
+      secretTwo.volume = soundVolumes.secretRare;
+      secretOne.currentTime = 0;
+      secretTwo.currentTime = 0;
+      Promise.allSettled([secretOne.play(), secretTwo.play()]);
+      return;
     }
+
+    playSound(soundPaths.cardFlip, soundVolumes.cardFlip, 0.98 + Math.random() * 0.04);
   }
 
   function preloadSounds() {
     const paths = [
       soundPaths.packRip,
       soundPaths.packPop,
+      soundPaths.cardFlip,
       soundPaths.superRare,
       soundPaths.ultraRare,
       ...soundPaths.secretRare
