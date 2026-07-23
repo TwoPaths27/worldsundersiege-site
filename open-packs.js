@@ -99,6 +99,64 @@
   let currentPackSaved = false;
   let openingAllPacks = false;
 
+  const soundPaths = Object.freeze({
+    packRip: "sounds/pack-rip.mp3",
+    packPop: "sounds/pack-pop.mp3",
+    superRare: "sounds/super-rare.mp3",
+    ultraRare: "sounds/ultra-rare.mp3",
+    secretRare: ["sounds/secret-rare-1.mp3", "sounds/secret-rare-2.mp3"]
+  });
+
+  const soundVolumes = Object.freeze({
+    packRip: 0.72,
+    packPop: 0.24,
+    superRare: 0.42,
+    ultraRare: 0.52,
+    secretRare: 0.58
+  });
+
+  function playSound(path, volume = 0.5, playbackRate = 1) {
+    if (!path) return;
+    const audio = new Audio(path);
+    audio.preload = "auto";
+    audio.volume = Math.max(0, Math.min(1, volume));
+    audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
+    audio.play().catch(() => {});
+  }
+
+  function playPackPop() {
+    const variedRate = 0.95 + Math.random() * 0.1;
+    playSound(soundPaths.packPop, soundVolumes.packPop, variedRate);
+  }
+
+  function playRaritySound(rarity) {
+    if (rarity === "Super Rare") {
+      playSound(soundPaths.superRare, soundVolumes.superRare);
+    } else if (rarity === "Ultra Rare") {
+      playSound(soundPaths.ultraRare, soundVolumes.ultraRare);
+    } else if (rarity === "Secret Rare") {
+      soundPaths.secretRare.forEach(path => playSound(path, soundVolumes.secretRare));
+    }
+  }
+
+  function preloadSounds() {
+    const paths = [
+      soundPaths.packRip,
+      soundPaths.packPop,
+      soundPaths.superRare,
+      soundPaths.ultraRare,
+      ...soundPaths.secretRare
+    ];
+    paths.forEach(path => {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.src = path;
+      audio.load();
+    });
+  }
+
+  preloadSounds();
+
   function createEmptyBoxSession() {
     return { openedPacks: 0, pulls: [], packs: [], collectionAdded: 0, duplicatesConverted: 0, goldEarned: 0 };
   }
@@ -344,6 +402,7 @@
           void visual.offsetWidth;
           visual.classList.add("bursting");
         }
+        playPackPop();
         await wait(85);
       }
 
@@ -461,6 +520,7 @@
     button.classList.add("revealed");
     if (["Ultra Rare", "Secret Rare"].includes(card.rarity)) button.classList.add("big-hit");
     button.setAttribute("aria-label", `${card.id} ${card.name}, ${card.rarity}`);
+    playRaritySound(card.rarity);
     preview(card);
     updateStatus();
   }
@@ -673,6 +733,7 @@
     }
     selectedBoxPack = null;
     renderPack(currentPack);
+    playSound(soundPaths.packRip, soundVolumes.packRip);
     boosterButton.classList.add("opening");
     clickHint.textContent = "Opening…";
     setTimeout(() => {
