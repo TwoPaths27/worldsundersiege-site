@@ -3801,3 +3801,316 @@ body.game-is-over .side-panel {
     0 7px 14px rgba(0, 0, 0, 0.55),
     0 0 9px rgba(205, 205, 205, 0.32);
 }
+
+/* =========================================================
+   v18 — Cinematic match ending
+========================================================= */
+body.game-ending {
+  overflow: hidden;
+}
+
+body.game-ending .game-layout,
+body.game-ending .hand-dock,
+body.game-ending .exit-game-button {
+  pointer-events: none;
+  user-select: none;
+}
+
+body.game-ending .battlefield-column,
+body.game-ending .hand-dock,
+body.game-ending .side-panel {
+  transition: filter 900ms ease, opacity 900ms ease;
+  filter: saturate(.58) brightness(.58);
+}
+
+body.game-ending .stronghold--victorious {
+  position: relative;
+  z-index: 45;
+  filter: brightness(1.2) saturate(1.35) !important;
+  animation: victorious-stronghold-secret-rare 1.15s ease-in-out infinite;
+  isolation: isolate;
+}
+
+body.game-ending .stronghold--victorious::before,
+body.game-ending .stronghold--victorious::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+body.game-ending .stronghold--victorious::before {
+  inset: -5px;
+  z-index: -1;
+  padding: 3px;
+  background: conic-gradient(
+    from var(--victory-angle, 0deg),
+    #fff4a8,
+    #ff9b34,
+    #ff4d8d,
+    #8c6bff,
+    #48d9ff,
+    #72ff9d,
+    #fff4a8
+  );
+  filter: blur(5px) brightness(1.35);
+  animation: victorious-rainbow-spin 1.55s linear infinite;
+}
+
+body.game-ending .stronghold--victorious::after {
+  inset: 0;
+  z-index: 2;
+  opacity: .78;
+  background: linear-gradient(
+    112deg,
+    transparent 15%,
+    rgba(255,255,255,.08) 34%,
+    rgba(255,245,172,.92) 46%,
+    rgba(255,255,255,.18) 56%,
+    transparent 72%
+  );
+  background-size: 240% 100%;
+  mix-blend-mode: screen;
+  animation: victorious-shimmer 1.35s ease-in-out infinite;
+}
+
+body.game-ending .stronghold--collapsing {
+  position: relative;
+  z-index: 42;
+  pointer-events: none;
+  transform-origin: 50% 90%;
+  animation: stronghold-final-collapse 2.05s cubic-bezier(.32,.02,.22,1) forwards;
+}
+
+body.game-ending .stronghold--collapsing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(64deg, transparent 42%, rgba(255,225,160,.95) 43%, rgba(41,15,6,.92) 45%, transparent 47%),
+    linear-gradient(118deg, transparent 29%, rgba(255,225,160,.75) 30%, rgba(41,15,6,.9) 32%, transparent 34%),
+    linear-gradient(82deg, transparent 62%, rgba(255,225,160,.85) 63%, rgba(41,15,6,.9) 65%, transparent 67%);
+  opacity: 0;
+  animation: stronghold-cracks 1.45s ease forwards;
+}
+
+.stronghold-debris-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stronghold-debris-layer > span {
+  position: fixed;
+  display: block;
+  border-radius: 1px;
+  background: linear-gradient(135deg, #f1b84b 0 25%, #7d3c16 26% 62%, #25120b 63%);
+  box-shadow: 0 0 8px rgba(255,133,38,.55);
+  opacity: 0;
+  animation: stronghold-debris-fall 1.6s cubic-bezier(.18,.75,.22,1) forwards;
+}
+
+.victory-modal {
+  z-index: 12000;
+}
+
+.victory-modal__backdrop {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(70,45,15,.17), transparent 44%),
+    rgba(0,0,0,.82);
+  backdrop-filter: blur(6px);
+  animation: end-screen-backdrop-in 680ms ease both;
+}
+
+.victory-modal__dialog {
+  width: min(620px, calc(100vw - 30px));
+  padding: clamp(24px, 4vw, 44px);
+  overflow: hidden;
+  text-align: center;
+  border: 1px solid rgba(224,182,79,.66);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255,186,62,.14), transparent 38%),
+    linear-gradient(180deg, rgba(24,20,18,.98), rgba(8,9,12,.98));
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.85),
+    0 0 0 1px rgba(255,241,178,.12) inset,
+    0 0 54px rgba(224,157,47,.22);
+  animation: end-screen-dialog-in 720ms cubic-bezier(.18,.9,.24,1.16) both;
+}
+
+.victory-modal--defeat .victory-modal__dialog {
+  border-color: rgba(176,55,55,.75);
+  background:
+    radial-gradient(circle at 50% 8%, rgba(173,32,32,.16), transparent 38%),
+    linear-gradient(180deg, rgba(24,17,18,.98), rgba(8,9,12,.98));
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.88),
+    0 0 0 1px rgba(255,205,205,.1) inset,
+    0 0 54px rgba(180,31,31,.24);
+}
+
+.victory-modal__logo {
+  display: block;
+  width: min(390px, 82%);
+  max-height: 210px;
+  object-fit: contain;
+  margin: -16px auto -10px;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,.72));
+  animation: end-logo-arrive 700ms 130ms ease-out both;
+}
+
+.victory-modal__eyebrow {
+  margin: 0 0 6px;
+  color: #d8c9a0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  animation: end-copy-arrive 500ms 250ms ease both;
+}
+
+.victory-modal__title {
+  margin: 0;
+  color: #ffe294;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(52px, 9vw, 88px);
+  line-height: .95;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-shadow:
+    0 3px 0 #72410f,
+    0 8px 20px rgba(0,0,0,.85),
+    0 0 28px rgba(255,181,53,.55);
+  animation: end-title-impact 650ms 300ms cubic-bezier(.18,.95,.25,1.3) both;
+}
+
+.victory-modal--defeat .victory-modal__title {
+  color: #ffb0a7;
+  text-shadow:
+    0 3px 0 #641e1e,
+    0 8px 20px rgba(0,0,0,.85),
+    0 0 28px rgba(221,42,42,.55);
+}
+
+.victory-modal__message {
+  margin: 18px auto 0;
+  max-width: 450px;
+  color: #eee7d8;
+  font-size: 16px;
+  line-height: 1.55;
+  animation: end-copy-arrive 520ms 470ms ease both;
+}
+
+.victory-modal__actions {
+  margin-top: 28px;
+  animation: end-actions-arrive 520ms 620ms ease both;
+}
+
+body.end-screen-visible .victory-modal__dialog {
+  pointer-events: auto;
+}
+
+@keyframes victorious-stronghold-secret-rare {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 18px rgba(255,190,50,.58), 0 0 42px rgba(96,117,255,.32);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 35px rgba(255,226,111,.96), 0 0 78px rgba(131,71,255,.65);
+  }
+}
+
+@property --victory-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes victorious-rainbow-spin {
+  to { --victory-angle: 360deg; }
+}
+
+@keyframes victorious-shimmer {
+  0% { background-position: 130% 0; opacity: .2; }
+  50% { opacity: .9; }
+  100% { background-position: -130% 0; opacity: .2; }
+}
+
+@keyframes stronghold-final-collapse {
+  0% { transform: translate(0,0) rotate(0) scale(1); filter: brightness(1); opacity: 1; }
+  7% { transform: translate(-8px,1px) rotate(-1deg) scale(1.02); filter: brightness(1.8); }
+  14% { transform: translate(9px,-2px) rotate(1.2deg) scale(.99); }
+  22% { transform: translate(-10px,3px) rotate(-1.5deg) scale(1.01); }
+  31% { transform: translate(8px,1px) rotate(1deg) scale(.99); filter: brightness(.92); }
+  43% { transform: translate(-6px,5px) rotate(-1deg) scale(.98); }
+  58% { transform: translate(5px,12px) rotate(1.8deg) scale(.96,.91); filter: brightness(.7) saturate(.65); opacity: .92; }
+  74% { transform: translate(-3px,34px) rotate(-3deg) scale(.92,.7); filter: brightness(.5) saturate(.35); opacity: .72; }
+  100% { transform: translate(2px,92px) rotate(5deg) scale(.82,.24); filter: brightness(.25) grayscale(.72); opacity: 0; }
+}
+
+@keyframes stronghold-cracks {
+  0%, 18% { opacity: 0; filter: brightness(1); }
+  30% { opacity: .95; filter: brightness(2); }
+  65%, 100% { opacity: .72; filter: brightness(.75); }
+}
+
+@keyframes stronghold-debris-fall {
+  0% { opacity: 0; transform: translate3d(0,0,0) rotate(0) scale(.6); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--debris-x),var(--debris-y),0) rotate(var(--debris-rotation)) scale(.9); }
+}
+
+@keyframes end-screen-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes end-screen-dialog-in {
+  from { opacity: 0; transform: translateY(28px) scale(.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes end-logo-arrive {
+  from { opacity: 0; transform: translateY(-15px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes end-title-impact {
+  0% { opacity: 0; transform: scale(.78); filter: blur(5px); }
+  64% { opacity: 1; transform: scale(1.1); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes end-copy-arrive {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes end-actions-arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.game-ending .stronghold--victorious,
+  body.game-ending .stronghold--victorious::before,
+  body.game-ending .stronghold--victorious::after,
+  body.game-ending .stronghold--collapsing,
+  body.game-ending .stronghold--collapsing::after,
+  .victory-modal__backdrop,
+  .victory-modal__dialog,
+  .victory-modal__logo,
+  .victory-modal__eyebrow,
+  .victory-modal__title,
+  .victory-modal__message,
+  .victory-modal__actions {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

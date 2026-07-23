@@ -214,11 +214,34 @@ const elements = {
   confirmExitButton: document.querySelector("#confirmExitButton"),
 
   victoryModal: document.querySelector("#victoryModal"),
+  victoryEyebrow: document.querySelector("#victoryEyebrow"),
   victoryTitle: document.querySelector("#victoryTitle"),
   victoryMessage: document.querySelector("#victoryMessage"),
   playAgainButton: document.querySelector("#playAgainButton"),
   victoryHomeButton: document.querySelector("#victoryHomeButton"),
 };
+
+const endGameAudio = {
+  collapse: createGameAudio("../sounds/stronghold-collapse.mp3", 1),
+  victory: createGameAudio("../sounds/victory-fanfare.mp3", 0.9),
+  defeatVoice: createGameAudio("../sounds/defeat-voice.mp3", 0.86),
+  defeatStinger: createGameAudio("../sounds/defeat-stinger.mp3", 0.86),
+};
+
+function createGameAudio(source, volume) {
+  const audio = new Audio(source);
+  audio.preload = "auto";
+  audio.volume = volume;
+  return audio;
+}
+
+function playGameAudio(audio) {
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
+  const playback = audio.play();
+  if (playback?.catch) playback.catch(() => {});
+}
 
 initializeGame();
 
@@ -1442,7 +1465,7 @@ async function attackStronghold(attacker, targetPlayerId) {
     renderGame();
 
     if (targetPlayer.strongholdHP <= 0) {
-      endGame(attacker.owner);
+      await endGame(attacker.owner, targetPlayerId);
     }
   } finally {
     GameState.isAnimating = false;
@@ -1511,7 +1534,7 @@ async function animateStrongholdAttack(attackerToken, stronghold, attacker) {
   }
 }
 
-function endGame(winnerPlayerId) {
+async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.gameOver = true;
   GameState.winnerPlayerId = winnerPlayerId;
   GameState.selectedUnitId = null;
@@ -1520,15 +1543,80 @@ function endGame(winnerPlayerId) {
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
 
-  addLog(`🏆 Player ${winnerPlayerId} destroyed the enemy Stronghold and won the match!`);
+  clearAttackHoverState();
+  addLog(`🏆 Player ${winnerPlayerId} destroyed Player ${losingPlayerId}'s Stronghold and won the match!`);
   renderGame();
 
-  elements.victoryTitle.textContent = `Player ${winnerPlayerId} Wins!`;
-  elements.victoryMessage.textContent =
-    `Player ${winnerPlayerId} reduced the opposing Stronghold to 0 HP.`;
+  const winningStronghold = winnerPlayerId === 1
+    ? elements.playerStronghold
+    : elements.enemyStronghold;
+  const losingStronghold = losingPlayerId === 1
+    ? elements.playerStronghold
+    : elements.enemyStronghold;
+
+  document.body.classList.add("game-ending", "game-is-over");
+  winningStronghold.classList.add("stronghold--victorious");
+  losingStronghold.classList.add("stronghold--collapsing");
+  losingStronghold.setAttribute("aria-label", `Player ${losingPlayerId} Stronghold destroyed`);
+  createStrongholdDebris(losingStronghold);
+  playGameAudio(endGameAudio.collapse);
+
+  await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 350 : 2150);
+
+  const isLocalVictory = winnerPlayerId === 1;
+  elements.victoryModal.classList.toggle("victory-modal--win", isLocalVictory);
+  elements.victoryModal.classList.toggle("victory-modal--defeat", !isLocalVictory);
+  elements.victoryEyebrow.textContent = isLocalVictory ? "Stronghold Conquered" : "Stronghold Lost";
+  elements.victoryTitle.textContent = isLocalVictory ? "Victory" : "Defeat";
+  elements.victoryMessage.textContent = isLocalVictory
+    ? "The enemy Stronghold has fallen. The battlefield is yours."
+    : "Your Stronghold has fallen. The siege is over.";
+
   elements.victoryModal.hidden = false;
-  document.body.classList.add("modal-open", "game-is-over");
-  elements.playAgainButton.focus();
+  document.body.classList.add("modal-open", "end-screen-visible");
+
+  if (isLocalVictory) {
+    playGameAudio(endGameAudio.victory);
+  } else {
+    playGameAudio(endGameAudio.defeatVoice);
+    playGameAudio(endGameAudio.defeatStinger);
+  }
+
+  window.setTimeout(() => elements.playAgainButton.focus(), 80);
+}
+
+function createStrongholdDebris(stronghold) {
+  if (!stronghold || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  const rect = stronghold.getBoundingClientRect();
+  const debrisLayer = document.createElement("div");
+  debrisLayer.className = "stronghold-debris-layer";
+  debrisLayer.setAttribute("aria-hidden", "true");
+
+  for (let index = 0; index < 18; index += 1) {
+    const piece = document.createElement("span");
+    const startX = rect.left + rect.width * (0.14 + Math.random() * 0.72);
+    const startY = rect.top + rect.height * (0.3 + Math.random() * 0.52);
+    const driftX = (Math.random() - 0.5) * 170;
+    const fallY = 80 + Math.random() * 150;
+    const rotation = (Math.random() - 0.5) * 520;
+    const size = 4 + Math.random() * 10;
+
+    piece.style.left = `${startX}px`;
+    piece.style.top = `${startY}px`;
+    piece.style.width = `${size}px`;
+    piece.style.height = `${Math.max(3, size * 0.58)}px`;
+    piece.style.setProperty("--debris-x", `${driftX}px`);
+    piece.style.setProperty("--debris-y", `${fallY}px`);
+    piece.style.setProperty("--debris-rotation", `${rotation}deg`);
+    piece.style.animationDelay = `${120 + Math.random() * 460}ms`;
+    debrisLayer.appendChild(piece);
+  }
+
+  document.body.appendChild(debrisLayer);
+  window.setTimeout(() => debrisLayer.remove(), 2600);
 }
 
 async function attackUnit(attacker, defender) {

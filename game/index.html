@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=17">
+  <link rel="stylesheet" href="./game.css?v=18">
 </head>
 <body>
   <main class="game-layout">
@@ -382,7 +382,7 @@
 
 
   <div id="victoryModal" class="exit-modal victory-modal" hidden>
-    <div class="exit-modal__backdrop"></div>
+    <div class="exit-modal__backdrop victory-modal__backdrop"></div>
 
     <section
       class="exit-modal__dialog victory-modal__dialog"
@@ -391,11 +391,16 @@
       aria-labelledby="victoryTitle"
       aria-describedby="victoryMessage"
     >
-      <div class="victory-modal__crest" aria-hidden="true">🏆</div>
-      <h2 id="victoryTitle">Victory!</h2>
-      <p id="victoryMessage">The enemy Stronghold has fallen.</p>
+      <img
+        class="victory-modal__logo"
+        src="../logo.png"
+        alt="Worlds Under Siege"
+      >
+      <p id="victoryEyebrow" class="victory-modal__eyebrow">Match Complete</p>
+      <h2 id="victoryTitle" class="victory-modal__title">Victory</h2>
+      <p id="victoryMessage" class="victory-modal__message">The enemy Stronghold has fallen.</p>
 
-      <div class="exit-modal__actions">
+      <div class="exit-modal__actions victory-modal__actions">
         <button id="playAgainButton" class="modal-button modal-button--confirm" type="button">
           Play Again
         </button>
