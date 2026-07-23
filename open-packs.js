@@ -102,7 +102,6 @@
   const soundPaths = Object.freeze({
     packRip: "sounds/pack-rip.mp3",
     packPop: "sounds/card-flip.mp3",
-    purchase: "sounds/drop-coin.mp3",
     cardFlip: "sounds/card-flip.mp3",
     superRare: "sounds/super-rare.mp3",
     ultraRare: "sounds/ultra-rare.mp3",
@@ -161,8 +160,7 @@
       return;
     }
 
-    playSound(soundPaths.cardFlip,
-      soundPaths.purchase, SOUND_VOLUME, 0.98 + Math.random() * 0.04);
+    playSound(soundPaths.cardFlip, SOUND_VOLUME, 0.98 + Math.random() * 0.04);
   }
 
   function preloadSounds() {
@@ -170,7 +168,6 @@
       soundPaths.packRip,
       soundPaths.packPop,
       soundPaths.cardFlip,
-      soundPaths.purchase,
       soundPaths.superRare,
       soundPaths.ultraRare,
       ...Object.values(soundPaths.secretRare)
@@ -221,9 +218,6 @@
       return;
     }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
-    if (cost > 0) {
-      playSound(soundPaths.purchase, SOUND_VOLUME);
-    }
     refreshGold();
     restoreOpening(result.opening);
   }
