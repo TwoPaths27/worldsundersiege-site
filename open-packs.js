@@ -117,6 +117,7 @@
   // one playback level. Each Secret Rare layer is reduced so the combined
   // three-sound reveal stays close to the same perceived level without clipping.
   const SOUND_VOLUME = 0.5;
+  const PURCHASE_SOUND_VOLUME = 0.8;
   const SECRET_LAYER_VOLUME = 0.29;
 
   function playSound(path, volume = 0.5, playbackRate = 1) {
@@ -300,10 +301,10 @@
       return;
     }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
-    playSound(soundPaths.purchase, SOUND_VOLUME);
+    playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
     showGoldSpendAnimation(cost > 0 ? cost : (mode === "box" ? 4200 : 200));
     refreshGold();
-    restoreOpening(result.opening);
+    window.setTimeout(() => restoreOpening(result.opening), 1000);
   }
 
   function cardIdsToCards(ids) {
