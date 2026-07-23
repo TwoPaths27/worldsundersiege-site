@@ -121,6 +121,30 @@
   const PURCHASE_SOUND_VOLUME = 0.8;
   const SECRET_LAYER_VOLUME = 0.29;
 
+  // Keep one persistent summary sound and unlock it during the first user gesture.
+  // This avoids browsers blocking playback after the long async box-opening sequence.
+  const boxSummaryAudio = new Audio(soundPaths.boxSummary);
+  boxSummaryAudio.preload = "auto";
+  boxSummaryAudio.volume = SOUND_VOLUME;
+
+  function unlockBoxSummaryAudio() {
+    boxSummaryAudio.volume = 0;
+    const attempt = boxSummaryAudio.play();
+    if (attempt && typeof attempt.then === "function") {
+      attempt
+        .then(() => {
+          boxSummaryAudio.pause();
+          boxSummaryAudio.currentTime = 0;
+          boxSummaryAudio.volume = SOUND_VOLUME;
+        })
+        .catch(() => {
+          boxSummaryAudio.volume = SOUND_VOLUME;
+        });
+    }
+  }
+
+  document.addEventListener("pointerdown", unlockBoxSummaryAudio, { once: true });
+
   function playSound(path, volume = 0.5, playbackRate = 1) {
     if (!path) return;
     const audio = new Audio(path);
@@ -708,7 +732,12 @@
     boxRevealDetailsButton.disabled = false;
     boxRevealDetailsButton.textContent = "Show All Pulls";
     showStage(stages.summary);
-    playSound(soundPaths.boxSummary, SOUND_VOLUME);
+    boxSummaryAudio.pause();
+    boxSummaryAudio.currentTime = 0;
+    boxSummaryAudio.volume = SOUND_VOLUME;
+    boxSummaryAudio.play().catch(error => {
+      console.error("Booster Box Summary sound could not play:", error);
+    });
   }
 
   function showAssetGate(show) {
