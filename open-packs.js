@@ -100,6 +100,7 @@
   let openingAllPacks = false;
 
   const soundPaths = Object.freeze({
+    purchase: "sounds/drop-coin.mp3",
     packRip: "sounds/pack-rip.mp3",
     packPop: "sounds/card-flip.mp3",
     cardFlip: "sounds/card-flip.mp3",
@@ -165,6 +166,7 @@
 
   function preloadSounds() {
     const paths = [
+      soundPaths.purchase,
       soundPaths.packRip,
       soundPaths.packPop,
       soundPaths.cardFlip,
@@ -218,6 +220,7 @@
       return;
     }
     showEconomyMessage(`${cost.toLocaleString()} Gold spent. Your purchase is saved until it is fully opened.`);
+    if (cost > 0) playSound(soundPaths.purchase, SOUND_VOLUME);
     refreshGold();
     restoreOpening(result.opening);
   }
