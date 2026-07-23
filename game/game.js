@@ -228,6 +228,27 @@ const endGameAudio = {
   defeatStinger: createGameAudio("../sounds/defeat-stinger.mp3", 0.86),
 };
 
+const GAMEPLAY_SFX_VOLUME = 0.78;
+const gameplayAudio = {
+  mouseClick: createGameAudio("../sounds/mouse-click.mp3", GAMEPLAY_SFX_VOLUME),
+  energy: createGameAudio("../sounds/energy.mp3", GAMEPLAY_SFX_VOLUME),
+  placement: createGameAudio("../sounds/placement.mp3", GAMEPLAY_SFX_VOLUME),
+  move: createGameAudio("../sounds/move.mp3", GAMEPLAY_SFX_VOLUME),
+  attack: createGameAudio("../sounds/attack.mp3", GAMEPLAY_SFX_VOLUME),
+  death: createGameAudio("../sounds/death.mp3", GAMEPLAY_SFX_VOLUME),
+  strongholdHit: createGameAudio("../sounds/stronghold-hit.mp3", GAMEPLAY_SFX_VOLUME),
+};
+
+
+const ambienceAudio = createGameAudio("../sounds/ambience.mp3", 0.25);
+ambienceAudio.loop = true;
+let ambienceStarted = false;
+function startAmbience(){
+ if(ambienceStarted) return;
+ ambienceStarted=true;
+ try{const pb=ambienceAudio.play(); if(pb?.catch) pb.catch(()=>{});}catch{}
+}
+document.addEventListener("pointerdown", startAmbience, {once:true});
 function createGameAudio(source, volume) {
   const audio = new Audio(source);
   audio.preload = "auto";
@@ -270,13 +291,33 @@ function playGameAudioGroup(...tracks) {
   );
 }
 
+function playOneShot(audio) {
+  if (!audio) return;
+  const instance = audio.cloneNode();
+  instance.volume = audio.volume;
+  instance.currentTime = 0;
+  try {
+    const playback = instance.play();
+    if (playback?.catch) playback.catch(() => {});
+  } catch {
+    // Optional/missing sound files never interrupt gameplay.
+  }
+}
+
+function playRepeatedSound(audio, count, interval = 150) {
+  const repeatCount = Math.max(0, Math.floor(count));
+  for (let index = 0; index < repeatCount; index += 1) {
+    window.setTimeout(() => playOneShot(audio), index * interval);
+  }
+}
+
 let endGameAudioPrimed = false;
 
 function primeEndGameAudio() {
   if (endGameAudioPrimed) return;
   endGameAudioPrimed = true;
 
-  Object.values(endGameAudio).forEach((audio) => {
+  [...Object.values(endGameAudio), ...Object.values(gameplayAudio)].forEach((audio) => {
     const originalVolume = audio.volume;
     audio.volume = 0;
     audio.currentTime = 0;
@@ -365,6 +406,11 @@ function bindEvents() {
   // defeat audio available even when the final blow is resolved by delayed AI.
   document.addEventListener("pointerdown", primeEndGameAudio, { once: true, capture: true });
   document.addEventListener("keydown", primeEndGameAudio, { once: true, capture: true });
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button === 0) {
+      playOneShot(gameplayAudio.mouseClick);
+    }
+  });
 
   elements.endTurnButton.addEventListener("click", endTurn);
 
@@ -1063,11 +1109,13 @@ async function recruitSelectedCard(x, y) {
 
   try {
     pulseActiveEnergy(GameState.activePlayer);
+    playOneShot(gameplayAudio.energy);
     await animateEnergyToCard(
       GameState.activePlayer,
       sourceCard,
       card.cost
     );
+    playOneShot(gameplayAudio.placement);
     await animateCardToCell(sourceCard, destinationCell);
 
     player.energy -= card.cost;
@@ -1401,6 +1449,8 @@ function moveSelectedUnit(destinationX, destinationY) {
   const previousX = unit.x;
   const previousY = unit.y;
 
+  playRepeatedSound(gameplayAudio.move, movementCost);
+
   unit.x = destinationX;
   unit.y = destinationY;
   unit.remainingSpeed -= movementCost;
@@ -1515,9 +1565,16 @@ async function attackStronghold(attacker, targetPlayerId) {
   setInteractionLock(true);
 
   try {
+    const targetPlayer = GameState.players[targetPlayerId];
+    const isLethalStrongholdHit =
+      targetPlayer.strongholdHP - attacker.currentAttack <= 0;
+
+    if (!isLethalStrongholdHit) {
+      playOneShot(gameplayAudio.strongholdHit);
+    }
+
     await animateStrongholdAttack(attackerToken, targetStronghold, attacker);
 
-    const targetPlayer = GameState.players[targetPlayerId];
     targetPlayer.strongholdHP = Math.max(0, targetPlayer.strongholdHP - attacker.currentAttack);
     attacker.hasAttacked = true;
 
@@ -1750,6 +1807,7 @@ async function attackUnit(attacker, defender) {
   setInteractionLock(true);
 
   try {
+    playOneShot(gameplayAudio.attack);
     await animateAttack(attackerToken, defenderToken, attacker, defender);
 
     defender.currentHP -= attacker.currentAttack;
@@ -1760,6 +1818,8 @@ async function attackUnit(attacker, defender) {
     );
 
     if (defender.currentHP <= 0) {
+      playOneShot(gameplayAudio.death);
+      await animateUnitToDiscard(defenderToken, defender.owner);
       GameState.players[defender.owner].discardCount += 1;
       GameState.units = GameState.units.filter((unit) => unit.id !== defender.id);
       addLog(`💀 Player ${defender.owner}'s ${defender.name} was destroyed.`);
@@ -1774,6 +1834,50 @@ async function attackUnit(attacker, defender) {
   } finally {
     GameState.isAnimating = false;
     setInteractionLock(false);
+  }
+}
+
+async function animateUnitToDiscard(unitToken, ownerPlayerId) {
+  const discardZone = document.querySelector(
+    ownerPlayerId === 1 ? "#playerDiscardZone" : "#enemyDiscardZone"
+  );
+
+  if (!unitToken || !discardZone) {
+    await wait(180);
+    return;
+  }
+
+  const sourceRect = unitToken.getBoundingClientRect();
+  const targetRect = discardZone.getBoundingClientRect();
+  const flyingUnit = unitToken.cloneNode(true);
+  flyingUnit.classList.add("unit-to-discard");
+  flyingUnit.setAttribute("aria-hidden", "true");
+  flyingUnit.style.left = `${sourceRect.left}px`;
+  flyingUnit.style.top = `${sourceRect.top}px`;
+  flyingUnit.style.width = `${sourceRect.width}px`;
+  flyingUnit.style.height = `${sourceRect.height}px`;
+  document.body.appendChild(flyingUnit);
+  unitToken.style.visibility = "hidden";
+
+  const deltaX = targetRect.left + targetRect.width / 2 -
+    (sourceRect.left + sourceRect.width / 2);
+  const deltaY = targetRect.top + targetRect.height / 2 -
+    (sourceRect.top + sourceRect.height / 2);
+
+  try {
+    const animation = flyingUnit.animate(
+      [
+        { transform: "translate3d(0,0,0) scale(1) rotate(0deg)", opacity: 1 },
+        { transform: `translate3d(${deltaX * .48}px,${deltaY * .38 - 38}px,0) scale(.82) rotate(-7deg)`, opacity: .92, offset: .52 },
+        { transform: `translate3d(${deltaX}px,${deltaY}px,0) scale(.18) rotate(18deg)`, opacity: 0 },
+      ],
+      { duration: 620, easing: "cubic-bezier(.2,.78,.2,1)", fill: "forwards" }
+    );
+    await animation.finished;
+  } catch {
+    await wait(620);
+  } finally {
+    flyingUnit.remove();
   }
 }
 
@@ -2053,6 +2157,22 @@ function renderStrongholds() {
 
   elements.enemyStrongholdHP.textContent = String(
     GameState.players[2].strongholdHP
+  );
+
+  const playerStrongholdDamaged =
+    GameState.players[1].strongholdHP > 0 &&
+    GameState.players[1].strongholdHP <= 5;
+  const enemyStrongholdDamaged =
+    GameState.players[2].strongholdHP > 0 &&
+    GameState.players[2].strongholdHP <= 5;
+
+  elements.playerStronghold.classList.toggle(
+    "stronghold--critical-damage",
+    playerStrongholdDamaged && !GameState.gameOver
+  );
+  elements.enemyStronghold.classList.toggle(
+    "stronghold--critical-damage",
+    enemyStrongholdDamaged && !GameState.gameOver
   );
 }
 
