@@ -67,6 +67,7 @@
   const openAnotherBoxButton = document.getElementById("openAnotherBoxButton");
   const backToSelectionButton = document.getElementById("backToSelectionButton");
   const bestPullSection = document.getElementById("bestPullSection");
+  const bestPullHeading = document.getElementById("bestPullHeading");
   const bestPullCard = document.getElementById("bestPullCard");
   const goldBalances = [...document.querySelectorAll("[data-gold-balance]")];
   const collectionResult = document.getElementById("collectionResult");
@@ -716,10 +717,14 @@
     const premiumCards = await Promise.all(premiums.map(card => createSummaryCard(card)));
     boxPremiumGrid.replaceChildren(...premiumCards);
 
-    const bestPull = premiums[0] || boxSession.pulls.slice().sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity))[0];
-    if (bestPull) {
-      const bestCard = await createSummaryCard(bestPull);
-      bestPullCard.replaceChildren(bestCard);
+    const highlightRarity = ["Secret Rare", "Ultra Rare", "Super Rare", "Rare"]
+      .find(rarity => boxSession.pulls.some(card => card.rarity === rarity));
+
+    if (highlightRarity) {
+      const highlightedPulls = boxSession.pulls.filter(card => card.rarity === highlightRarity);
+      const highlightedCards = await Promise.all(highlightedPulls.map(card => createSummaryCard(card)));
+      bestPullHeading.textContent = `${highlightRarity} Pulls`;
+      bestPullCard.replaceChildren(...highlightedCards);
       bestPullSection.hidden = false;
     } else {
       bestPullCard.replaceChildren();
