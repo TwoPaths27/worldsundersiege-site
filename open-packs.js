@@ -236,7 +236,27 @@
   function showGoldSpendAnimation(amount) {
     if (!amount) return;
 
-    const visibleBalance = goldBalances.find(element => {
+    const purchaseButton =
+      openingMode === "box"
+        ? (openAnotherBoxButton && !openAnotherBoxButton.hidden ? openAnotherBoxButton : beginBoxButton)
+        : (anotherButton && !anotherButton.hidden ? anotherButton : beginButton);
+
+    const purchaseStage = purchaseButton?.closest(".stage");
+    const stageBalance = purchaseStage
+      ? [...purchaseStage.querySelectorAll("[data-gold-balance]")].find(element => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            style.opacity !== "0"
+          );
+        })
+      : null;
+
+    const visibleBalance = stageBalance || goldBalances.find(element => {
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
       return (
@@ -248,8 +268,7 @@
       );
     });
 
-    const fallbackButton = openingMode === "box" ? beginBoxButton : (anotherButton || beginButton);
-    const anchor = visibleBalance || fallbackButton;
+    const anchor = visibleBalance || purchaseButton;
     const rect = anchor?.getBoundingClientRect();
 
     const effect = document.createElement("div");
@@ -974,7 +993,10 @@ if (__zoomModal) {
   let __zoomTouchStartX = null;
   let __zoomTouchStartY = null;
 
-  function __collectZoomCards() {
+  function __collectZoomCards(image) {
+    const summaryGroup = image?.closest("#bestPullCard, #boxPremiumGrid, #boxAllPulls");
+    if (summaryGroup) return [...summaryGroup.querySelectorAll(".summary-card img")];
+
     const revealed = [...document.querySelectorAll(".card-grid .pack-card.revealed img")];
     return revealed.length ? revealed : [...document.querySelectorAll(".card-grid img")];
   }
@@ -992,7 +1014,7 @@ if (__zoomModal) {
   }
 
   function __openZoom(image) {
-    __zoomCards = __collectZoomCards();
+    __zoomCards = __collectZoomCards(image);
     __zoomIndex = Math.max(0, __zoomCards.indexOf(image));
     __showZoomCard(__zoomIndex);
     __zoomModal.hidden = false;
@@ -1005,7 +1027,9 @@ if (__zoomModal) {
   }
 
   document.addEventListener("click", event => {
-    const image = event.target.closest(".card-grid .pack-card.revealed img");
+    const image = event.target.closest(
+      ".card-grid .pack-card.revealed img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
+    );
     if (!image) return;
     __openZoom(image);
   });
