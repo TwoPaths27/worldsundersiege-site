@@ -457,21 +457,6 @@
   function showStage(stage) {
     Object.values(stages).forEach(item => { item.hidden = item !== stage; });
 
-    const useDesktopRevealView =
-      stage === stages.reveal &&
-      window.matchMedia("(max-width: 900px)").matches;
-
-    if (viewportMeta) {
-      viewportMeta.setAttribute(
-        "content",
-        useDesktopRevealView
-          ? "width=980, initial-scale=1"
-          : normalViewportContent
-      );
-    }
-
-    document.body.classList.toggle("reveal-desktop-view", useDesktopRevealView);
-
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
