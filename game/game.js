@@ -236,11 +236,72 @@ function createGameAudio(source, volume) {
 }
 
 function playGameAudio(audio) {
-  if (!audio) return;
+  if (!audio) return Promise.resolve();
+
   audio.pause();
   audio.currentTime = 0;
-  const playback = audio.play();
-  if (playback?.catch) playback.catch(() => {});
+
+  try {
+    const playback = audio.play();
+    return playback?.catch ? playback.catch(() => {}) : Promise.resolve();
+  } catch {
+    return Promise.resolve();
+  }
+}
+
+function playGameAudioGroup(...tracks) {
+  const playableTracks = tracks.filter(Boolean);
+
+  playableTracks.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+
+  // Start every track in the same JavaScript task so layered sounds stay synchronized.
+  return Promise.allSettled(
+    playableTracks.map((audio) => {
+      try {
+        const playback = audio.play();
+        return playback?.catch ? playback.catch(() => {}) : Promise.resolve();
+      } catch {
+        return Promise.resolve();
+      }
+    })
+  );
+}
+
+let endGameAudioPrimed = false;
+
+function primeEndGameAudio() {
+  if (endGameAudioPrimed) return;
+  endGameAudioPrimed = true;
+
+  Object.values(endGameAudio).forEach((audio) => {
+    const originalVolume = audio.volume;
+    audio.volume = 0;
+    audio.currentTime = 0;
+
+    try {
+      const playback = audio.play();
+      if (playback?.then) {
+        playback
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = originalVolume;
+          })
+          .catch(() => {
+            audio.volume = originalVolume;
+          });
+      } else {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = originalVolume;
+      }
+    } catch {
+      audio.volume = originalVolume;
+    }
+  });
 }
 
 initializeGame();
@@ -300,6 +361,11 @@ function validateRequiredElements() {
 }
 
 function bindEvents() {
+  // Prime the cinematic tracks during the first real user gesture. This keeps
+  // defeat audio available even when the final blow is resolved by delayed AI.
+  document.addEventListener("pointerdown", primeEndGameAudio, { once: true, capture: true });
+  document.addEventListener("keydown", primeEndGameAudio, { once: true, capture: true });
+
   elements.endTurnButton.addEventListener("click", endTurn);
 
   elements.exitGameButton.addEventListener("click", openExitModal);
@@ -1556,8 +1622,7 @@ async function endGame(winnerPlayerId, losingPlayerId) {
 
   document.body.classList.add("game-ending", "game-is-over");
   winningStronghold.classList.add("stronghold--victorious");
-  losingStronghold.classList.add("stronghold--collapsing");
-  losingStronghold.setAttribute("aria-label", `Player ${losingPlayerId} Stronghold destroyed`);
+  animateDestroyedStronghold(losingStronghold, losingPlayerId);
   createStrongholdDebris(losingStronghold);
   playGameAudio(endGameAudio.collapse);
 
@@ -1578,11 +1643,47 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   if (isLocalVictory) {
     playGameAudio(endGameAudio.victory);
   } else {
-    playGameAudio(endGameAudio.defeatVoice);
-    playGameAudio(endGameAudio.defeatStinger);
+    // These two tracks are intentionally layered and must begin together.
+    playGameAudioGroup(endGameAudio.defeatVoice, endGameAudio.defeatStinger);
   }
 
   window.setTimeout(() => elements.playAgainButton.focus(), 80);
+}
+
+function animateDestroyedStronghold(stronghold, playerId) {
+  if (!stronghold) return;
+
+  stronghold.setAttribute("aria-label", `Player ${playerId} Stronghold destroyed`);
+
+  // Restart the CSS animation reliably for either Stronghold.
+  stronghold.classList.remove("stronghold--collapsing");
+  void stronghold.offsetWidth;
+  stronghold.classList.add("stronghold--collapsing");
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  // The Web Animations fallback guarantees the player Stronghold visibly
+  // collapses even if another transform rule overrides the CSS animation.
+  stronghold.animate(
+    [
+      { transform: "translate(0,0) rotate(0) scale(1)", filter: "brightness(1)", opacity: 1 },
+      { transform: "translate(-8px,1px) rotate(-1deg) scale(1.02)", filter: "brightness(1.8)", offset: 0.07 },
+      { transform: "translate(9px,-2px) rotate(1.2deg) scale(.99)", offset: 0.14 },
+      { transform: "translate(-10px,3px) rotate(-1.5deg) scale(1.01)", offset: 0.22 },
+      { transform: "translate(8px,1px) rotate(1deg) scale(.99)", filter: "brightness(.92)", offset: 0.31 },
+      { transform: "translate(-6px,5px) rotate(-1deg) scale(.98)", offset: 0.43 },
+      { transform: "translate(5px,12px) rotate(1.8deg) scale(.96,.91)", filter: "brightness(.7) saturate(.65)", opacity: 0.92, offset: 0.58 },
+      { transform: "translate(-3px,34px) rotate(-3deg) scale(.92,.7)", filter: "brightness(.5) saturate(.35)", opacity: 0.72, offset: 0.74 },
+      { transform: "translate(2px,92px) rotate(5deg) scale(.82,.24)", filter: "brightness(.25) grayscale(.72)", opacity: 0 },
+    ],
+    {
+      duration: 2050,
+      easing: "cubic-bezier(.32,.02,.22,1)",
+      fill: "forwards",
+    }
+  );
 }
 
 function createStrongholdDebris(stronghold) {
