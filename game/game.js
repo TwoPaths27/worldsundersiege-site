@@ -955,7 +955,10 @@ function createBattlefieldCell(x, y) {
 
     if (selectedUnit?.id === occupant.id) {
   cell.classList.add("cell-selected");
-  cell.appendChild(createUnitActionMenu(occupant));
+
+  if (GameState.selectedUnitAction === "menu") {
+    cell.appendChild(createUnitActionMenu(occupant));
+  }
 }
 
     if (isAttackTarget) {
@@ -1164,12 +1167,23 @@ function handleBattlefieldClick(x, y) {
 
   if (clickedUnit) {
     if (
-      selectedUnit &&
-      clickedUnit.id === selectedUnit.id
-    ) {
-      clearSelection();
-      return;
-    }
+  selectedUnit &&
+  clickedUnit.id === selectedUnit.id
+) {
+  if (GameState.selectedUnitAction === "menu") {
+    clearSelection();
+    return;
+  }
+
+  GameState.selectedUnitAction = "menu";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+
+  clearAttackHoverState();
+  renderGame();
+  return;
+}
 
     if (clickedUnit.owner !== GameState.activePlayer) {
   if (
@@ -1242,10 +1256,10 @@ function selectUnit(unitId) {
   GameState.attackableStrongholdPlayerId = null;
 
   addLog(
-    unit.hasAttacked
-      ? `${unit.name} selected. Its attack has already been used this turn.`
-      : `${unit.name} selected. Choose Move or Attack.`
-  );
+  unit.hasAttacked
+    ? `${unit.name} selected. Its attack has already been used this turn.`
+    : `${unit.name} selected. Click the Unit again to choose Move or Attack.`
+);
 
   renderGame();
 }
