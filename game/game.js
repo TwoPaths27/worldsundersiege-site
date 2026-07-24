@@ -582,19 +582,56 @@ function positionAttackPreviewBadge(target) {
   badge.classList.toggle("is-below-target", placeBelow);
 }
 
-function showAttackPreviewBadge(target, damage, isLethal) {
+function showAttackPreviewBadge(
+  target,
+  damage,
+  isLethal,
+  combatPreview = null
+) {
   const badge = getAttackPreviewBadge();
   activeAttackPreviewTarget = target;
 
-  badge.textContent = isLethal
-    ? `LETHAL · −${damage} HP`
-    : `−${damage} HP`;
-  badge.classList.toggle("is-lethal", isLethal);
+  if (combatPreview) {
+    const {
+      attackerName,
+      attackerCurrentHP,
+      attackerRemainingHP,
+      defenderName,
+      defenderCurrentHP,
+      defenderRemainingHP,
+      canRetaliate,
+    } = combatPreview;
+
+    const attackerResult =
+      attackerRemainingHP <= 0
+        ? "💀"
+        : `${attackerRemainingHP} HP`;
+
+    const defenderResult =
+      defenderRemainingHP <= 0
+        ? "💀"
+        : `${defenderRemainingHP} HP`;
+
+    badge.textContent = canRetaliate
+      ? `${attackerName}: ${attackerCurrentHP} → ${attackerResult} · ${defenderName}: ${defenderCurrentHP} → ${defenderResult}`
+      : `${attackerName}: ${attackerCurrentHP} HP · ${defenderName}: ${defenderCurrentHP} → ${defenderResult}`;
+
+    badge.classList.toggle(
+      "is-lethal",
+      attackerRemainingHP <= 0 || defenderRemainingHP <= 0
+    );
+  } else {
+    badge.textContent = isLethal
+      ? `LETHAL · −${damage} HP`
+      : `−${damage} HP`;
+
+    badge.classList.toggle("is-lethal", isLethal);
+  }
+
   badge.classList.add("is-visible");
 
   requestAnimationFrame(() => positionAttackPreviewBadge(target));
 }
-
 function hideAttackPreviewBadge() {
   activeAttackPreviewTarget = null;
 
