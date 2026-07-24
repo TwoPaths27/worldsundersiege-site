@@ -1542,6 +1542,9 @@ function moveSelectedUnit(destinationX, destinationY) {
 }
 
 function findAttackableUnits(unit) {
+
+console.log(unit.name, "Range =", unit.currentRange);
+
   const targets = new Set();
 
   if (!unit || unit.hasAttacked) {
