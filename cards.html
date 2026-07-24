@@ -199,7 +199,7 @@
 
     .modal-content {
       position: relative;
-      max-width: 1120px;
+      max-width: 1480px;
       width: 100%;
       max-height: 94vh;
       overflow: auto;
@@ -231,8 +231,8 @@
 
     .card-detail {
       display: grid;
-      grid-template-columns: minmax(280px, 430px) minmax(0, 1fr);
-      gap: 28px;
+      grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+      gap: 30px;
       align-items: start;
     }
 
@@ -295,32 +295,35 @@
 
     .info-box {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 12px;
     }
 
     .info-item {
+      min-width: 0;
       background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.08);
-      border-radius: 10px;
-      padding: 12px 14px;
+      border-radius: 9px;
+      padding: 9px 10px;
     }
 
     .info-label {
       display: block;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: bold;
-      letter-spacing: .05em;
+      letter-spacing: .055em;
       text-transform: uppercase;
       color: #94a3b8;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
 
     .info-value {
       display: block;
       color: #f8fafc;
-      line-height: 1.4;
+      font-size: 14px;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
     }
 
     .history-heading {
@@ -366,7 +369,7 @@
 
     .history-heading {
       border-top: 1px solid rgba(255,255,255,.10);
-      padding-top: 18px;
+      padding-top: 14px;
     }
 
     .history-scroll {
@@ -396,6 +399,7 @@
 
     @media (max-width: 1200px) {
       .card-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+      .info-box { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
     @media (max-width: 900px) {
@@ -410,6 +414,10 @@
 
       .history-scroll {
         max-height: 45vh;
+      }
+
+      .info-box {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
