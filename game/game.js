@@ -899,10 +899,43 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(coordinateLabel);
   }
 
-  if (moveDistance !== undefined && moveDistance > 0 && !occupant) {
+  if (!occupant) {
+
+  const isMoveSpace =
+    moveDistance !== undefined && moveDistance > 0;
+
+  const rangeDistance =
+    selectedUnit
+      ? Math.abs(selectedUnit.x - x) +
+        Math.abs(selectedUnit.y - y)
+      : Infinity;
+
+  const isRangeSpace =
+    selectedUnit &&
+    rangeDistance > 0 &&
+    rangeDistance <= selectedUnit.currentRange;
+
+  if (isMoveSpace && isRangeSpace) {
+
+    cell.classList.add("cell-move-range");
+    cell.title =
+      `Move (${moveDistance} Speed)\nAttack Range`;
+
+  } else if (isMoveSpace) {
+
     cell.classList.add("cell-move");
-    cell.title = `Move here — costs ${moveDistance} Speed`;
+    cell.title =
+      `Move here — costs ${moveDistance} Speed`;
+
+  } else if (isRangeSpace) {
+
+    cell.classList.add("cell-range");
+    cell.title =
+      `Within Attack Range`;
+
   }
+
+}
 
   cell.addEventListener("click", () => {
     handleBattlefieldClick(x, y);

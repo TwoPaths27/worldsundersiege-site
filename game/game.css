@@ -569,11 +569,26 @@ body{
 }
 
 .cell-move {
-  background: #2859d9;
+    background:#2859d9;
 }
 
-.cell-attack {
-  background: #9b2b2b;
+.cell-range{
+    background:#c97b17;
+}
+
+.cell-move-range{
+    background:
+        linear-gradient(
+            135deg,
+            #2859d9 0%,
+            #2859d9 49%,
+            #c97b17 51%,
+            #c97b17 100%
+        );
+}
+
+.cell-attack{
+    background:#9b2b2b;
 }
 
   /* ===========================
