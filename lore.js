@@ -31,7 +31,7 @@ During the centuries that followed, authors such as Chrétien de Troyes, Sir Tho
 The earliest version of Merlin appears in Welsh tradition as Myrddin Wyllt, a prophet who wandered the wilderness after witnessing a devastating battle. During the 12th century, Geoffrey of Monmouth combined stories about Myrddin with those of the prophetic child Ambrosius to create the Merlin known today in Historia Regum Britanniae. Geoffrey portrayed him as a gifted prophet and powerful magician whose visions shaped the destiny of Britain and foretold the rise of King Arthur.
 
 Later medieval romances greatly expanded Merlin's role. He became Arthur's mentor, orchestrated the sword in the stone, advised the Knights of the Round Table, and was credited with magical feats such as transporting the stones of Stonehenge to England. His story ends tragically when he falls in love with the enchantress Nimue—also called Viviane or the Lady of the Lake—who eventually imprisons him forever using the very magic he taught her. Merlin remains one of the greatest symbols of wisdom, prophecy, and ancient magic in Western mythology.`
-  }
+  },
   "BOA-003": {
     status: "Legendary Knight (Fictional)",
     origin: "French Arthurian Romance",
@@ -45,7 +45,7 @@ Lancelot received his first major role in Chrétien de Troyes' romance Lancelot,
 Later works greatly expanded Lancelot's history. He was described as the son of King Ban of Benoic, who was taken as an infant and raised by the Lady of the Lake, earning him the name Lancelot du Lac, or Lancelot of the Lake. He grew into an almost unbeatable warrior celebrated for his courage, courtesy, and loyalty. However, his love for Guinevere placed him in conflict with his duty to King Arthur. Their affair divided the Knights of the Round Table, contributed to the collapse of Camelot, and prevented Lancelot from achieving the Holy Grail. In many versions, his son Sir Galahad succeeds where he cannot, becoming the pure knight destined to complete the Grail quest.
 
 After Arthur's kingdom falls, Lancelot abandons warfare and spends the remainder of his life in repentance as a monk or holy man. His story represents both the highest ideals and the deepest failures of knighthood: he is Arthur's greatest warrior, but his forbidden love helps destroy the kingdom he swore to protect.`
-}
+},
   "BOA-004": {
     status: "Legendary Knight (Fictional)",
     origin: "Welsh and French Arthurian Romance",
@@ -57,7 +57,7 @@ After Arthur's kingdom falls, Lancelot abandons warfare and spends the remainder
 Yvain begins his story by defeating the guardian knight Esclados beside a magical fountain and marrying his widow, Lady Laudine. Although he promises to remain by her side, he leaves in search of adventure and fame with the blessing of King Arthur. When he fails to return by the agreed time, Laudine rejects him. Overcome with grief and shame, Yvain loses his sanity and wanders the wilderness until he is eventually healed by a noblewoman.
 
 During his travels, Yvain rescues a lion that is being attacked by a venomous serpent. The grateful lion becomes his loyal companion, fighting beside him in countless battles and never abandoning him. Because of this faithful companion, Yvain earns the title "Knight of the Lion." Together they defeat giants, rescue prisoners, defend the innocent, and restore Yvain's reputation as one of Arthur's greatest champions. By the end of his journey, Yvain proves he has become wiser and more honorable, eventually reconciling with Laudine and regaining both his love and his honor. His story remains one of the greatest medieval tales of redemption, courage, loyalty, and the unbreakable bond between a knight and his lion companion.`
-  }
+  },
 "BOA-005": {
     status: "Legendary Knight (Fictional)",
     origin: "French Arthurian Romance",
@@ -71,7 +71,7 @@ According to the legends, Galahad was raised in secrecy within a convent after h
 Soon afterward, Galahad joined the greatest adventure in Arthurian legend: the Quest for the Holy Grail. Alongside Sir Percival and Sir Bors, he traveled through Britain overcoming trials that tested not only strength but faith and virtue. Because of his perfect purity, Galahad succeeded where even his father, Sir Lancelot, failed. He became the only knight to behold the Holy Grail in its full divine glory and was granted a vision of heaven itself.
 
 After achieving the Grail Quest, Galahad prayed that his earthly life would end while he remained in God's grace. His wish was granted, and his soul was said to be carried to heaven by angels, making him one of the few Arthurian heroes whose story ends in complete spiritual triumph. Sir Galahad has since become the ultimate symbol of purity, righteousness, selflessness, and the ideal knight whose faith surpassed even the greatest warriors of Camelot.`
-}
+},
   "BOA-006": {
     status: "Legendary Knight (Fictional)",
     origin: "Welsh and British Arthurian Tradition",
@@ -83,7 +83,7 @@ After achieving the Grail Quest, Galahad prayed that his earthly life would end 
 The earliest Welsh tales describe Cai as a warrior with extraordinary supernatural abilities. He could grow to enormous size, survive without food or water for days, radiate intense heat from his body, and perform incredible feats of strength. As Arthurian legends spread across Europe, these magical abilities gradually disappeared, and Kay became known instead as the kingdom's seneschal, serving as the chief steward of Camelot while remaining a skilled knight and battlefield commander.
 
 Although later medieval romances often portray Sir Kay as sarcastic, boastful, and quick-tempered, his sharp tongue usually hides a fiercely loyal heart. He frequently challenges younger knights, only for them to prove themselves through courage and honor. Despite his pride and occasional arrogance, Kay never betrays King Arthur and consistently fights to defend Camelot against its enemies. His lifelong loyalty to Arthur and his status as one of the earliest companions of the king have made Sir Kay one of the most enduring figures in Arthurian legend, representing steadfast service, courage, and unwavering loyalty despite his many flaws.`
-  }
+  },
   "BOA-007": {
     status: "Legendary Knight (Fictional)",
     origin: "Welsh and British Arthurian Tradition",
@@ -108,7 +108,7 @@ Lucan plays his greatest role during the final Battle of Camlann, where Arthur d
 One of Gawain's most famous legends is Sir Gawain and the Green Knight, a 14th-century English poem regarded as one of the masterpieces of medieval literature. In the tale, the mysterious Green Knight challenges Arthur's court to a dangerous game. Gawain accepts the challenge in Arthur's place, displaying extraordinary courage. A year later he keeps his promise by seeking out the Green Knight, where he faces tests of honesty, temptation, and honor. Although he makes a small mistake by hiding a magical green girdle that he believes will save his life, the Green Knight forgives him, proving that true honor comes from recognizing and admitting one's imperfections.
 
 In many Arthurian romances, Gawain possesses a remarkable gift: as the sun rises toward noon, his strength steadily increases until it becomes unmatched at midday before gradually fading again as evening approaches. This supernatural blessing makes him nearly unbeatable in battle during the brightest hours of the day. Throughout the legends, Gawain is remembered as a fearless warrior, a model of knightly courtesy, and one of Camelot's greatest champions. His adventures explore the ideals of courage, humility, loyalty, and the difficult pursuit of true honor.`
-  }
+  },
   "BOA-009": {
     status: "Legendary Knight (Fictional)",
     origin: "Welsh and British Arthurian Tradition",
@@ -133,7 +133,7 @@ Bedivere's greatest moment comes after the final Battle of Camlann. With Arthur 
 In many medieval romances, Sagremore is described as a knight of unmatched determination who eagerly seeks combat against powerful opponents. His nickname, "the Desirous," refers to his relentless desire for adventure, glory, and honorable battle. He frequently rides alone in search of giants, rogue knights, and other dangers, often charging into battle without hesitation. While his boldness sometimes leads him into trouble, it also earns him great respect among the Knights of the Round Table.
 
 Despite his aggressive fighting style, Sagremore is fiercely loyal to King Arthur and remains devoted to defending Camelot throughout its greatest conflicts. Although he is defeated on occasion by legendary heroes such as Lancelot, these losses never diminish his courage or willingness to fight again. His stories portray him as the embodiment of fearless determination, martial skill, and the adventurous spirit that defined the greatest knights of Arthur's court.`
-  }
+  },
 "BOA-011": {
     status: "Legendary Enchantress (Fictional)",
     origin: "French Arthurian Romance",
@@ -158,7 +158,7 @@ In many later romances, the Lady of the Lake also raises the young Sir Lancelot 
 Throughout the Arthurian legends, Guinevere serves as Arthur's loyal queen and is greatly admired by the Knights of the Round Table. However, her secret love affair with Sir Lancelot becomes one of the defining events of the legend. Although the two genuinely love one another, their forbidden relationship betrays Arthur's trust and divides Camelot. The revelation of their affair sparks conflict among the knights, weakens the unity of the Round Table, and helps pave the way for Mordred's rebellion and the kingdom's eventual collapse.
 
 After the destruction of Camelot and King Arthur's final battle, Guinevere renounces her royal life and enters a convent, where she spends the remainder of her days in prayer and repentance. In many versions of the legend, Lancelot visits her one final time before they part forever. Queen Guinevere remains one of the most complex figures in Arthurian mythology, representing love, loyalty, regret, and the tragic consequences of choices that forever changed the fate of Camelot.`
-  }
+  },
 "BOA-013": {
     status: "Legendary Knight (Fictional)",
     origin: "Welsh and British Arthurian Tradition",
@@ -248,7 +248,7 @@ Although remembered as a controversial figure, Agravain believed he was defendin
 Gaheris participates in many of Camelot's battles and quests, earning respect for his courage and steady judgment. Unlike the hot-tempered Agravain, Gaheris often avoids unnecessary conflict and seeks to uphold the ideals of knighthood. He is especially remembered for standing beside his brothers in defense of Arthur during the kingdom's darkest days.
 
 Like Sir Gareth, Gaheris is tragically killed during Sir Lancelot's rescue of Queen Guinevere. His death further deepens the rift between Lancelot and King Arthur, helping to ignite the civil war that ultimately destroys Camelot. Sir Gaheris represents loyalty, quiet courage, and the tragic cost of conflicts between friends and family.`
-      }
+      },
 "BOA-020": {
     status: "Fictional Vampire Count",
     origin: "Transylvania, Romania",
@@ -273,7 +273,7 @@ Seeking new victims, Dracula travels from his castle in Transylvania to England,
 Victor Frankenstein creates the Creature by assembling parts from human corpses and bringing them to life through an unspecified scientific process. Although gigantic and physically frightening, the Creature begins life with the innocence of a child. He secretly learns language, history, and literature by observing a rural family, developing intelligence, compassion, and a desire for friendship. However, he is repeatedly rejected because of his terrifying appearance, leading him to become bitter and filled with loneliness.
 
 After Victor refuses to create a companion for him, the Creature vows revenge against his creator. He murders several of Victor's loved ones, including his younger brother William, his friend Henry Clerval, and Victor's bride Elizabeth. The tragedy ends in the Arctic, where Victor dies while pursuing his creation. Overcome with grief and remorse, the Creature declares that he no longer wishes to live and departs into the frozen wilderness, intending to destroy himself. Mary Shelley's novel explores themes of humanity, isolation, prejudice, responsibility, and the dangers of unchecked scientific ambition, making Frankenstein's Monster one of literature's most tragic and misunderstood figures.`
-  }
+  },
 "BOA-022": {
     status: "Legendary Cryptid",
     origin: "Himalayan Folklore",
@@ -301,7 +301,7 @@ Bertrand is born into a family associated with rumors of wolfish violence and su
 The novel places Bertrand against the real historical background of the Franco-Prussian War and the Paris Commune of 1871. As France descends into warfare, starvation, political uprising, and mass violence, Bertrand's private curse becomes connected to the brutality occurring around him. Endore uses the werewolf not only as a supernatural creature but also as a symbol of the cruelty and savagery ordinary human beings can display during war and revolution.
 
 Bertrand eventually serves as a soldier and becomes involved in the chaos surrounding Paris. His condition leads to imprisonment, investigation, and a military trial, while Galliez argues that Bertrand is both responsible for terrible acts and the victim of a curse he never chose. The Werewolf of Paris blends documented history, old loup-garou folklore, Gothic horror, and tragedy to create one of literature's most influential werewolves. Bertrand is remembered as a monster, but also as a deeply human figure whose lifelong battle against his own nature ends in suffering and destruction.`
-  }
+  },
 
   "BOA-024": {
     status: "Legendary Ghost",

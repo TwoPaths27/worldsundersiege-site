@@ -344,6 +344,56 @@
       min-height: 1px;
     }
 
+
+    .card {
+      cursor: pointer;
+    }
+
+    .card:focus-visible {
+      outline: 3px solid #22c55e;
+      outline-offset: 4px;
+    }
+
+    .modal-content {
+      background:
+        radial-gradient(circle at top right, rgba(34,197,94,.10), transparent 34%),
+        #111827;
+    }
+
+    .card-detail-info {
+      padding: 4px 4px 4px 0;
+    }
+
+    .history-heading {
+      border-top: 1px solid rgba(255,255,255,.10);
+      padding-top: 18px;
+    }
+
+    .history-scroll {
+      color: #e5e7eb;
+      scrollbar-color: #22c55e #111827;
+      scrollbar-width: thin;
+    }
+
+    .history-scroll p:first-child {
+      font-size: 1.04rem;
+      color: #f8fafc;
+    }
+
+    .missing-lore {
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .info-item {
+      transition: border-color .2s ease, background .2s ease;
+    }
+
+    .info-item:hover {
+      border-color: rgba(34,197,94,.45);
+      background: rgba(34,197,94,.08);
+    }
+
     @media (max-width: 1200px) {
       .card-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
     }
@@ -490,14 +540,25 @@
       });
     }
 
-    
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
     function formatHistory(text) {
-      if (!text) return "";
+      if (!text) {
+        return '<p class="missing-lore">Lore has not been added for this card yet.</p>';
+      }
 
-      return text
+      return String(text)
+        .trim()
         .split(/\n\s*\n/)
-        .map(paragraph => `<p>${paragraph.trim()}</p>`)
+        .filter(Boolean)
+        .map(paragraph => `<p>${escapeHTML(paragraph.trim())}</p>`)
         .join("");
     }
 
@@ -519,7 +580,7 @@
           ${fields.map(([label, value]) => `
             <div class="info-item">
               <span class="info-label">${label}</span>
-              <span class="info-value">${value}</span>
+              <span class="info-value">${escapeHTML(value)}</span>
             </div>
           `).join("")}
         </div>
@@ -575,8 +636,8 @@
           ${imageSection}
 
           <section class="card-detail-info">
-            <h2>${card.name}</h2>
-            <div class="card-detail-meta">${card.id} • ${typeLabel} • ${card.set}</div>
+            <h2>${escapeHTML(card.name)}</h2>
+            <div class="card-detail-meta">${escapeHTML(card.id)} • ${escapeHTML(typeLabel)} • ${escapeHTML(card.set)}</div>
             ${buildInfoBox(loreEntry)}
             <h3 class="history-heading">History & Origins</h3>
             <div class="history-scroll">${formatHistory(history)}</div>
@@ -609,6 +670,9 @@
           : card.type === "Stronghold";
 
         wrapper.className = isStronghold ? "card stronghold-card" : "card";
+        wrapper.tabIndex = 0;
+        wrapper.setAttribute("role", "button");
+        wrapper.setAttribute("aria-label", `View ${card.name} card details and lore`);
 
         const typeLabel = Array.isArray(card.type)
           ? card.type.join(" • ")
@@ -620,17 +684,22 @@
           </div>
 
           <div class="card-body">
-            <div class="card-name">${card.id} — ${card.name}</div>
+            <div class="card-name">${escapeHTML(card.id)} — ${escapeHTML(card.name)}</div>
             <div class="card-meta">
-              <span class="card-type">${typeLabel}</span>
-              <span class="card-set">${card.set}</span>
+              <span class="card-type">${escapeHTML(typeLabel)}</span>
+              <span class="card-set">${escapeHTML(card.set)}</span>
             </div>
-            <div class="card-hint">${card.backImage ? "Click to view both sides" : "Click to enlarge"}</div>
+            <div class="card-hint">${card.backImage ? "View both sides and lore" : "View card lore"}</div>
           </div>
         `;
 
-        wrapper.querySelector(".card-image-wrap")
-          .addEventListener("click", () => openModal(card));
+        wrapper.addEventListener("click", () => openModal(card));
+        wrapper.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openModal(card);
+          }
+        });
 
         grid.appendChild(wrapper);
       });
