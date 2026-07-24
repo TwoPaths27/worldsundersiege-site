@@ -1543,7 +1543,6 @@ function moveSelectedUnit(destinationX, destinationY) {
 
 function findAttackableUnits(unit) {
 
-console.log(unit.name, "Range =", unit.currentRange);
 
   const targets = new Set();
 
@@ -1559,6 +1558,14 @@ console.log(unit.name, "Range =", unit.currentRange);
     const distance =
       Math.abs(candidate.x - unit.x) +
       Math.abs(candidate.y - unit.y);
+
+console.log(
+  `${unit.name} at (${unit.x + 1}, ${unit.y + 1})`,
+  `→ ${candidate.name} at (${candidate.x + 1}, ${candidate.y + 1})`,
+  `Distance: ${distance}`,
+  `Range: ${unit.currentRange}`,
+  `Attackable: ${distance > 0 && distance <= unit.currentRange}`
+);
 
     if (distance > 0 && distance <= unit.currentRange) {
       targets.add(candidate.id);
