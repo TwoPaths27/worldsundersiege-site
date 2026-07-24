@@ -1825,11 +1825,48 @@ async function attackUnit(attacker, defender) {
       addLog(`💀 Player ${defender.owner}'s ${defender.name} was destroyed.`);
     } else {
       addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+
+      // A surviving defender retaliates once when the attacker is inside the
+      // defender's own range. Retaliation never triggers another retaliation.
+      const retaliationDistance =
+        Math.abs(attacker.x - defender.x) +
+        Math.abs(attacker.y - defender.y);
+      const canRetaliate =
+        retaliationDistance > 0 &&
+        retaliationDistance <= defender.currentRange;
+
+      if (canRetaliate) {
+        playOneShot(gameplayAudio.attack);
+        await animateAttack(defenderToken, attackerToken, defender, attacker);
+
+        attacker.currentHP -= defender.currentAttack;
+        addLog(
+          `↩ Player ${defender.owner}'s ${defender.name} retaliated against ${attacker.name} for ${defender.currentAttack} damage.`
+        );
+
+        if (attacker.currentHP <= 0) {
+          playOneShot(gameplayAudio.death);
+          await animateUnitToDiscard(attackerToken, attacker.owner);
+          GameState.players[attacker.owner].discardCount += 1;
+          GameState.units = GameState.units.filter((unit) => unit.id !== attacker.id);
+          GameState.selectedUnitId = null;
+          addLog(`💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`);
+        } else {
+          addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
+        }
+      }
     }
 
-    GameState.attackableUnitIds = findAttackableUnits(attacker);
-    GameState.attackableStrongholdPlayerId = findAttackableStronghold(attacker);
-    GameState.reachableSpaces = findReachableSpaces(attacker);
+    const attackerStillExists = GameState.units.some((unit) => unit.id === attacker.id);
+    if (attackerStillExists) {
+      GameState.attackableUnitIds = findAttackableUnits(attacker);
+      GameState.attackableStrongholdPlayerId = findAttackableStronghold(attacker);
+      GameState.reachableSpaces = findReachableSpaces(attacker);
+    } else {
+      GameState.reachableSpaces = new Map();
+      GameState.attackableUnitIds = new Set();
+      GameState.attackableStrongholdPlayerId = null;
+    }
     renderGame();
   } finally {
     GameState.isAnimating = false;
