@@ -843,14 +843,42 @@ function createBattlefieldCell(x, y) {
         : `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage`;
 
       const beginAttackPreview = () => {
-        cell.classList.add("is-attack-hovered");
-        setAttackHoverState(true);
-        showAttackPreviewBadge(
-          cell,
-          selectedUnit.currentAttack,
-          isLethal
-        );
-      };
+  cell.classList.add("is-attack-hovered");
+  setAttackHoverState(true);
+
+  const retaliationDistance =
+    Math.abs(selectedUnit.x - occupant.x) +
+    Math.abs(selectedUnit.y - occupant.y);
+
+  const canRetaliate =
+    retaliationDistance > 0 &&
+    retaliationDistance <= occupant.currentRange;
+
+  const attackerRemainingHP =
+    selectedUnit.currentHP -
+    (canRetaliate ? occupant.currentAttack : 0);
+
+  const defenderRemainingHP =
+    occupant.currentHP -
+    selectedUnit.currentAttack;
+
+  showAttackPreviewBadge(
+    cell,
+    selectedUnit.currentAttack,
+    isLethal,
+    {
+      attackerName: selectedUnit.name,
+      attackerCurrentHP: selectedUnit.currentHP,
+      attackerRemainingHP,
+
+      defenderName: occupant.name,
+      defenderCurrentHP: occupant.currentHP,
+      defenderRemainingHP,
+
+      canRetaliate,
+    }
+  );
+};
       const endAttackPreview = () => {
         cell.classList.remove("is-attack-hovered");
         clearAttackHoverState();
