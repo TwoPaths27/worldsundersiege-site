@@ -1166,15 +1166,10 @@ function handleBattlefieldClick(x, y) {
   }
 
   if (clickedUnit) {
-    if (
+   if (
   selectedUnit &&
   clickedUnit.id === selectedUnit.id
 ) {
-  if (GameState.selectedUnitAction === "menu") {
-    clearSelection();
-    return;
-  }
-
   GameState.selectedUnitAction = "menu";
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
@@ -1185,32 +1180,22 @@ function handleBattlefieldClick(x, y) {
   return;
 }
 
-    if (clickedUnit.owner !== GameState.activePlayer) {
-  if (
+  if (clickedUnit.owner !== GameState.activePlayer) {
+  const isValidAttack =
     selectedUnit &&
     GameState.selectedUnitAction === "attack" &&
-    GameState.attackableUnitIds.has(clickedUnit.id)
-  ) {
+    GameState.attackableUnitIds.has(clickedUnit.id);
+
+  if (isValidAttack) {
     attackUnit(selectedUnit, clickedUnit);
     return;
   }
 
-  if (
-    selectedUnit &&
-    GameState.selectedUnitAction !== "attack"
-  ) {
-    addLog("Choose Attack before targeting an enemy Unit.");
-    renderGame();
-    return;
+  if (selectedUnit) {
+    addLog("Invalid attack target. Selection cleared.");
+    clearSelection();
   }
 
-  addLog(
-    selectedUnit?.hasAttacked
-      ? `${selectedUnit.name} has already attacked this turn.`
-      : `${clickedUnit.name} is not within attack range.`
-  );
-
-  renderGame();
   return;
 }
 
@@ -1219,18 +1204,25 @@ function handleBattlefieldClick(x, y) {
   }
 
   if (!selectedUnit) {
-    addLog("Select one of your Units before choosing a destination.");
-    return;
-  }
-
-  if (GameState.selectedUnitAction !== "move") {
-  addLog("Choose Move before selecting a destination.");
-  renderGame();
   return;
 }
 
-moveSelectedUnit(x, y);
+const destinationKey = getCoordinateKey(x, y);
+const movementCost =
+  GameState.reachableSpaces.get(destinationKey);
+
+const isValidMove =
+  GameState.selectedUnitAction === "move" &&
+  movementCost !== undefined &&
+  movementCost > 0;
+
+if (isValidMove) {
+  moveSelectedUnit(x, y);
+  return;
 }
+
+addLog("Selection cleared.");
+clearSelection();
 
 function selectUnit(unitId) {
   if (GameState.gameOver || GameState.isAnimating) {
@@ -1247,18 +1239,18 @@ function selectUnit(unitId) {
     return;
   }
 
-  GameState.selectedCardId = null;
-  GameState.selectedUnitId = unit.id;
-  GameState.selectedUnitAction = "move";
+GameState.selectedCardId = null;
+GameState.selectedUnitId = unit.id;
+GameState.selectedUnitAction = "menu";
 
-  GameState.reachableSpaces = findReachableSpaces(unit);
-  GameState.attackableUnitIds = new Set();
-  GameState.attackableStrongholdPlayerId = null;
+GameState.reachableSpaces = new Map();
+GameState.attackableUnitIds = new Set();
+GameState.attackableStrongholdPlayerId = null;
 
-  addLog(
+addLog(
   unit.hasAttacked
     ? `${unit.name} selected. Its attack has already been used this turn.`
-    : `${unit.name} selected. Click the Unit again to choose Move or Attack.`
+    : `${unit.name} selected. Choose Move or Attack.`
 );
 
   renderGame();
