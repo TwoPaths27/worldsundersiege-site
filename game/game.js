@@ -582,60 +582,19 @@ function positionAttackPreviewBadge(target) {
   badge.classList.toggle("is-below-target", placeBelow);
 }
 
-function showAttackPreviewBadge(
-  target,
-  damage,
-  isLethal,
-  counterDamage = null,
-  attackerRemainingHP = null,
-  defenderRemainingHP = null
-) {
+function showAttackPreviewBadge(target, damage, isLethal) {
   const badge = getAttackPreviewBadge();
   activeAttackPreviewTarget = target;
 
-  badge.replaceChildren();
-
-  const defenderResult = document.createElement("span");
-  defenderResult.className = "attack-preview-result";
-
-  if (defenderRemainingHP !== null) {
-    defenderResult.textContent =
-      `Defender: ${Math.max(0, defenderRemainingHP)} HP`;
-  } else {
-    defenderResult.textContent = isLethal
-      ? `Defender: 0 HP · LETHAL`
-      : `Defender: −${damage} HP`;
-  }
-
-  badge.appendChild(defenderResult);
-
-  if (
-    counterDamage !== null &&
-    attackerRemainingHP !== null
-  ) {
-    const divider = document.createElement("span");
-    divider.className = "attack-preview-divider";
-    divider.textContent = "↕";
-
-    const attackerResult = document.createElement("span");
-    attackerResult.className = "attack-preview-result";
-    attackerResult.textContent =
-      `Attacker: ${Math.max(0, attackerRemainingHP)} HP`;
-
-    badge.append(divider, attackerResult);
-  }
-
-  badge.classList.toggle(
-    "is-lethal",
-    isLethal ||
-      defenderRemainingHP === 0 ||
-      attackerRemainingHP === 0
-  );
-
+  badge.textContent = isLethal
+    ? `LETHAL · −${damage} HP`
+    : `−${damage} HP`;
+  badge.classList.toggle("is-lethal", isLethal);
   badge.classList.add("is-visible");
 
   requestAnimationFrame(() => positionAttackPreviewBadge(target));
 }
+
 function hideAttackPreviewBadge() {
   activeAttackPreviewTarget = null;
 
@@ -836,77 +795,35 @@ function createBattlefieldCell(x, y) {
       cell.classList.add("cell-selected");
     }
 
-   if (isAttackTarget) {
-  const attackDistance =
-    Math.abs(selectedUnit.x - occupant.x) +
-    Math.abs(selectedUnit.y - occupant.y);
+    if (isAttackTarget) {
+      const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
 
-  const canCounterattack =
-    attackDistance > 0 &&
-    attackDistance <= occupant.currentRange;
+      cell.classList.add("cell-attack", "cell-attack-target");
+      cell.dataset.predictedDamage = `−${selectedUnit.currentAttack} HP`;
+      cell.dataset.lethal = isLethal ? "LETHAL" : "";
+      cell.title = isLethal
+        ? `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage — lethal`
+        : `Attack ${occupant.name} for ${selectedUnit.currentAttack} damage`;
 
-  const defenderRemainingHP = Math.max(
-    0,
-    occupant.currentHP - selectedUnit.currentAttack
-  );
+      const beginAttackPreview = () => {
+        cell.classList.add("is-attack-hovered");
+        setAttackHoverState(true);
+        showAttackPreviewBadge(
+          cell,
+          selectedUnit.currentAttack,
+          isLethal
+        );
+      };
+      const endAttackPreview = () => {
+        cell.classList.remove("is-attack-hovered");
+        clearAttackHoverState();
+      };
 
-  const attackerRemainingHP = canCounterattack
-    ? Math.max(
-        0,
-        selectedUnit.currentHP - occupant.currentAttack
-      )
-    : selectedUnit.currentHP;
-
-  const isDefenderLethal = defenderRemainingHP <= 0;
-  const isAttackerLethal =
-    canCounterattack && attackerRemainingHP <= 0;
-
-  cell.classList.add("cell-attack", "cell-attack-target");
-
-  cell.dataset.predictedDamage =
-    `Defender: ${defenderRemainingHP} HP`;
-
-  cell.dataset.lethal =
-    isDefenderLethal || isAttackerLethal
-      ? "LETHAL"
-      : "";
-
-  cell.title = canCounterattack
-    ? (
-        `Attack ${occupant.name}: ` +
-        `${occupant.name} will have ${defenderRemainingHP} HP; ` +
-        `${selectedUnit.name} will have ${attackerRemainingHP} HP`
-      )
-    : (
-        `Attack ${occupant.name}: ` +
-        `${occupant.name} will have ${defenderRemainingHP} HP; ` +
-        `${occupant.name} cannot counterattack`
-      );
-
-  const beginAttackPreview = () => {
-    cell.classList.add("is-attack-hovered");
-    setAttackHoverState(true);
-
-    showAttackPreviewBadge(
-      cell,
-      selectedUnit.currentAttack,
-      isDefenderLethal,
-      canCounterattack ? occupant.currentAttack : null,
-      canCounterattack ? attackerRemainingHP : null,
-      defenderRemainingHP
-    );
-  };
-
-  const endAttackPreview = () => {
-    cell.classList.remove("is-attack-hovered");
-    clearAttackHoverState();
-  };
-
-  cell.addEventListener("mouseenter", beginAttackPreview);
-  cell.addEventListener("mouseleave", endAttackPreview);
-  cell.addEventListener("focus", beginAttackPreview);
-  cell.addEventListener("blur", endAttackPreview);
-}
+      cell.addEventListener("mouseenter", beginAttackPreview);
+      cell.addEventListener("mouseleave", endAttackPreview);
+      cell.addEventListener("focus", beginAttackPreview);
+      cell.addEventListener("blur", endAttackPreview);
+    }
   } else {
     const coordinateLabel = document.createElement("span");
 
@@ -1649,10 +1566,12 @@ async function attackStronghold(attacker, targetPlayerId) {
 
   try {
     const targetPlayer = GameState.players[targetPlayerId];
+    const isLethalStrongholdHit =
+      targetPlayer.strongholdHP - attacker.currentAttack <= 0;
 
-// Every Stronghold attack plays the impact sound, including lethal attacks.
-// If lethal, the collapse sound and animation follow afterward.
-playOneShot(gameplayAudio.strongholdHit);
+    if (!isLethalStrongholdHit) {
+      playOneShot(gameplayAudio.strongholdHit);
+    }
 
     await animateStrongholdAttack(attackerToken, targetStronghold, attacker);
 
@@ -1884,28 +1803,6 @@ async function attackUnit(attacker, defender) {
     `[data-unit-id="${CSS.escape(defender.id)}"]`
   );
 
-  /*
-   * Determine retaliation before either unit receives damage.
-   * This allows the defender to deal its already-established combat damage
-   * even when the attack will reduce it to 0 HP.
-   */
-  const retaliationDistance =
-    Math.abs(attacker.x - defender.x) +
-    Math.abs(attacker.y - defender.y);
-
-  const canRetaliate =
-    retaliationDistance > 0 &&
-    retaliationDistance <= defender.currentRange;
-
-  /*
-   * Capture both damage values before applying anything. This prevents
-   * damage-changing death effects from altering this combat exchange midway.
-   */
-  const damageToDefender = Math.max(0, attacker.currentAttack);
-  const damageToAttacker = canRetaliate
-    ? Math.max(0, defender.currentAttack)
-    : 0;
-
   GameState.isAnimating = true;
   setInteractionLock(true);
 
@@ -1913,114 +1810,71 @@ async function attackUnit(attacker, defender) {
     playOneShot(gameplayAudio.attack);
     await animateAttack(attackerToken, defenderToken, attacker, defender);
 
-    /*
-     * Show the retaliation animation before resolving deaths. The defender
-     * may already be marked for lethal damage, but it still completes this
-     * simultaneous combat exchange.
-     */
-    if (canRetaliate) {
-      playOneShot(gameplayAudio.attack);
-      await animateAttack(defenderToken, attackerToken, defender, attacker);
-    }
-
-    // Apply all combat damage together.
-    defender.currentHP -= damageToDefender;
-
-    if (canRetaliate) {
-      attacker.currentHP -= damageToAttacker;
-    }
-
+    defender.currentHP -= attacker.currentAttack;
     attacker.hasAttacked = true;
 
     addLog(
-      `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${damageToDefender} damage.`
+      `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`
     );
 
-    if (canRetaliate) {
-      addLog(
-        `↩ Player ${defender.owner}'s ${defender.name} counterattacked ${attacker.name} for ${damageToAttacker} damage.`
-      );
-    }
-
-    const defenderDied = defender.currentHP <= 0;
-    const attackerDied = attacker.currentHP <= 0;
-
-    /*
-     * Animate both deaths before removing either unit from GameState.
-     * Promise.all lets both cards travel toward their discard piles together.
-     */
-    const deathAnimations = [];
-
-    if (defenderDied) {
-      deathAnimations.push(
-        animateUnitToDiscard(defenderToken, defender.owner)
-      );
-    }
-
-    if (attackerDied) {
-      deathAnimations.push(
-        animateUnitToDiscard(attackerToken, attacker.owner)
-      );
-    }
-
-    if (deathAnimations.length > 0) {
+    if (defender.currentHP <= 0) {
       playOneShot(gameplayAudio.death);
-      await Promise.all(deathAnimations);
-    }
-
-    if (defenderDied) {
+      await animateUnitToDiscard(defenderToken, defender.owner);
       GameState.players[defender.owner].discardCount += 1;
-      GameState.units = GameState.units.filter(
-        (unit) => unit.id !== defender.id
-      );
-
-      addLog(
-        `💀 Player ${defender.owner}'s ${defender.name} was destroyed.`
-      );
+      GameState.units = GameState.units.filter((unit) => unit.id !== defender.id);
+      addLog(`💀 Player ${defender.owner}'s ${defender.name} was destroyed.`);
     } else {
-      addLog(
-        `❤ ${defender.name} has ${Math.max(0, defender.currentHP)} HP remaining.`
-      );
+      addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+
+      // A surviving defender retaliates once when the attacker is inside the
+      // defender's own range. Retaliation never triggers another retaliation.
+      const retaliationDistance =
+        Math.abs(attacker.x - defender.x) +
+        Math.abs(attacker.y - defender.y);
+      const canRetaliate =
+        retaliationDistance > 0 &&
+        retaliationDistance <= defender.currentRange;
+
+      if (canRetaliate) {
+        playOneShot(gameplayAudio.attack);
+        await animateAttack(defenderToken, attackerToken, defender, attacker);
+
+        attacker.currentHP -= defender.currentAttack;
+        addLog(
+          `↩ Player ${defender.owner}'s ${defender.name} retaliated against ${attacker.name} for ${defender.currentAttack} damage.`
+        );
+
+        if (attacker.currentHP <= 0) {
+          playOneShot(gameplayAudio.death);
+          await animateUnitToDiscard(attackerToken, attacker.owner);
+          GameState.players[attacker.owner].discardCount += 1;
+          GameState.units = GameState.units.filter((unit) => unit.id !== attacker.id);
+          GameState.selectedUnitId = null;
+          addLog(`💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`);
+        } else {
+          addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
+        }
+      }
     }
 
-    if (attackerDied) {
-      GameState.players[attacker.owner].discardCount += 1;
-      GameState.units = GameState.units.filter(
-        (unit) => unit.id !== attacker.id
-      );
-
-      GameState.selectedUnitId = null;
-
-      addLog(
-        `💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`
-      );
-    } else {
-      addLog(
-        `❤ ${attacker.name} has ${Math.max(0, attacker.currentHP)} HP remaining.`
-      );
-    }
-
-    const attackerStillExists = GameState.units.some(
-      (unit) => unit.id === attacker.id
-    );
-
+    const attackerStillExists = GameState.units.some((unit) => unit.id === attacker.id);
     if (attackerStillExists) {
       GameState.attackableUnitIds = findAttackableUnits(attacker);
-      GameState.attackableStrongholdPlayerId =
-        findAttackableStronghold(attacker);
+      GameState.attackableStrongholdPlayerId = findAttackableStronghold(attacker);
       GameState.reachableSpaces = findReachableSpaces(attacker);
     } else {
       GameState.reachableSpaces = new Map();
       GameState.attackableUnitIds = new Set();
       GameState.attackableStrongholdPlayerId = null;
     }
-
     renderGame();
   } finally {
     GameState.isAnimating = false;
     setInteractionLock(false);
   }
-}{
+}
+
+async function animateUnitToDiscard(unitToken, ownerPlayerId) {
   const discardZone = document.querySelector(
     ownerPlayerId === 1 ? "#playerDiscardZone" : "#enemyDiscardZone"
   );

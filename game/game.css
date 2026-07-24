@@ -3435,40 +3435,22 @@ body.is-game-animating .hand-dock__toggle {
   z-index: 99999;
   left: 0;
   top: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
   transform: translateX(-50%) translateY(4px) scale(.92);
-  min-width: 122px;
-  padding: 7px 10px;
+  padding: 5px 8px;
   border: 1px solid rgba(255, 135, 135, .9);
-  border-radius: 10px;
+  border-radius: 999px;
   background: rgba(72, 5, 5, .97);
   color: #fff2f2;
   font-size: 10px;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 1;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   box-shadow: 0 0 16px rgba(255, 52, 52, .78);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease,
-    visibility 120ms ease;
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
   animation: none;
-}
-.attack-preview-result {
-  display: block;
-}
-
-.attack-preview-divider {
-  display: block;
-  color: rgba(255, 220, 220, .72);
-  font-size: 11px;
-  line-height: .8;
 }
 
 .attack-damage-preview-badge.is-visible {
