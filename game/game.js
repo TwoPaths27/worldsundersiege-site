@@ -789,8 +789,13 @@ function setSelectedUnitAction(action) {
   }
 
   if (action === "attack") {
-    if (unit.hasAttacked) {
-      return;
+
+    const hasAttackTarget =
+        findAttackableUnits(unit).size > 0 ||
+        findAttackableStronghold(unit) !== null;
+
+    if (unit.hasAttacked || !hasAttackTarget) {
+        return;
     }
 
     GameState.selectedUnitAction = "attack";
@@ -819,13 +824,17 @@ function createUnitActionMenu(unit) {
     isDisabled: unit.remainingSpeed <= 0,
   });
 
-  const attackButton = createUnitActionButton({
-    label: "Attack",
-    icon: "⚔",
-    action: "attack",
-    isActive: GameState.selectedUnitAction === "attack",
-    isDisabled: unit.hasAttacked,
-  });
+  const hasAttackTarget =
+  findAttackableUnits(unit).size > 0 ||
+  findAttackableStronghold(unit) !== null;
+
+const attackButton = createUnitActionButton({
+  label: "Attack",
+  icon: "⚔",
+  action: "attack",
+  isActive: GameState.selectedUnitAction === "attack",
+  isDisabled: unit.hasAttacked || !hasAttackTarget,
+});
 
   menu.append(moveButton, attackButton);
 
