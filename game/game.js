@@ -963,7 +963,25 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
-  cell.classList.add("cell-selected");
+  const {
+    canMove,
+    canAttack,
+  } = getUnitActionAvailability(occupant);
+
+  cell.classList.add(
+    "cell-selected",
+    "cell-unit-action-status"
+  );
+
+  if (canMove && canAttack) {
+    cell.classList.add("cell-unit-action-status--both");
+  } else if (canMove) {
+    cell.classList.add("cell-unit-action-status--move-only");
+  } else if (canAttack) {
+    cell.classList.add("cell-unit-action-status--attack-only");
+  } else {
+    cell.classList.add("cell-unit-action-status--none");
+  }
 
   if (GameState.selectedUnitAction === "menu") {
     cell.appendChild(createUnitActionMenu(occupant));
@@ -1071,6 +1089,26 @@ function createBattlefieldCell(x, y) {
 
   return cell;
 }
+function getUnitActionAvailability(unit) {
+  if (!unit) {
+    return {
+      canMove: false,
+      canAttack: false,
+    };
+  }
+
+  const canMove =
+    unit.remainingSpeed > 0;
+
+  const canAttack =
+    !unit.hasAttacked &&
+    unitHasLegalAttackTarget(unit);
+
+  return {
+    canMove,
+    canAttack,
+  };
+}
 
 function unitHasLegalAttackTarget(unit) {
   if (!unit || unit.hasAttacked) {
@@ -1084,11 +1122,13 @@ function unitHasLegalAttackTarget(unit) {
 }
 
 function isUnitExhausted(unit) {
-  return (
-    unit.remainingSpeed <= 0 &&
-    !unitHasLegalAttackTarget(unit)
-  );
-}
+  const {
+    canMove,
+    canAttack,
+  } = getUnitActionAvailability(unit);
+
+  return !canMove && !canAttack;
+}}
 
 function createUnitToken(unit) {
   const token = document.createElement("div");
@@ -1104,8 +1144,18 @@ function createUnitToken(unit) {
     GameState.selectedUnitId === unit.id
   );
   token.classList.toggle("has-attacked", unit.hasAttacked);
-  const exhausted = isUnitExhausted(unit);
-  token.classList.toggle("is-exhausted", exhausted);
+  const {
+  canMove,
+  canAttack,
+} = getUnitActionAvailability(unit);
+
+const exhausted =
+  !canMove &&
+  !canAttack;
+
+token.classList.toggle("can-move", canMove);
+token.classList.toggle("can-attack", canAttack);
+token.classList.toggle("is-exhausted", exhausted);
   token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
@@ -1768,9 +1818,9 @@ function isUnitProtected(attacker, target) {
     );
 
     // Only the target's friendly Units provide protection.
-    if (blocker && blocker.owner === target.owner) {
-      return true;
-    }
+    if (blocker) {
+  return true;
+}
   }
 
   return false;
@@ -1805,10 +1855,9 @@ function isStrongholdLaneProtected(
       attacker.y + stepY * step
     );
 
-    if (blocker && blocker.owner === defenderOwner) {
-      return true;
-    }
-  }
+    if (blocker) {
+  return true;
+}
 
   return false;
 }

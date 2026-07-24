@@ -4358,3 +4358,73 @@ body.end-screen-visible .victory-modal__dialog {
   background: #c63d3d;
   border-color: #ff9a9a;
 }
+/*
+ * Selected Unit Action Status
+ *
+ * Left half: movement
+ * Right half: attack
+ */
+
+.battlefield-cell.cell-selected.cell-unit-action-status {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Movement and attack are both available. */
+.battlefield-cell.cell-selected.cell-unit-action-status--both {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(40, 130, 255, 0.58) 0%,
+      rgba(40, 130, 255, 0.58) 50%,
+      rgba(255, 137, 35, 0.58) 50%,
+      rgba(255, 137, 35, 0.58) 100%
+    );
+}
+
+/* Movement remains, but attack is unavailable. */
+.battlefield-cell.cell-selected.cell-unit-action-status--move-only {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(40, 130, 255, 0.58) 0%,
+      rgba(40, 130, 255, 0.58) 50%,
+      rgba(100, 105, 115, 0.58) 50%,
+      rgba(100, 105, 115, 0.58) 100%
+    );
+}
+
+/* Attack remains, but movement is unavailable. */
+.battlefield-cell.cell-selected.cell-unit-action-status--attack-only {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(100, 105, 115, 0.58) 0%,
+      rgba(100, 105, 115, 0.58) 50%,
+      rgba(255, 137, 35, 0.58) 50%,
+      rgba(255, 137, 35, 0.58) 100%
+    );
+}
+
+/* Neither action is available. */
+.battlefield-cell.cell-selected.cell-unit-action-status--none {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(100, 105, 115, 0.62) 0%,
+      rgba(100, 105, 115, 0.62) 100%
+    );
+}
+
+/* Only gray the Unit itself when both actions are unavailable. */
+.unit-token.is-exhausted {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+/* Do not fade a Unit that still has either action. */
+.unit-token.can-move,
+.unit-token.can-attack {
+  filter: none;
+  opacity: 1;
+}
