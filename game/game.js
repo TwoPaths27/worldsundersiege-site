@@ -1727,7 +1727,60 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   renderGame();
 }
-function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
+function greatestCommonDivisor(a, b) {
+  let first = Math.abs(a);
+  let second = Math.abs(b);
+
+  while (second !== 0) {
+    const remainder = first % second;
+    first = second;
+    second = remainder;
+  }
+
+  return first;
+}
+
+function isUnitProtected(attacker, target) {
+  if (!attacker || !target) {
+    return false;
+  }
+
+  const deltaX = target.x - attacker.x;
+  const deltaY = target.y - attacker.y;
+
+  const steps = greatestCommonDivisor(
+    Math.abs(deltaX),
+    Math.abs(deltaY)
+  );
+
+  // There is no space between adjacent Units.
+  if (steps <= 1) {
+    return false;
+  }
+
+  const stepX = deltaX / steps;
+  const stepY = deltaY / steps;
+
+  for (let step = 1; step < steps; step += 1) {
+    const blocker = getUnitAt(
+      attacker.x + stepX * step,
+      attacker.y + stepY * step
+    );
+
+    // Only the target's friendly Units provide protection.
+    if (blocker && blocker.owner === target.owner) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isStrongholdLaneProtected(
+  attacker,
+  strongholdColumn,
+  defenderOwner
+) {
   const strongholdY =
     defenderOwner === 1 ? BOARD_ROWS : -1;
 
@@ -1746,7 +1799,7 @@ function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
   const stepX = deltaX / steps;
   const stepY = deltaY / steps;
 
-  for (let step = 1; step < steps; step++) {
+  for (let step = 1; step < steps; step += 1) {
     const blocker = getUnitAt(
       attacker.x + stepX * step,
       attacker.y + stepY * step
@@ -1759,36 +1812,6 @@ function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
 
   return false;
 }
-function findAttackableUnits(unit) {
-  const targets = new Set();
-
-  if (!unit || unit.hasAttacked) {
-    return targets;
-  }
-
-  for (const candidate of GameState.units) {
-    if (candidate.owner === unit.owner) {
-      continue;
-    }
-
-    const distance =
-      Math.abs(candidate.x - unit.x) +
-      Math.abs(candidate.y - unit.y);
-
-    const isWithinRange =
-      distance > 0 &&
-      distance <= unit.currentRange;
-
-    const isProtected =
-      isUnitProtected(unit, candidate);
-
-    if (isWithinRange && !isProtected) {
-      targets.add(candidate.id);
-    }
-  }
-
-  return targets;
-}
 
 function findAttackableUnits(unit) {
   const targets = new Set();
@@ -1819,8 +1842,7 @@ function findAttackableUnits(unit) {
   }
 
   return targets;
-}
-function findAttackableStronghold(unit) {
+}function findAttackableStronghold(unit) {
 
   if (!unit || unit.hasAttacked || GameState.gameOver) {
     return null;
