@@ -569,26 +569,162 @@ body{
 }
 
 .cell-move {
-    background:#2859d9;
+  background: #2859d9;
+  border-color: #72a2ff;
+  box-shadow: inset 0 0 16px rgba(74, 132, 255, 0.32);
 }
 
-.cell-range{
-    background:#c97b17;
+.cell-range {
+  background: #a85f13;
+  border-color: #ffb34a;
+  box-shadow: inset 0 0 16px rgba(255, 153, 38, 0.3);
 }
 
-.cell-move-range{
-    background:
-        linear-gradient(
-            135deg,
-            #2859d9 0%,
-            #2859d9 49%,
-            #c97b17 51%,
-            #c97b17 100%
-        );
+.cell-attack {
+  background: #9b2b2b;
 }
 
-.cell-attack{
-    background:#9b2b2b;
+/* Let the selected Unit's action menu extend beyond its tile. */
+.battlefield-cell.cell-selected {
+  z-index: 30;
+  overflow: visible;
+}
+
+/* Keep the Unit token above ordinary tile highlights. */
+.battlefield-cell.cell-selected .unit-token {
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================================================
+   Selected Unit Action Menu
+========================================================= */
+
+.unit-action-menu {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 50;
+
+  display: flex;
+  gap: 4px;
+
+  width: max-content;
+  padding: 4px;
+
+  background: rgba(18, 20, 26, 0.97);
+  border: 1px solid #747b89;
+  border-radius: 8px;
+
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  transform: translateX(-50%);
+  animation: unit-action-menu-in 140ms ease-out;
+}
+
+/* Small pointer connecting the menu to the selected Unit. */
+.unit-action-menu::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+
+  width: 8px;
+  height: 8px;
+
+  background: rgba(18, 20, 26, 0.97);
+  border-right: 1px solid #747b89;
+  border-bottom: 1px solid #747b89;
+
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.unit-action-menu__button {
+  position: relative;
+  z-index: 1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  min-width: 68px;
+  min-height: 28px;
+  padding: 5px 9px;
+
+  color: #d8dce5;
+  background: #30343d;
+  border: 1px solid #555c69;
+  border-radius: 5px;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.unit-action-menu__button:hover,
+.unit-action-menu__button:focus-visible {
+  color: #fff;
+  border-color: #fff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.unit-action-menu__button--move.is-active {
+  color: #fff;
+  background: #2859d9;
+  border-color: #7dadff;
+  box-shadow: 0 0 10px rgba(63, 123, 255, 0.65);
+}
+
+.unit-action-menu__button--attack.is-active {
+  color: #fff;
+  background: #a85f13;
+  border-color: #ffb34a;
+  box-shadow: 0 0 10px rgba(255, 145, 31, 0.62);
+}
+
+.unit-action-menu__button.is-disabled {
+  color: #777d88;
+  background: #292c33;
+  border-color: #424650;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+@keyframes unit-action-menu-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 5px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unit-action-menu {
+    animation: none;
+  }
 }
 
   /* ===========================
@@ -4168,4 +4304,57 @@ body.end-screen-visible .victory-modal__dialog {
     filter: saturate(1.35);
     box-shadow: 0 0 10px rgba(255, 42, 42, .45);
   }
+}
+.unit-action-menu {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.unit-action-menu__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 3px 7px;
+
+  border-radius: 999px;
+
+  background: rgba(12,18,28,.92);
+  border: 1px solid rgba(255,255,255,.18);
+
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform .12s,
+    background .12s,
+    border-color .12s;
+}
+
+.unit-action-menu__button:hover {
+  transform: translateY(-1px);
+}
+
+.unit-action-menu__button.is-active {
+  background: #3d7bff;
+  border-color: #8eb5ff;
+}
+
+.unit-action-menu__button.is-disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.unit-action-menu__button--attack.is-active {
+  background: #c63d3d;
+  border-color: #ff9a9a;
 }

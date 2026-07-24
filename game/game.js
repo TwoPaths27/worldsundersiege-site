@@ -53,10 +53,11 @@ const GameState = {
   turn: 1,
   activePlayer: 1,
   selectedUnitId: null,
-  selectedCardId: null,
-  reachableSpaces: new Map(),
-  attackableUnitIds: new Set(),
-  attackableStrongholdPlayerId: null,
+selectedCardId: null,
+selectedUnitAction: "move",
+reachableSpaces: new Map(),
+attackableUnitIds: new Set(),
+attackableStrongholdPlayerId: null,
   gameOver: false,
   winnerPlayerId: null,
   nextUnitId: 1,
@@ -764,7 +765,131 @@ function renderBattlefield() {
     }
   }
 }
+function setSelectedUnitAction(action) {
+  const unit = getSelectedUnit();
 
+  if (
+    !unit ||
+    GameState.gameOver ||
+    GameState.isAnimating ||
+    (action !== "move" && action !== "attack")
+  ) {
+    return;
+  }
+
+  if (action === "move") {
+    if (unit.remainingSpeed <= 0) {
+      return;
+    }
+
+    GameState.selectedUnitAction = "move";
+    GameState.reachableSpaces = findReachableSpaces(unit);
+    GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
+  }
+
+  if (action === "attack") {
+    if (unit.hasAttacked) {
+      return;
+    }
+
+    GameState.selectedUnitAction = "attack";
+    GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = findAttackableUnits(unit);
+    GameState.attackableStrongholdPlayerId =
+      findAttackableStronghold(unit);
+  }
+
+  clearAttackHoverState();
+  renderGame();
+}
+
+function createUnitActionMenu(unit) {
+  const menu = document.createElement("div");
+
+  menu.className = "unit-action-menu";
+  menu.setAttribute("role", "toolbar");
+  menu.setAttribute("aria-label", `${unit.name} actions`);
+
+  const moveButton = createUnitActionButton({
+    label: "Move",
+    icon: "◆",
+    action: "move",
+    isActive: GameState.selectedUnitAction === "move",
+    isDisabled: unit.remainingSpeed <= 0,
+  });
+
+  const attackButton = createUnitActionButton({
+    label: "Attack",
+    icon: "⚔",
+    action: "attack",
+    isActive: GameState.selectedUnitAction === "attack",
+    isDisabled: unit.hasAttacked,
+  });
+
+  menu.append(moveButton, attackButton);
+
+  menu.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  menu.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  return menu;
+}
+
+function createUnitActionButton({
+  label,
+  icon,
+  action,
+  isActive,
+  isDisabled,
+}) {
+  const control = document.createElement("span");
+
+  control.className =
+    `unit-action-menu__button ` +
+    `unit-action-menu__button--${action}`;
+
+  control.setAttribute("role", "button");
+  control.setAttribute("aria-label", label);
+  control.setAttribute("aria-pressed", String(isActive));
+  control.setAttribute("aria-disabled", String(isDisabled));
+  control.tabIndex = isDisabled ? -1 : 0;
+
+  control.classList.toggle("is-active", isActive);
+  control.classList.toggle("is-disabled", isDisabled);
+
+  const iconElement = document.createElement("span");
+  iconElement.setAttribute("aria-hidden", "true");
+  iconElement.textContent = icon;
+
+  const labelElement = document.createElement("span");
+  labelElement.textContent = label;
+
+  control.append(iconElement, labelElement);
+
+  const activate = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isDisabled) {
+      setSelectedUnitAction(action);
+    }
+  };
+
+  control.addEventListener("click", activate);
+
+  control.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      activate(event);
+    }
+  });
+
+  return control;
+}
 function createBattlefieldCell(x, y) {
   const cell = document.createElement("button");
 
@@ -829,8 +954,9 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
-      cell.classList.add("cell-selected");
-    }
+  cell.classList.add("cell-selected");
+  cell.appendChild(createUnitActionMenu(occupant));
+}
 
     if (isAttackTarget) {
       const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
@@ -899,39 +1025,31 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(coordinateLabel);
   }
 
-  if (!occupant) {
+  if (!occupant && selectedUnit) {
 
-  const isMoveSpace =
-    moveDistance !== undefined && moveDistance > 0;
+  if (GameState.selectedUnitAction === "move") {
 
-  const rangeDistance =
-    selectedUnit
-      ? Math.abs(selectedUnit.x - x) +
-        Math.abs(selectedUnit.y - y)
-      : Infinity;
+    const isMoveSpace =
+      moveDistance !== undefined && moveDistance > 0;
 
-  const isRangeSpace =
-    selectedUnit &&
-    rangeDistance > 0 &&
-    rangeDistance <= selectedUnit.currentRange;
+    if (isMoveSpace) {
+      cell.classList.add("cell-move");
+      cell.title = `Move here — costs ${moveDistance} Speed`;
+    }
 
-  if (isMoveSpace && isRangeSpace) {
+  } else if (GameState.selectedUnitAction === "attack") {
 
-    cell.classList.add("cell-move-range");
-    cell.title =
-      `Move (${moveDistance} Speed)\nAttack Range`;
+    const rangeDistance =
+      Math.abs(selectedUnit.x - x) +
+      Math.abs(selectedUnit.y - y);
 
-  } else if (isMoveSpace) {
-
-    cell.classList.add("cell-move");
-    cell.title =
-      `Move here — costs ${moveDistance} Speed`;
-
-  } else if (isRangeSpace) {
-
-    cell.classList.add("cell-range");
-    cell.title =
-      `Within Attack Range`;
+    if (
+      rangeDistance > 0 &&
+      rangeDistance <= selectedUnit.currentRange
+    ) {
+      cell.classList.add("cell-range");
+      cell.title = "Within Attack Range";
+    }
 
   }
 
@@ -1054,22 +1172,33 @@ function handleBattlefieldClick(x, y) {
     }
 
     if (clickedUnit.owner !== GameState.activePlayer) {
-      if (
-        selectedUnit &&
-        GameState.attackableUnitIds.has(clickedUnit.id)
-      ) {
-        attackUnit(selectedUnit, clickedUnit);
-        return;
-      }
+  if (
+    selectedUnit &&
+    GameState.selectedUnitAction === "attack" &&
+    GameState.attackableUnitIds.has(clickedUnit.id)
+  ) {
+    attackUnit(selectedUnit, clickedUnit);
+    return;
+  }
 
-      addLog(
-        selectedUnit?.hasAttacked
-          ? `${selectedUnit.name} has already attacked this turn.`
-          : `${clickedUnit.name} is not within attack range.`
-      );
-      renderGame();
-      return;
-    }
+  if (
+    selectedUnit &&
+    GameState.selectedUnitAction !== "attack"
+  ) {
+    addLog("Choose Attack before targeting an enemy Unit.");
+    renderGame();
+    return;
+  }
+
+  addLog(
+    selectedUnit?.hasAttacked
+      ? `${selectedUnit.name} has already attacked this turn.`
+      : `${clickedUnit.name} is not within attack range.`
+  );
+
+  renderGame();
+  return;
+}
 
     selectUnit(clickedUnit.id);
     return;
@@ -1080,7 +1209,13 @@ function handleBattlefieldClick(x, y) {
     return;
   }
 
-  moveSelectedUnit(x, y);
+  if (GameState.selectedUnitAction !== "move") {
+  addLog("Choose Move before selecting a destination.");
+  renderGame();
+  return;
+}
+
+moveSelectedUnit(x, y);
 }
 
 function selectUnit(unitId) {
@@ -1100,18 +1235,20 @@ function selectUnit(unitId) {
 
   GameState.selectedCardId = null;
   GameState.selectedUnitId = unit.id;
+  GameState.selectedUnitAction = "move";
+
   GameState.reachableSpaces = findReachableSpaces(unit);
-  GameState.attackableUnitIds = findAttackableUnits(unit);
-  GameState.attackableStrongholdPlayerId = findAttackableStronghold(unit);
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
 
   addLog(
     unit.hasAttacked
       ? `${unit.name} selected. Its attack has already been used this turn.`
-      : `${unit.name} selected.`
+      : `${unit.name} selected. Choose Move or Attack.`
   );
+
   renderGame();
 }
-
 function selectCard(cardId) {
   if (GameState.gameOver || GameState.isAnimating) {
     return;
@@ -1517,6 +1654,7 @@ function clearSelection() {
 
   GameState.selectedUnitId = null;
   GameState.selectedCardId = null;
+  GameState.selectedUnitAction = "move";
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
@@ -1561,15 +1699,17 @@ function moveSelectedUnit(destinationX, destinationY) {
   );
 
   if (unit.remainingSpeed > 0) {
-    GameState.reachableSpaces = findReachableSpaces(unit);
-    GameState.attackableUnitIds = findAttackableUnits(unit);
-    GameState.attackableStrongholdPlayerId = findAttackableStronghold(unit);
-  } else {
-    GameState.selectedUnitId = null;
-    GameState.reachableSpaces = new Map();
-    GameState.attackableUnitIds = new Set();
-    GameState.attackableStrongholdPlayerId = null;
-  }
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = findReachableSpaces(unit);
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+} else {
+  GameState.selectedUnitId = null;
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+}
 
   renderGame();
 }
@@ -1686,9 +1826,19 @@ async function attackStronghold(attacker, targetPlayerId) {
     );
     addLog(`❤ Player ${targetPlayerId}'s Stronghold has ${targetPlayer.strongholdHP} HP remaining.`);
 
-    GameState.attackableUnitIds = new Set();
-    GameState.attackableStrongholdPlayerId = null;
-    renderGame();
+    if (attacker.remainingSpeed > 0) {
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = findReachableSpaces(attacker);
+} else {
+  GameState.selectedUnitId = null;
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = new Map();
+}
+
+GameState.attackableUnitIds = new Set();
+GameState.attackableStrongholdPlayerId = null;
+
+renderGame();
 
     if (targetPlayer.strongholdHP <= 0) {
       await endGame(attacker.owner, targetPlayerId);
@@ -1986,16 +2136,22 @@ if (attackerDestroyed) {
   addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
 }
 
-    const attackerStillExists = GameState.units.some((unit) => unit.id === attacker.id);
-    if (attackerStillExists) {
-      GameState.attackableUnitIds = findAttackableUnits(attacker);
-      GameState.attackableStrongholdPlayerId = findAttackableStronghold(attacker);
-      GameState.reachableSpaces = findReachableSpaces(attacker);
-    } else {
-      GameState.reachableSpaces = new Map();
-      GameState.attackableUnitIds = new Set();
-      GameState.attackableStrongholdPlayerId = null;
-    }
+    const attackerStillExists = GameState.units.some(
+  (unit) => unit.id === attacker.id
+);
+
+if (attackerStillExists && attacker.remainingSpeed > 0) {
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = findReachableSpaces(attacker);
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+} else {
+  GameState.selectedUnitId = null;
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+}
     renderGame();
   } finally {
     GameState.isAnimating = false;
