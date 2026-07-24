@@ -249,5 +249,85 @@ Gaheris participates in many of Camelot's battles and quests, earning respect fo
 
 Like Sir Gareth, Gaheris is tragically killed during Sir Lancelot's rescue of Queen Guinevere. His death further deepens the rift between Lancelot and King Arthur, helping to ignite the civil war that ultimately destroys Camelot. Sir Gaheris represents loyalty, quiet courage, and the tragic cost of conflicts between friends and family.`
       }
+"BOA-020": {
+    status: "Fictional Vampire Count",
+    origin: "Transylvania, Romania",
+    first: "Dracula by Bram Stoker (1897)",
+    period: "15th Century (Novel Setting)",
+    aliases: "Count Dracula; The Count",
+    history: `Count Dracula is the central antagonist of Bram Stoker's 1897 Gothic novel Dracula and one of the most influential vampires in literature. Although Stoker borrowed the name "Dracula" from the historical Vlad III Dracula of Wallachia, the character himself is entirely fictional. In the novel, Dracula is an ancient Transylvanian nobleman who has existed for centuries, surviving by feeding upon the blood of the living.
+
+Dracula possesses extraordinary supernatural abilities. He has immense strength, can scale walls like a lizard, transform into a bat, wolf, mist, or swarms of rats, command wolves and other creatures of the night, and influence the minds of weaker individuals through hypnotic powers. Despite these abilities, he is bound by strict supernatural limitations. He cannot enter a home unless invited, fears holy objects, is weakened by sunlight, and can only be permanently destroyed through specific rituals involving a stake, decapitation, and consecration.
+
+Seeking new victims, Dracula travels from his castle in Transylvania to England, where he spreads vampirism and terror. His campaign is opposed by Professor Abraham Van Helsing and a small group of determined allies. After a relentless pursuit across Europe, Dracula is intercepted before reaching the safety of his castle. His body is destroyed, ending his reign of terror and freeing those under his curse. Bram Stoker's novel established many of the defining characteristics of vampires in modern fiction, making Count Dracula the most iconic vampire ever created.`
+  },
+
+  "BOA-021": {
+    status: "Artificial Human (Fictional)",
+    origin: "Switzerland",
+    first: "Frankenstein; or, The Modern Prometheus by Mary Shelley (1818)",
+    period: "Late 18th Century",
+    aliases: "The Creature; Frankenstein's Monster; Adam",
+    history: `Frankenstein's Monster is the central figure of Mary Shelley's 1818 novel Frankenstein; or, The Modern Prometheus. Contrary to popular belief, "Frankenstein" is the surname of his creator, Victor Frankenstein, not the creature himself. The being is never given a true name in the novel, and is most often referred to simply as "the Creature," "the Monster," or, by himself, "Adam."
+
+Victor Frankenstein creates the Creature by assembling parts from human corpses and bringing them to life through an unspecified scientific process. Although gigantic and physically frightening, the Creature begins life with the innocence of a child. He secretly learns language, history, and literature by observing a rural family, developing intelligence, compassion, and a desire for friendship. However, he is repeatedly rejected because of his terrifying appearance, leading him to become bitter and filled with loneliness.
+
+After Victor refuses to create a companion for him, the Creature vows revenge against his creator. He murders several of Victor's loved ones, including his younger brother William, his friend Henry Clerval, and Victor's bride Elizabeth. The tragedy ends in the Arctic, where Victor dies while pursuing his creation. Overcome with grief and remorse, the Creature declares that he no longer wishes to live and departs into the frozen wilderness, intending to destroy himself. Mary Shelley's novel explores themes of humanity, isolation, prejudice, responsibility, and the dangers of unchecked scientific ambition, making Frankenstein's Monster one of literature's most tragic and misunderstood figures.`
+  }
+"BOA-022": {
+    status: "Legendary Cryptid",
+    origin: "Himalayan Folklore",
+    first: "Sherpa and Tibetan Oral Tradition",
+    period: "Ancient Folklore",
+    aliases: "Yeti; Abominable Snowman; Migoi; Meh-Teh",
+    history: `The Yeti is a legendary ape-like creature said to inhabit the remote Himalayan mountains of Nepal, Tibet, and Bhutan. Long before Western explorers heard of it, the Yeti was already part of Sherpa and Tibetan folklore, where it was regarded as a mysterious being of the high mountains. Stories describe it as a massive, humanlike creature covered in white or reddish-brown fur, capable of surviving in the harshest alpine environments.
+
+The Yeti gained worldwide attention during the 19th and 20th centuries as mountaineers and explorers reported discovering enormous footprints in the snow. Expeditions to Mount Everest frequently investigated these claims, but no physical evidence has ever conclusively proven the creature's existence. Many supposed Yeti footprints have since been explained as tracks left by bears or distorted by melting snow, while alleged hair and bone samples have consistently been identified as belonging to known animals.
+
+Despite the lack of scientific proof, the Yeti remains one of the world's most famous cryptids. To many Himalayan communities it is respected as a guardian spirit of the mountains rather than a monster. The legend continues to inspire explorers, cryptozoologists, and storytellers alike, symbolizing the enduring mystery of the world's highest peaks.`
+  },
+  "BOA-023": {
+    status: "Fictional Werewolf Inspired by History and Folklore",
+    origin: "France",
+    first: "The Werewolf of Paris by Guy Endore (1933)",
+    period: "Franco-Prussian War and Paris Commune (1870–1871)",
+    aliases: "Bertrand Caillet; The Werewolf of Paris",
+    history: `Bertrand Caillet is the fictional werewolf at the center of Guy Endore's 1933 novel The Werewolf of Paris. Although Bertrand himself was not a real historical person, his story combines traditional European werewolf folklore with real events from 19th-century French history. The novel presents his life through a manuscript written by his step-uncle, Aymar Galliez, who attempts to explain and defend Bertrand's actions.
+
+Belief in werewolves existed throughout Europe for centuries before Endore wrote his novel. In French folklore, a werewolf was commonly called a loup-garou. Some legends claimed that lycanthropy could be caused by witchcraft, divine punishment, a magical animal skin, or a curse inherited through a family. Other traditions connected it to being born on Christmas Eve or being conceived during a forbidden holy period. Endore draws upon these superstitions by making Bertrand's condition hereditary rather than the result of being bitten by another werewolf.
+
+Bertrand is born into a family associated with rumors of wolfish violence and supernatural corruption. As he grows older, he experiences disturbing dreams, violent impulses, and missing memories. He eventually discovers that some of these dreams are memories of nights when he physically transformed into a wolf. Bertrand is not portrayed as a mindless monster, however. In his human form, he understands that something terrible lives within him and repeatedly struggles to control the beast.
+
+The novel places Bertrand against the real historical background of the Franco-Prussian War and the Paris Commune of 1871. As France descends into warfare, starvation, political uprising, and mass violence, Bertrand's private curse becomes connected to the brutality occurring around him. Endore uses the werewolf not only as a supernatural creature but also as a symbol of the cruelty and savagery ordinary human beings can display during war and revolution.
+
+Bertrand eventually serves as a soldier and becomes involved in the chaos surrounding Paris. His condition leads to imprisonment, investigation, and a military trial, while Galliez argues that Bertrand is both responsible for terrible acts and the victim of a curse he never chose. The Werewolf of Paris blends documented history, old loup-garou folklore, Gothic horror, and tragedy to create one of literature's most influential werewolves. Bertrand is remembered as a monster, but also as a deeply human figure whose lifelong battle against his own nature ends in suffering and destruction.`
+  }
+
+  "BOA-024": {
+    status: "Legendary Ghost",
+    origin: "American Folklore",
+    first: "The Legend of Sleepy Hollow by Washington Irving (1820)",
+    period: "American Revolutionary War",
+    aliases: "The Headless Horseman; Hessian Horseman",
+    history: `The Headless Horseman is the supernatural antagonist of Washington Irving's 1820 short story The Legend of Sleepy Hollow. According to local legend, he is the ghost of a Hessian cavalry soldier who fought for the British during the American Revolutionary War. The soldier was decapitated by a cannonball during battle, and his restless spirit is said to ride each night in search of his missing head.
+
+The Horseman haunts the quiet village of Sleepy Hollow near the old Dutch church where his remains are believed to be buried. Mounted upon a powerful black horse, he gallops through the countryside carrying either a carved pumpkin or his severed head beneath his arm. Those unfortunate enough to cross his path are pursued with terrifying speed through the dark forests and lonely roads.
+
+The legend reaches its climax when schoolmaster Ichabod Crane encounters the Horseman during his ride home after a village gathering. The ghost hurls his pumpkin at Ichabod, who disappears without a trace, leaving readers to wonder whether the Horseman was truly supernatural or an elaborate disguise. Irving intentionally leaves the mystery unresolved, making the Headless Horseman one of the greatest enduring legends in American literature.`
+  },
+
+  "BOA-025": {
+    status: "Legendary Cryptid",
+    origin: "North American Folklore",
+    first: "Indigenous Oral Traditions",
+    period: "Ancient Folklore",
+    aliases: "Bigfoot; Sasquatch",
+    history: `Bigfoot, also known as Sasquatch, is a legendary ape-like creature said to inhabit the forests and mountains of North America. Long before modern sightings, many Indigenous peoples of the Pacific Northwest told stories of large, hairy forest beings that lived deep within the wilderness. The name "Sasquatch" comes from the Halkomelem word "Sásq'ets," while "Bigfoot" became popular during the 20th century after reports of enormous footprints.
+
+Witnesses typically describe Bigfoot as standing between seven and ten feet tall, covered in dark hair, and possessing immense strength. Thousands of sightings have been reported across the United States and Canada, accompanied by footprint casts, photographs, recordings, and other alleged evidence. The most famous claim remains the 1967 Patterson–Gimlin film, which supposedly captured a Bigfoot walking through the forests of Northern California.
+
+Despite decades of investigations, no conclusive scientific evidence has confirmed Bigfoot's existence. Most researchers attribute sightings to misidentified animals, hoaxes, or natural phenomena, while cryptozoologists continue searching for proof. Bigfoot remains one of the world's most famous cryptids, representing humanity's fascination with the possibility that unknown creatures still exist within Earth's remote wilderness.`
+  }
+
 };
 
