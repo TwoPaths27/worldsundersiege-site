@@ -1805,52 +1805,78 @@ async function attackUnit(attacker, defender) {
     playOneShot(gameplayAudio.attack);
     await animateAttack(attackerToken, defenderToken, attacker, defender);
 
-    defender.currentHP -= attacker.currentAttack;
-    attacker.hasAttacked = true;
+    const retaliationDistance =
+  Math.abs(attacker.x - defender.x) +
+  Math.abs(attacker.y - defender.y);
 
-    addLog(
-      `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`
-    );
+const canRetaliate =
+  retaliationDistance > 0 &&
+  retaliationDistance <= defender.currentRange;
 
-    if (defender.currentHP <= 0) {
-      playOneShot(gameplayAudio.death);
-      await animateUnitToDiscard(defenderToken, defender.owner);
-      GameState.players[defender.owner].discardCount += 1;
-      GameState.units = GameState.units.filter((unit) => unit.id !== defender.id);
-      addLog(`💀 Player ${defender.owner}'s ${defender.name} was destroyed.`);
-    } else {
-      addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+// Show the defender's retaliation before resolving deaths.
+// The defender can retaliate even when the incoming attack is lethal.
+if (canRetaliate) {
+  playOneShot(gameplayAudio.attack);
+  await animateAttack(defenderToken, attackerToken, defender, attacker);
+}
 
-      // A surviving defender retaliates once when the attacker is inside the
-      // defender's own range. Retaliation never triggers another retaliation.
-      const retaliationDistance =
-        Math.abs(attacker.x - defender.x) +
-        Math.abs(attacker.y - defender.y);
-      const canRetaliate =
-        retaliationDistance > 0 &&
-        retaliationDistance <= defender.currentRange;
+// Apply all combat damage before checking whether either unit died.
+defender.currentHP -= attacker.currentAttack;
 
-      if (canRetaliate) {
-        playOneShot(gameplayAudio.attack);
-        await animateAttack(defenderToken, attackerToken, defender, attacker);
+if (canRetaliate) {
+  attacker.currentHP -= defender.currentAttack;
+}
 
-        attacker.currentHP -= defender.currentAttack;
-        addLog(
-          `↩ Player ${defender.owner}'s ${defender.name} retaliated against ${attacker.name} for ${defender.currentAttack} damage.`
-        );
+attacker.hasAttacked = true;
 
-        if (attacker.currentHP <= 0) {
-          playOneShot(gameplayAudio.death);
-          await animateUnitToDiscard(attackerToken, attacker.owner);
-          GameState.players[attacker.owner].discardCount += 1;
-          GameState.units = GameState.units.filter((unit) => unit.id !== attacker.id);
-          GameState.selectedUnitId = null;
-          addLog(`💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`);
-        } else {
-          addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
-        }
-      }
-    }
+addLog(
+  `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`
+);
+
+if (canRetaliate) {
+  addLog(
+    `↩ Player ${defender.owner}'s ${defender.name} retaliated against ${attacker.name} for ${defender.currentAttack} damage.`
+  );
+}
+
+const defenderDestroyed = defender.currentHP <= 0;
+const attackerDestroyed = attacker.currentHP <= 0;
+
+// Resolve the defender's result after all combat damage has been applied.
+if (defenderDestroyed) {
+  playOneShot(gameplayAudio.death);
+  await animateUnitToDiscard(defenderToken, defender.owner);
+
+  GameState.players[defender.owner].discardCount += 1;
+  GameState.units = GameState.units.filter(
+    (unit) => unit.id !== defender.id
+  );
+
+  addLog(
+    `💀 Player ${defender.owner}'s ${defender.name} was destroyed.`
+  );
+} else {
+  addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+}
+
+// Resolve the attacker's result separately, allowing both units to die.
+if (attackerDestroyed) {
+  playOneShot(gameplayAudio.death);
+  await animateUnitToDiscard(attackerToken, attacker.owner);
+
+  GameState.players[attacker.owner].discardCount += 1;
+  GameState.units = GameState.units.filter(
+    (unit) => unit.id !== attacker.id
+  );
+
+  GameState.selectedUnitId = null;
+
+  addLog(
+    `💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`
+  );
+} else if (canRetaliate) {
+  addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
+}
 
     const attackerStillExists = GameState.units.some((unit) => unit.id === attacker.id);
     if (attackerStillExists) {
