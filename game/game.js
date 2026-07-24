@@ -1566,12 +1566,7 @@ async function attackStronghold(attacker, targetPlayerId) {
 
   try {
     const targetPlayer = GameState.players[targetPlayerId];
-    const isLethalStrongholdHit =
-      targetPlayer.strongholdHP - attacker.currentAttack <= 0;
-
-    if (!isLethalStrongholdHit) {
-      playOneShot(gameplayAudio.strongholdHit);
-    }
+    playOneShot(gameplayAudio.strongholdHit);
 
     await animateStrongholdAttack(attackerToken, targetStronghold, attacker);
 
