@@ -1128,7 +1128,7 @@ function isUnitExhausted(unit) {
   } = getUnitActionAvailability(unit);
 
   return !canMove && !canAttack;
-}}
+}
 
 function createUnitToken(unit) {
   const token = document.createElement("div");
@@ -1850,16 +1850,17 @@ function isStrongholdLaneProtected(
   const stepY = deltaY / steps;
 
   for (let step = 1; step < steps; step += 1) {
-    const blocker = getUnitAt(
-      attacker.x + stepX * step,
-      attacker.y + stepY * step
-    );
+  const blocker = getUnitAt(
+    attacker.x + stepX * step,
+    attacker.y + stepY * step
+  );
 
-    if (blocker) {
-  return true;
+  if (blocker) {
+    return true;
+  }
 }
 
-  return false;
+return false;
 }
 
 function findAttackableUnits(unit) {
