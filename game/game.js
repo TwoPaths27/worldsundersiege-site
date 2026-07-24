@@ -1223,6 +1223,7 @@ if (isValidMove) {
 
 addLog("Selection cleared.");
 clearSelection();
+}
 
 function selectUnit(unitId) {
   if (GameState.gameOver || GameState.isAnimating) {
