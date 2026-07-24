@@ -1050,12 +1050,17 @@ function createBattlefieldCell(x, y) {
     }
 
   } else if (GameState.selectedUnitAction === "attack") {
+  const rangeDistance =
+    Math.abs(selectedUnit.x - x) +
+    Math.abs(selectedUnit.y - y);
 
-  if (hasClearLineOfSight(selectedUnit, x, y)) {
+  if (
+    rangeDistance > 0 &&
+    rangeDistance <= selectedUnit.currentRange
+  ) {
     cell.classList.add("cell-range");
     cell.title = "Within Attack Range";
   }
-
 }
 
 }
@@ -1722,49 +1727,67 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   renderGame();
 }
+function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
+  const strongholdY =
+    defenderOwner === 1 ? BOARD_ROWS : -1;
 
-function hasClearLineOfSight(attacker, targetX, targetY) {
-  if (!attacker) {
+  const deltaX = strongholdColumn - attacker.x;
+  const deltaY = strongholdY - attacker.y;
+
+  const steps = greatestCommonDivisor(
+    Math.abs(deltaX),
+    Math.abs(deltaY)
+  );
+
+  if (steps <= 1) {
     return false;
   }
 
-  const deltaX = targetX - attacker.x;
-  const deltaY = targetY - attacker.y;
+  const stepX = deltaX / steps;
+  const stepY = deltaY / steps;
 
-  // Attacks must travel in a straight horizontal or vertical line.
-  const isSameColumn = deltaX === 0;
-  const isSameRow = deltaY === 0;
+  for (let step = 1; step < steps; step++) {
+    const blocker = getUnitAt(
+      attacker.x + stepX * step,
+      attacker.y + stepY * step
+    );
 
-  if (!isSameColumn && !isSameRow) {
-    return false;
-  }
-
-  const distance =
-    Math.abs(deltaX) +
-    Math.abs(deltaY);
-
-  if (
-    distance <= 0 ||
-    distance > attacker.currentRange
-  ) {
-    return false;
-  }
-
-  const stepX = Math.sign(deltaX);
-  const stepY = Math.sign(deltaY);
-
-  // Check every space between the attacker and the target.
-  // The target's own space is not checked here.
-  for (let step = 1; step < distance; step += 1) {
-    const checkX = attacker.x + stepX * step;
-    const checkY = attacker.y + stepY * step;
-
-    if (getUnitAt(checkX, checkY)) {
-      return false;
+    if (blocker && blocker.owner === defenderOwner) {
+      return true;
     }
   }
 
-  return true;
+  return false;
+}
+function findAttackableUnits(unit) {
+  const targets = new Set();
+
+  if (!unit || unit.hasAttacked) {
+    return targets;
+  }
+
+  for (const candidate of GameState.units) {
+    if (candidate.owner === unit.owner) {
+      continue;
+    }
+
+    const distance =
+      Math.abs(candidate.x - unit.x) +
+      Math.abs(candidate.y - unit.y);
+
+    const isWithinRange =
+      distance > 0 &&
+      distance <= unit.currentRange;
+
+    const isProtected =
+      isUnitProtected(unit, candidate);
+
+    if (isWithinRange && !isProtected) {
+      targets.add(candidate.id);
+    }
+  }
+
+  return targets;
 }
 
 function findAttackableUnits(unit) {
@@ -1779,38 +1802,60 @@ function findAttackableUnits(unit) {
       continue;
     }
 
-    if (
-      hasClearLineOfSight(
-        unit,
-        candidate.x,
-        candidate.y
-      )
-    ) {
+    const distance =
+      Math.abs(candidate.x - unit.x) +
+      Math.abs(candidate.y - unit.y);
+
+    const isWithinRange =
+      distance > 0 &&
+      distance <= unit.currentRange;
+
+    const isProtected =
+      isUnitProtected(unit, candidate);
+
+    if (isWithinRange && !isProtected) {
       targets.add(candidate.id);
     }
   }
 
   return targets;
 }
-
 function findAttackableStronghold(unit) {
+
   if (!unit || unit.hasAttacked || GameState.gameOver) {
     return null;
   }
 
-  const enemyPlayerId = unit.owner === 1 ? 2 : 1;
-  const strongholdY = enemyPlayerId === 2 ? -1 : BOARD_ROWS;
+  const enemyPlayerId =
+    unit.owner === 1 ? 2 : 1;
+
+  const strongholdY =
+    enemyPlayerId === 2 ? -1 : BOARD_ROWS;
+
   const strongholdColumns = [2, 3, 4];
 
-  const minimumDistance = Math.min(
-    ...strongholdColumns.map((column) =>
-      Math.abs(unit.x - column) + Math.abs(unit.y - strongholdY)
-    )
-  );
+  for (const column of strongholdColumns) {
 
-  return minimumDistance <= unit.currentRange ? enemyPlayerId : null;
+    const distance =
+      Math.abs(unit.x - column) +
+      Math.abs(unit.y - strongholdY);
+
+    if (
+      distance > 0 &&
+      distance <= unit.currentRange &&
+      !isStrongholdLaneProtected(
+        unit,
+        column,
+        enemyPlayerId
+      )
+    ) {
+      return enemyPlayerId;
+    }
+
+  }
+
+  return null;
 }
-
 function handleStrongholdClick(targetPlayerId) {
   clearAttackHoverState();
 
