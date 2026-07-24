@@ -490,14 +490,7 @@
       });
     }
 
-    function formatHistory(text) {
-      if (!text) return "";
-
-      return text
-        .split(/\n\s*\n/)
-        .map(paragraph => `<p>${paragraph.trim()}</p>`)
-        .join("");
-    }
+    
 
     function formatHistory(text) {
       if (!text) return "";
