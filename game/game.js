@@ -1051,19 +1051,12 @@ function createBattlefieldCell(x, y) {
 
   } else if (GameState.selectedUnitAction === "attack") {
 
-    const rangeDistance =
-      Math.abs(selectedUnit.x - x) +
-      Math.abs(selectedUnit.y - y);
-
-    if (
-      rangeDistance > 0 &&
-      rangeDistance <= selectedUnit.currentRange
-    ) {
-      cell.classList.add("cell-range");
-      cell.title = "Within Attack Range";
-    }
-
+  if (hasClearLineOfSight(selectedUnit, x, y)) {
+    cell.classList.add("cell-range");
+    cell.title = "Within Attack Range";
   }
+
+}
 
 }
 
@@ -1730,9 +1723,51 @@ function moveSelectedUnit(destinationX, destinationY) {
   renderGame();
 }
 
+function hasClearLineOfSight(attacker, targetX, targetY) {
+  if (!attacker) {
+    return false;
+  }
+
+  const deltaX = targetX - attacker.x;
+  const deltaY = targetY - attacker.y;
+
+  // Attacks must travel in a straight horizontal or vertical line.
+  const isSameColumn = deltaX === 0;
+  const isSameRow = deltaY === 0;
+
+  if (!isSameColumn && !isSameRow) {
+    return false;
+  }
+
+  const distance =
+    Math.abs(deltaX) +
+    Math.abs(deltaY);
+
+  if (
+    distance <= 0 ||
+    distance > attacker.currentRange
+  ) {
+    return false;
+  }
+
+  const stepX = Math.sign(deltaX);
+  const stepY = Math.sign(deltaY);
+
+  // Check every space between the attacker and the target.
+  // The target's own space is not checked here.
+  for (let step = 1; step < distance; step += 1) {
+    const checkX = attacker.x + stepX * step;
+    const checkY = attacker.y + stepY * step;
+
+    if (getUnitAt(checkX, checkY)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function findAttackableUnits(unit) {
-
-
   const targets = new Set();
 
   if (!unit || unit.hasAttacked) {
@@ -1744,19 +1779,13 @@ function findAttackableUnits(unit) {
       continue;
     }
 
-    const distance =
-      Math.abs(candidate.x - unit.x) +
-      Math.abs(candidate.y - unit.y);
-
-console.log(
-  `${unit.name} at (${unit.x + 1}, ${unit.y + 1})`,
-  `→ ${candidate.name} at (${candidate.x + 1}, ${candidate.y + 1})`,
-  `Distance: ${distance}`,
-  `Range: ${unit.currentRange}`,
-  `Attackable: ${distance > 0 && distance <= unit.currentRange}`
-);
-
-    if (distance > 0 && distance <= unit.currentRange) {
+    if (
+      hasClearLineOfSight(
+        unit,
+        candidate.x,
+        candidate.y
+      )
+    ) {
       targets.add(candidate.id);
     }
   }
