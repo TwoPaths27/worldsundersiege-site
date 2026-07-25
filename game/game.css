@@ -5046,3 +5046,90 @@ body::after {
   justify-self: center;
   align-self: center;
 }
+
+
+/* =========================================================
+   BOA-001 King Arthur visual test
+========================================================= */
+
+.unit-token--art {
+  position: relative;
+  overflow: hidden;
+  padding: 4px !important;
+  color: #fff;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 5px rgba(0, 0, 0, 0.9);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 3px 8px rgba(0, 0, 0, 0.48);
+}
+
+.unit-token--art > span {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2px 3px;
+  background: rgba(4, 7, 12, 0.66);
+  border-radius: 4px;
+  line-height: 1.05;
+}
+
+.hand-card--art {
+  background-color: #242833;
+  color: #fff;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.hand-card--art .hand-card__stats {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 24px;
+  z-index: 2;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.68);
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.hand-card--art .hand-card__name {
+  z-index: 3;
+}
+
+.card-preview {
+  min-height: 0;
+  overflow: auto;
+}
+
+.card-preview__art {
+  display: block;
+  width: min(100%, 250px);
+  max-height: calc(100dvh - 170px);
+  margin: 0 auto 10px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.card-preview__details {
+  display: grid;
+  gap: 6px;
+}
+
+.card-preview__details h3,
+.card-preview__details p {
+  margin: 0;
+}
+
+.card-preview__effect {
+  color: #d9dde6;
+  font-size: 12px;
+  line-height: 1.35;
+}

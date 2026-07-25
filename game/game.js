@@ -37,6 +37,9 @@ function createCard({
   hp,
   range,
   speed,
+  cardImage = null,
+  tileImage = null,
+  effectText = "",
 }) {
   return {
     id,
@@ -47,6 +50,9 @@ function createCard({
     hp,
     range,
     speed,
+    cardImage,
+    tileImage,
+    effectText,
   };
 }
 const GameState = {
@@ -93,13 +99,16 @@ attackableStrongholdPlayerId: null,
   }),
 
   createCard({
-    id: "p1-knight",
-    name: "Knight",
-    cost: 3,
-    attack: 4,
+    id: "boa-001-king-arthur",
+    name: "King Arthur",
+    cost: 5,
+    attack: 6,
     hp: 6,
     range: 1,
     speed: 2,
+    cardImage: "../cards/BOA-001 King Arthur.jpg",
+    tileImage: "../tile/BOA-001 King Arthur.jpg",
+    effectText: "Other Units you control gain +2 ATK and +1 SPD. (Visual test only — effect inactive.)",
   }),
 ],
     },
@@ -146,16 +155,19 @@ attackableStrongholdPlayerId: null,
 
   units: [
     createUnit({
-  id: "player-1-knight",
-  name: "Knight",
+  id: "player-1-king-arthur",
+  name: "King Arthur",
   owner: 1,
   x: 3,
   y: 5,
-  attack: 3,
+  attack: 6,
   hp: 6,
   range: 1,
-  speed: 3,
-  cost: 2,
+  speed: 2,
+  cost: 5,
+  cardImage: "../cards/BOA-001 King Arthur.jpg",
+  tileImage: "../tile/BOA-001 King Arthur.jpg",
+  effectText: "Other Units you control gain +2 ATK and +1 SPD. (Visual test only — effect inactive.)",
 }),
 
 createUnit({
@@ -365,6 +377,9 @@ function createUnit({
   range,
   speed,
   cost,
+  cardImage = null,
+  tileImage = null,
+  effectText = "",
 }) {
   return {
     id,
@@ -387,6 +402,10 @@ function createUnit({
 
     remainingSpeed: speed,
     hasAttacked: false,
+
+    cardImage,
+    tileImage,
+    effectText,
   };
 }
 
@@ -1203,14 +1222,25 @@ token.classList.toggle("is-exhausted", exhausted);
   token.style.textAlign = "center";
   token.style.fontSize = "12px";
   token.style.fontWeight = "700";
-  token.style.background =
-    unit.owner === 1
-      ? "linear-gradient(145deg, #174d89, #0f2948)"
-      : "linear-gradient(145deg, #8a2929, #481414)";
+  if (unit.tileImage) {
+    token.classList.add("unit-token--art");
+    token.style.backgroundImage =
+      `linear-gradient(to bottom, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), ` +
+      `url("${unit.tileImage}")`;
+    token.style.backgroundPosition = "center";
+    token.style.backgroundRepeat = "no-repeat";
+    token.style.backgroundSize = "cover";
+  } else {
+    token.style.background =
+      unit.owner === 1
+        ? "linear-gradient(145deg, #174d89, #0f2948)"
+        : "linear-gradient(145deg, #8a2929, #481414)";
+  }
+
   token.style.border =
     unit.owner === GameState.activePlayer
-      ? "2px solid rgba(255, 255, 255, 0.8)"
-      : "2px solid rgba(255, 255, 255, 0.3)";
+      ? "2px solid rgba(255, 255, 255, 0.9)"
+      : "2px solid rgba(255, 255, 255, 0.35)";
 
   const name = document.createElement("span");
   name.textContent = unit.name;
@@ -1466,6 +1496,9 @@ async function recruitSelectedCard(x, y) {
       range: card.range,
       speed: card.speed,
       cost: card.cost,
+      cardImage: card.cardImage,
+      tileImage: card.tileImage,
+      effectText: card.effectText,
     });
 
     GameState.nextUnitId += 1;
@@ -2618,6 +2651,17 @@ function renderSelectedUnitPanel() {
   );
 }
 
+function createCardArtPreview(imageSource, altText) {
+  if (!imageSource) return null;
+
+  const image = document.createElement("img");
+  image.className = "card-preview__art";
+  image.src = imageSource;
+  image.alt = altText;
+  image.loading = "eager";
+  return image;
+}
+
 function renderCardPreview(unit = null) {
   const previewUnit = unit ?? getSelectedUnit();
 
@@ -2632,34 +2676,39 @@ function renderCardPreview(unit = null) {
 
   elements.cardPreview.className = "card-preview";
 
+  const art = createCardArtPreview(
+    previewUnit.cardImage,
+    `${previewUnit.name} card`
+  );
+
+  const details = document.createElement("div");
+  details.className = "card-preview__details";
+
   const name = document.createElement("h3");
   name.textContent = previewUnit.name;
 
-  const type = document.createElement("p");
-  type.textContent = `Player ${previewUnit.owner} Unit`;
-
   const printedStats = document.createElement("p");
   printedStats.textContent =
-    `Printed — Cost ${previewUnit.printedCost}, ` +
-    `ATK ${previewUnit.printedAttack}, ` +
-    `HP ${previewUnit.printedHP}, ` +
-    `Range ${previewUnit.printedRange}, ` +
-    `Speed ${previewUnit.printedSpeed}`;
+    `Cost ${previewUnit.printedCost} · ` +
+    `ATK ${previewUnit.printedAttack} · ` +
+    `HP ${previewUnit.printedHP} · ` +
+    `RNG ${previewUnit.printedRange} · ` +
+    `SPD ${previewUnit.printedSpeed}`;
 
-  const currentStats = document.createElement("p");
-  currentStats.textContent =
-    `Current — Cost ${previewUnit.currentCost}, ` +
-    `ATK ${previewUnit.currentAttack}, ` +
-    `HP ${previewUnit.currentHP}, ` +
-    `Range ${previewUnit.currentRange}, ` +
-    `Speed ${previewUnit.currentSpeed}`;
+  details.append(name, printedStats);
 
-  elements.cardPreview.append(
-    name,
-    type,
-    printedStats,
-    currentStats
-  );
+  if (previewUnit.effectText) {
+    const effect = document.createElement("p");
+    effect.className = "card-preview__effect";
+    effect.textContent = previewUnit.effectText;
+    details.appendChild(effect);
+  }
+
+  if (art) {
+    elements.cardPreview.append(art, details);
+  } else {
+    elements.cardPreview.append(details);
+  }
 }
 
 function renderStrongholds() {
@@ -2740,6 +2789,16 @@ function renderHand() {
       ? `${card.name} can be played for ${card.cost} Energy`
       : `${card.name} requires ${card.cost} Energy; you have ${player.energy}`;
 
+    if (card.cardImage) {
+      cardButton.classList.add("hand-card--art");
+      cardButton.style.backgroundImage =
+        `linear-gradient(to top, rgba(0, 0, 0, 0.76), rgba(0, 0, 0, 0.03) 64%), ` +
+        `url("${card.cardImage}")`;
+      cardButton.style.backgroundPosition = "center";
+      cardButton.style.backgroundRepeat = "no-repeat";
+      cardButton.style.backgroundSize = "cover";
+    }
+
     const cost = document.createElement("span");
     cost.className = "hand-card__cost";
     cost.textContent = String(card.cost);
@@ -2782,28 +2841,36 @@ function renderHandCardPreview(card) {
   elements.cardPreview.replaceChildren();
   elements.cardPreview.className = "card-preview";
 
+  const art = createCardArtPreview(
+    card.cardImage,
+    `${card.name} card`
+  );
+
+  const details = document.createElement("div");
+  details.className = "card-preview__details";
+
   const name = document.createElement("h3");
   name.textContent = card.name;
 
-  const type = document.createElement("p");
-  type.textContent = card.type;
-
-  const cost = document.createElement("p");
-  cost.textContent = `Cost: ${card.cost}`;
-
   const stats = document.createElement("p");
   stats.textContent =
-    `Attack ${card.attack} · ` +
-    `HP ${card.hp} · ` +
-    `Range ${card.range} · ` +
-    `Speed ${card.speed}`;
+    `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
+    `RNG ${card.range} · SPD ${card.speed}`;
 
-  elements.cardPreview.append(
-    name,
-    type,
-    cost,
-    stats
-  );
+  details.append(name, stats);
+
+  if (card.effectText) {
+    const effect = document.createElement("p");
+    effect.className = "card-preview__effect";
+    effect.textContent = card.effectText;
+    details.appendChild(effect);
+  }
+
+  if (art) {
+    elements.cardPreview.append(art, details);
+  } else {
+    elements.cardPreview.append(details);
+  }
 }
 function renderGameLog() {
   elements.gameLog.replaceChildren();
