@@ -534,15 +534,21 @@ function renderGame() {
   renderGameLog();
 }
 
-let activeAttackPreviewTarget = null;
+let activeAttackPreviewTargets = null;
 
-function getAttackPreviewBadge() {
-  let badge = document.getElementById("attackDamagePreviewBadge");
+function getAttackPreviewBadge(kind) {
+  const id =
+    kind === "attacker"
+      ? "attackPreviewAttackerBadge"
+      : "attackPreviewDefenderBadge";
+
+  let badge = document.getElementById(id);
 
   if (!badge) {
     badge = document.createElement("div");
-    badge.id = "attackDamagePreviewBadge";
-    badge.className = "attack-damage-preview-badge";
+    badge.id = id;
+    badge.className =
+      `attack-damage-preview-badge attack-damage-preview-badge--${kind}`;
     badge.setAttribute("role", "status");
     badge.setAttribute("aria-live", "polite");
     document.body.appendChild(badge);
@@ -551,21 +557,19 @@ function getAttackPreviewBadge() {
   return badge;
 }
 
-function positionAttackPreviewBadge(target) {
-  const badge = getAttackPreviewBadge();
+function positionAttackPreviewBadge(badge, target, placement) {
+  if (!badge || !target) return;
+
   const rect = target.getBoundingClientRect();
+  const badgeRect = badge.getBoundingClientRect();
   const margin = 12;
   const viewportPadding = 8;
 
-  // Measure after text/class changes so the fallback position is accurate.
-  const badgeRect = badge.getBoundingClientRect();
-  const preferredTop = rect.top - badgeRect.height - margin;
-  const placeBelow = preferredTop < viewportPadding;
-
   let left = rect.left + rect.width / 2;
-  let top = placeBelow
-    ? rect.bottom + margin
-    : preferredTop;
+  let top =
+    placement === "below"
+      ? rect.bottom + margin
+      : rect.top - badgeRect.height - margin;
 
   const halfWidth = badgeRect.width / 2;
   left = Math.max(
@@ -580,64 +584,98 @@ function positionAttackPreviewBadge(target) {
 
   badge.style.left = `${left}px`;
   badge.style.top = `${top}px`;
-  badge.classList.toggle("is-below-target", placeBelow);
+  badge.classList.toggle("is-below-target", placement === "below");
 }
 
-function showAttackPreviewBadge(
-  target,
-  damage,
-  isLethal,
-  combatPreview = null
-) {
-  const badge = getAttackPreviewBadge();
-  activeAttackPreviewTarget = target;
+function positionActiveAttackPreviewBadges() {
+  if (!activeAttackPreviewTargets) return;
 
-  if (combatPreview) {
-    const {
-      attackerName,
-      attackerCurrentHP,
-      attackerRemainingHP,
-      defenderName,
-      defenderCurrentHP,
-      defenderRemainingHP,
-      canRetaliate,
-    } = combatPreview;
+  const {
+    defenderTarget,
+    attackerTarget,
+  } = activeAttackPreviewTargets;
 
-    const attackerResult =
-      attackerRemainingHP <= 0
-        ? "💀"
-        : `${attackerRemainingHP} HP`;
+  positionAttackPreviewBadge(
+    getAttackPreviewBadge("defender"),
+    defenderTarget,
+    "above"
+  );
 
-    const defenderResult =
-      defenderRemainingHP <= 0
-        ? "💀"
-        : `${defenderRemainingHP} HP`;
-
-    badge.textContent = canRetaliate
-      ? `${attackerName}: ${attackerCurrentHP} → ${attackerResult} · ${defenderName}: ${defenderCurrentHP} → ${defenderResult}`
-      : `${attackerName}: ${attackerCurrentHP} HP · ${defenderName}: ${defenderCurrentHP} → ${defenderResult}`;
-
-    badge.classList.toggle(
-      "is-lethal",
-      attackerRemainingHP <= 0 || defenderRemainingHP <= 0
+  if (attackerTarget) {
+    positionAttackPreviewBadge(
+      getAttackPreviewBadge("attacker"),
+      attackerTarget,
+      "below"
     );
-  } else {
-    badge.textContent = isLethal
-      ? `LETHAL · −${damage} HP`
-      : `−${damage} HP`;
-
-    badge.classList.toggle("is-lethal", isLethal);
   }
-
-  badge.classList.add("is-visible");
-
-  requestAnimationFrame(() => positionAttackPreviewBadge(target));
 }
-function hideAttackPreviewBadge() {
-  activeAttackPreviewTarget = null;
 
-  const badge = document.getElementById("attackDamagePreviewBadge");
-  if (badge) {
+function formatPreviewHP(currentHP, remainingHP) {
+  const result = remainingHP <= 0 ? "💀" : `${remainingHP} HP`;
+  return `${currentHP} HP → ${result}`;
+}
+
+function showUnitAttackPreview(
+  defenderTarget,
+  attackerTarget,
+  combatPreview
+) {
+  const defenderBadge = getAttackPreviewBadge("defender");
+  const attackerBadge = getAttackPreviewBadge("attacker");
+
+  activeAttackPreviewTargets = {
+    defenderTarget,
+    attackerTarget,
+  };
+
+  defenderBadge.textContent = formatPreviewHP(
+    combatPreview.defenderCurrentHP,
+    combatPreview.defenderRemainingHP
+  );
+  defenderBadge.classList.toggle(
+    "is-lethal",
+    combatPreview.defenderRemainingHP <= 0
+  );
+
+  attackerBadge.textContent = formatPreviewHP(
+    combatPreview.attackerCurrentHP,
+    combatPreview.attackerRemainingHP
+  );
+  attackerBadge.classList.toggle(
+    "is-lethal",
+    combatPreview.attackerRemainingHP <= 0
+  );
+
+  defenderBadge.classList.add("is-visible");
+  attackerBadge.classList.add("is-visible");
+
+  requestAnimationFrame(positionActiveAttackPreviewBadges);
+}
+
+function showStrongholdAttackPreview(target, damage, isLethal) {
+  const defenderBadge = getAttackPreviewBadge("defender");
+  const attackerBadge = getAttackPreviewBadge("attacker");
+
+  activeAttackPreviewTargets = {
+    defenderTarget: target,
+    attackerTarget: null,
+  };
+
+  defenderBadge.textContent = isLethal
+    ? `LETHAL · −${damage} HP`
+    : `−${damage} HP`;
+  defenderBadge.classList.toggle("is-lethal", isLethal);
+  defenderBadge.classList.add("is-visible");
+  attackerBadge.classList.remove("is-visible", "is-lethal");
+
+  requestAnimationFrame(positionActiveAttackPreviewBadges);
+}
+
+function hideAttackPreviewBadge() {
+  activeAttackPreviewTargets = null;
+
+  for (const kind of ["defender", "attacker"]) {
+    const badge = getAttackPreviewBadge(kind);
     badge.classList.remove("is-visible", "is-lethal", "is-below-target");
   }
 }
@@ -651,17 +689,8 @@ function clearAttackHoverState() {
   hideAttackPreviewBadge();
 }
 
-window.addEventListener("resize", () => {
-  if (activeAttackPreviewTarget) {
-    positionAttackPreviewBadge(activeAttackPreviewTarget);
-  }
-});
-
-window.addEventListener("scroll", () => {
-  if (activeAttackPreviewTarget) {
-    positionAttackPreviewBadge(activeAttackPreviewTarget);
-  }
-}, true);
+window.addEventListener("resize", positionActiveAttackPreviewBadges);
+window.addEventListener("scroll", positionActiveAttackPreviewBadges, true);
 
 function configureStrongholdAttackPreview(stronghold, targetPlayerId) {
   const attacker = getSelectedUnit();
@@ -687,7 +716,7 @@ function configureStrongholdAttackPreview(stronghold, targetPlayerId) {
     if (stronghold.classList.contains("is-attack-target")) {
       stronghold.classList.add("is-attack-hovered");
       setAttackHoverState(true);
-      showAttackPreviewBadge(
+      showStrongholdAttackPreview(
         stronghold,
         attacker.currentAttack,
         GameState.players[targetPlayerId].strongholdHP <= attacker.currentAttack
@@ -1018,20 +1047,19 @@ function createBattlefieldCell(x, y) {
     occupant.currentHP -
     selectedUnit.currentAttack;
 
-  showAttackPreviewBadge(
+  const attackerCell = getBattlefieldCell(
+    selectedUnit.x,
+    selectedUnit.y
+  );
+
+  showUnitAttackPreview(
     cell,
-    selectedUnit.currentAttack,
-    isLethal,
+    attackerCell,
     {
-      attackerName: selectedUnit.name,
       attackerCurrentHP: selectedUnit.currentHP,
       attackerRemainingHP,
-
-      defenderName: occupant.name,
       defenderCurrentHP: occupant.currentHP,
       defenderRemainingHP,
-
-      canRetaliate,
     }
   );
 };
@@ -1850,17 +1878,17 @@ function isStrongholdLaneProtected(
   const stepY = deltaY / steps;
 
   for (let step = 1; step < steps; step += 1) {
-  const blocker = getUnitAt(
-    attacker.x + stepX * step,
-    attacker.y + stepY * step
-  );
+    const blocker = getUnitAt(
+      attacker.x + stepX * step,
+      attacker.y + stepY * step
+    );
 
-  if (blocker) {
-    return true;
+    if (blocker) {
+      return true;
+    }
   }
-}
 
-return false;
+  return false;
 }
 
 function findAttackableUnits(unit) {

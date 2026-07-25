@@ -407,3 +407,53 @@ body.builder-locked{overflow:hidden}
   }
 }
 
+/* Final desktop layout correction:
+   the preview grows naturally with its full effect text,
+   while the deck and card browser keep their own scrolling areas. */
+@media (min-width:1251px){
+  .builder-layout{
+    height:auto !important;
+    min-height:calc(100vh - 190px);
+    align-items:start;
+  }
+
+  .preview-panel{
+    height:auto !important;
+    min-height:0;
+    overflow:hidden;
+  }
+
+  .deck-panel,
+  .browser-panel{
+    height:calc(100vh - 190px);
+    min-height:620px;
+    align-self:start;
+  }
+
+  .deck-list{
+    flex:1 1 auto;
+    min-height:180px;
+    max-height:none !important;
+    overflow-x:hidden;
+    overflow-y:auto;
+    padding-bottom:24px;
+    scroll-padding-bottom:24px;
+  }
+
+  .browser-panel{
+    max-height:none !important;
+    overflow:hidden !important;
+  }
+
+  .card-browser{
+    flex:1 1 auto;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    padding-bottom:32px !important;
+    scroll-padding-bottom:32px;
+  }
+}
+
