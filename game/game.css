@@ -584,16 +584,35 @@ body{
   background: #9b2b2b;
 }
 
-/* Let the selected Unit's action menu extend beyond its tile. */
+/* Keep the selected Unit above the hand panel. */
 .battlefield-cell.cell-selected {
-  z-index: 30;
+  position: relative;
   overflow: visible;
+  z-index: 200;
 }
 
-/* Keep the Unit token above ordinary tile highlights. */
+/* Raise the portrait above nearby UI. */
 .battlefield-cell.cell-selected .unit-token {
   position: relative;
-  z-index: 2;
+  z-index: 201;
+}
+
+/* Raise the stat controls above everything. */
+.selected-unit-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 202;
+  pointer-events: none;
+}
+
+.selected-unit-controls__row {
+  pointer-events: auto;
+  z-index: 203;
+}
+
+.selected-unit-control {
+  position: relative;
+  z-index: 204;
 }
 
 /* =========================================================
@@ -736,7 +755,7 @@ body{
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
+  z-index: 40;
 
   display: flex;
   flex-direction: column;
@@ -5399,7 +5418,7 @@ body::after {
 .selected-unit-controls {
   position: absolute;
   inset: 0;
-  z-index: 90;
+  z-index: 500;
   pointer-events: none;
 }
 
