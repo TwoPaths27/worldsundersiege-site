@@ -40,6 +40,7 @@ function createCard({
   cardImage = null,
   tileImage = null,
   effectText = "",
+  databaseId = null,
 }) {
   return {
     id,
@@ -53,8 +54,95 @@ function createCard({
     cardImage,
     tileImage,
     effectText,
+    databaseId,
   };
 }
+
+const CARD_DATABASE = Array.isArray(window.WUS_CARD_DATABASE)
+  ? window.WUS_CARD_DATABASE
+  : [];
+
+function getCardDatabaseEntry(cardId) {
+  return CARD_DATABASE.find(
+    (entry) =>
+      entry.id === cardId ||
+      entry.gameplayId === cardId
+  ) ?? null;
+}
+
+function normalizeGameAssetPath(path) {
+  if (!path) return null;
+
+  if (
+    path.startsWith("../") ||
+    path.startsWith("./") ||
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://")
+  ) {
+    return path;
+  }
+
+  return `../${path}`;
+}
+
+function getDatabaseTilePath(entry) {
+  if (!entry) return null;
+
+  return `../tile/${entry.id} ${entry.name}.jpg`;
+}
+
+function createCardFromDatabase(cardId, overrides = {}) {
+  const entry = getCardDatabaseEntry(cardId);
+
+  if (!entry) {
+    throw new Error(
+      `Card database entry not found for ${cardId}. ` +
+      `Load card-database.js before game.js.`
+    );
+  }
+
+  return createCard({
+    id: entry.gameplayId ?? entry.id,
+    name: entry.name,
+    cost: entry.cost,
+    attack: entry.atk,
+    hp: entry.hp,
+    range: entry.range,
+    speed: entry.spd,
+    cardImage: normalizeGameAssetPath(entry.image),
+    tileImage: getDatabaseTilePath(entry),
+    effectText: entry.effectText ?? "",
+    databaseId: entry.id,
+    ...overrides,
+  });
+}
+
+function createUnitFromDatabase(cardId, unitOptions) {
+  const entry = getCardDatabaseEntry(cardId);
+
+  if (!entry) {
+    throw new Error(
+      `Card database entry not found for ${cardId}. ` +
+      `Load card-database.js before game.js.`
+    );
+  }
+
+  return createUnit({
+    ...unitOptions,
+    name: entry.name,
+    attack: entry.atk,
+    hp: entry.hp,
+    range: entry.range,
+    speed: entry.spd,
+    cost: entry.cost,
+    cardImage: normalizeGameAssetPath(entry.image),
+    tileImage: getDatabaseTilePath(entry),
+    effectText: entry.effectText ?? "",
+    databaseId: entry.id,
+  });
+}
+
 const GameState = {
   turn: 1,
   activePlayer: 1,
@@ -98,18 +186,24 @@ attackableStrongholdPlayerId: null,
     speed: 2,
   }),
 
-  createCard({
-    id: "boa-001-king-arthur",
-    name: "King Arthur",
-    cost: 5,
-    attack: 6,
-    hp: 6,
-    range: 1,
-    speed: 2,
-    cardImage: "../cards/BOA-001 King Arthur.jpg",
-    tileImage: "../tile/BOA-001 King Arthur.jpg",
-    effectText: "Other Units you control gain +2 ATK and +1 SPD. (Visual test only — effect inactive.)",
-  }),
+    (
+    getCardDatabaseEntry("BOA-001")
+      ? createCardFromDatabase("BOA-001")
+      : createCard({
+          id: "BOA-001",
+          name: "King Arthur",
+          cost: 5,
+          attack: 6,
+          hp: 6,
+          range: 1,
+          speed: 2,
+          cardImage: "../cards/BOA-001 King Arthur.jpg",
+          tileImage: "../tile/BOA-001 King Arthur.jpg",
+          effectText:
+            "Other Units you control gain +2 Attack and +1 Speed.",
+          databaseId: "BOA-001",
+        })
+  ),
 ],
     },
 
@@ -154,21 +248,32 @@ attackableStrongholdPlayerId: null,
   },
 
   units: [
-    createUnit({
-  id: "player-1-king-arthur",
-  name: "King Arthur",
-  owner: 1,
-  x: 3,
-  y: 5,
-  attack: 6,
-  hp: 6,
-  range: 1,
-  speed: 2,
-  cost: 5,
-  cardImage: "../cards/BOA-001 King Arthur.jpg",
-  tileImage: "../tile/BOA-001 King Arthur.jpg",
-  effectText: "Other Units you control gain +2 ATK and +1 SPD. (Visual test only — effect inactive.)",
-}),
+        (
+      getCardDatabaseEntry("BOA-001")
+        ? createUnitFromDatabase("BOA-001", {
+            id: "player-1-king-arthur",
+            owner: 1,
+            x: 3,
+            y: 5,
+          })
+        : createUnit({
+            id: "player-1-king-arthur",
+            name: "King Arthur",
+            owner: 1,
+            x: 3,
+            y: 5,
+            attack: 6,
+            hp: 6,
+            range: 1,
+            speed: 2,
+            cost: 5,
+            cardImage: "../cards/BOA-001 King Arthur.jpg",
+            tileImage: "../tile/BOA-001 King Arthur.jpg",
+            effectText:
+              "Other Units you control gain +2 Attack and +1 Speed.",
+            databaseId: "BOA-001",
+          })
+    ),
 
 createUnit({
   id: "player-2-guard",
@@ -380,6 +485,7 @@ function createUnit({
   cardImage = null,
   tileImage = null,
   effectText = "",
+  databaseId = null,
 }) {
   return {
     id,
@@ -406,6 +512,7 @@ function createUnit({
     cardImage,
     tileImage,
     effectText,
+    databaseId,
   };
 }
 
@@ -857,96 +964,137 @@ function setSelectedUnitAction(action) {
   renderGame();
 }
 
-function createUnitActionMenu(unit) {
-  const menu = document.createElement("div");
-
-  menu.className = "unit-action-menu";
-  menu.setAttribute("role", "toolbar");
-  menu.setAttribute("aria-label", `${unit.name} actions`);
-
-  const moveButton = createUnitActionButton({
-    label: "Move",
-    icon: "◆",
-    action: "move",
-    isActive: GameState.selectedUnitAction === "move",
-    isDisabled: unit.remainingSpeed <= 0,
-  });
-
-  const hasAttackTarget =
-  findAttackableUnits(unit).size > 0 ||
-  findAttackableStronghold(unit) !== null;
-
-const attackButton = createUnitActionButton({
-  label: "Attack",
-  icon: "⚔",
-  action: "attack",
-  isActive: GameState.selectedUnitAction === "attack",
-  isDisabled: unit.hasAttacked || !hasAttackTarget,
-});
-
-  menu.append(moveButton, attackButton);
-
-  menu.addEventListener("pointerdown", (event) => {
-    event.stopPropagation();
-  });
-
-  menu.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-
-  return menu;
+function unitHasLegalAttackTarget(unit) {
+  return (
+    findAttackableUnits(unit).size > 0 ||
+    findAttackableStronghold(unit) !== null
+  );
 }
 
-function createUnitActionButton({
+function createSelectedUnitControls(unit) {
+  const controls = document.createElement("div");
+  controls.className = "selected-unit-controls";
+  controls.setAttribute("aria-label", `${unit.name} statistics and actions`);
+
+  const canMove = unit.remainingSpeed > 0;
+  const canAttack =
+    !unit.hasAttacked &&
+    unitHasLegalAttackTarget(unit);
+
+  const topRow = document.createElement("div");
+  topRow.className =
+    "selected-unit-controls__row selected-unit-controls__row--top";
+
+  const bottomRow = document.createElement("div");
+  bottomRow.className =
+    "selected-unit-controls__row selected-unit-controls__row--bottom";
+
+  const rangeControl = createSelectedUnitControl({
+    label: "RNG",
+    value: unit.currentRange,
+    kind: "range",
+    action: "attack",
+    isActive: GameState.selectedUnitAction === "attack",
+    isDisabled: !canAttack,
+  });
+
+  const speedControl = createSelectedUnitControl({
+    label: "SPD",
+    value: unit.remainingSpeed,
+    kind: "speed",
+    action: "move",
+    isActive: GameState.selectedUnitAction === "move",
+    isDisabled: !canMove,
+  });
+
+  const attackControl = createSelectedUnitControl({
+    label: "ATK",
+    value: unit.currentAttack,
+    kind: "attack",
+    action: "attack",
+    isActive: GameState.selectedUnitAction === "attack",
+    isDisabled: !canAttack,
+  });
+
+  const healthControl = createSelectedUnitControl({
+    label: "HP",
+    value: unit.currentHP,
+    kind: "health",
+    action: null,
+    isActive: false,
+    isDisabled: true,
+    isDamaged: unit.currentHP < unit.printedHP,
+  });
+
+  topRow.append(rangeControl, speedControl);
+  bottomRow.append(attackControl, healthControl);
+  controls.append(topRow, bottomRow);
+
+  controls.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  controls.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  return controls;
+}
+
+function createSelectedUnitControl({
   label,
-  icon,
+  value,
+  kind,
   action,
   isActive,
   isDisabled,
+  isDamaged = false,
 }) {
   const control = document.createElement("span");
 
   control.className =
-    `unit-action-menu__button ` +
-    `unit-action-menu__button--${action}`;
+    `selected-unit-control selected-unit-control--${kind}`;
 
-  control.setAttribute("role", "button");
-  control.setAttribute("aria-label", label);
-  control.setAttribute("aria-pressed", String(isActive));
+  control.setAttribute("role", action ? "button" : "status");
+  control.setAttribute("aria-label", `${label} ${value}`);
   control.setAttribute("aria-disabled", String(isDisabled));
-  control.tabIndex = isDisabled ? -1 : 0;
+  control.tabIndex = action && !isDisabled ? 0 : -1;
 
   control.classList.toggle("is-active", isActive);
   control.classList.toggle("is-disabled", isDisabled);
-
-  const iconElement = document.createElement("span");
-  iconElement.setAttribute("aria-hidden", "true");
-  iconElement.textContent = icon;
+  control.classList.toggle("is-damaged", isDamaged);
 
   const labelElement = document.createElement("span");
+  labelElement.className = "selected-unit-control__label";
   labelElement.textContent = label;
 
-  control.append(iconElement, labelElement);
+  const valueElement = document.createElement("strong");
+  valueElement.className = "selected-unit-control__value";
+  valueElement.textContent = String(value);
 
-  const activate = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  control.append(labelElement, valueElement);
 
-    if (!isDisabled) {
-      setSelectedUnitAction(action);
-    }
-  };
+  if (action) {
+    const activate = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
 
-  control.addEventListener("click", activate);
+      if (!isDisabled) {
+        setSelectedUnitAction(action);
+      }
+    };
 
-  control.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      activate(event);
-    }
-  });
+    control.addEventListener("click", activate);
+    control.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        activate(event);
+      }
+    });
+  }
 
   return control;
 }
+
 function createBattlefieldCell(x, y) {
   const cell = document.createElement("button");
 
@@ -1011,30 +1159,9 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
-  const {
-    canMove,
-    canAttack,
-  } = getUnitActionAvailability(occupant);
-
-  cell.classList.add(
-    "cell-selected",
-    "cell-unit-action-status"
-  );
-
-  if (canMove && canAttack) {
-    cell.classList.add("cell-unit-action-status--both");
-  } else if (canMove) {
-    cell.classList.add("cell-unit-action-status--move-only");
-  } else if (canAttack) {
-    cell.classList.add("cell-unit-action-status--attack-only");
-  } else {
-    cell.classList.add("cell-unit-action-status--none");
-  }
-
-  if (GameState.selectedUnitAction === "menu") {
-    cell.appendChild(createUnitActionMenu(occupant));
-  }
-}
+      cell.classList.add("cell-selected");
+      cell.appendChild(createSelectedUnitControls(occupant));
+    }
 
     if (isAttackTarget) {
       const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
@@ -1209,17 +1336,14 @@ function createUnitToken(unit) {
     GameState.attackableUnitIds.has(unit.id)
   );
 
-  token.title = exhausted
-    ? `${unit.name} — Player ${unit.owner} — no actions remaining`
-    : `${unit.name} — Player ${unit.owner}`;
-
+  token.title = "";
   token.setAttribute("aria-disabled", String(exhausted));
   token.setAttribute(
     "aria-label",
-    `${unit.name}. Range ${unit.currentRange}. ` +
-    `Speed ${unit.remainingSpeed}. ` +
-    `Attack ${unit.currentAttack}. ` +
-    `Health ${unit.currentHP}.`
+    `${unit.name}. RNG ${unit.currentRange}. ` +
+    `SPD ${unit.remainingSpeed}. ` +
+    `ATK ${unit.currentAttack}. ` +
+    `HP ${unit.currentHP}.`
   );
 
   token.style.width = "calc(100% - 8px)";
@@ -1227,14 +1351,11 @@ function createUnitToken(unit) {
   token.style.borderRadius = "8px";
   token.style.padding = "0";
   token.style.display = "block";
-  token.style.textAlign = "center";
-  token.style.fontSize = "12px";
-  token.style.fontWeight = "700";
 
   if (unit.tileImage) {
     token.classList.add("unit-token--art");
     token.style.backgroundImage =
-      `linear-gradient(to bottom, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.18)), ` +
+      `linear-gradient(to bottom, rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0.12)), ` +
       `url("${unit.tileImage}")`;
     token.style.backgroundPosition = "center";
     token.style.backgroundRepeat = "no-repeat";
@@ -1251,37 +1372,11 @@ function createUnitToken(unit) {
       ? "2px solid rgba(255, 255, 255, 0.9)"
       : "2px solid rgba(255, 255, 255, 0.35)";
 
-  const statValues = [
-    {
-      className: "unit-stat-badge unit-stat-badge--range",
-      label: "Range",
-      value: unit.currentRange,
-    },
-    {
-      className: "unit-stat-badge unit-stat-badge--speed",
-      label: "Speed remaining",
-      value: unit.remainingSpeed,
-    },
-    {
-      className: "unit-stat-badge unit-stat-badge--attack",
-      label: "Attack",
-      value: unit.currentAttack,
-    },
-    {
-      className: "unit-stat-badge unit-stat-badge--health",
-      label: "Health",
-      value: unit.currentHP,
-    },
-  ];
-
-  for (const stat of statValues) {
-    const badge = document.createElement("span");
-    badge.className = stat.className;
-    badge.textContent = String(stat.value);
-    badge.title = `${stat.label}: ${stat.value}`;
-    badge.setAttribute("aria-hidden", "true");
-    token.appendChild(badge);
-  }
+  const nameBanner = document.createElement("span");
+  nameBanner.className = "unit-name-banner";
+  nameBanner.textContent = unit.name;
+  nameBanner.setAttribute("aria-hidden", "true");
+  token.appendChild(nameBanner);
 
   token.addEventListener("mouseenter", () => {
     renderCardPreview(unit);
@@ -1315,11 +1410,6 @@ function handleBattlefieldClick(x, y) {
   selectedUnit &&
   clickedUnit.id === selectedUnit.id
 ) {
-  GameState.selectedUnitAction = "menu";
-  GameState.reachableSpaces = new Map();
-  GameState.attackableUnitIds = new Set();
-  GameState.attackableStrongholdPlayerId = null;
-
   clearAttackHoverState();
   renderGame();
   return;
@@ -1387,7 +1477,7 @@ function selectUnit(unitId) {
 
 GameState.selectedCardId = null;
 GameState.selectedUnitId = unit.id;
-GameState.selectedUnitAction = "menu";
+GameState.selectedUnitAction = "selected";
 
 GameState.reachableSpaces = new Map();
 GameState.attackableUnitIds = new Set();
@@ -1396,7 +1486,7 @@ GameState.attackableStrongholdPlayerId = null;
 addLog(
   unit.hasAttacked
     ? `${unit.name} selected. Its attack has already been used this turn.`
-    : `${unit.name} selected. Choose Move or Attack.`
+    : `${unit.name} selected. Choose RNG, SPD, or ATK.`
 );
 
   renderGame();
@@ -1529,6 +1619,7 @@ async function recruitSelectedCard(x, y) {
       cardImage: card.cardImage,
       tileImage: card.tileImage,
       effectText: card.effectText,
+      databaseId: card.databaseId,
     });
 
     GameState.nextUnitId += 1;

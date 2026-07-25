@@ -5278,3 +5278,267 @@ body::after {
   }
 }
 
+/* =========================================================
+   Card-style selected Unit controls
+   Keep this section at the absolute bottom of game.css.
+========================================================= */
+
+/* Remove every previous action menu/stat overlay implementation. */
+.unit-action-menu,
+.unit-hover-stats,
+.unit-stat-badge {
+  display: none !important;
+}
+
+/* Remove card stat text from the cards in hand. */
+.hand-card__stats,
+.hand-card--art .hand-card__stats {
+  display: none !important;
+}
+
+/* Selected cells retain the stone tile and only gain a gold outline. */
+.battlefield-cell.cell-selected,
+.battlefield-cell.cell-selected.cell-unit-action-status--both,
+.battlefield-cell.cell-selected.cell-unit-action-status--move-only,
+.battlefield-cell.cell-selected.cell-unit-action-status--attack-only,
+.battlefield-cell.cell-selected.cell-unit-action-status--none {
+  background:
+    linear-gradient(rgba(255, 215, 0, 0.04), rgba(255, 215, 0, 0.04)),
+    url("battlefield-stone.png") center center / 100% 100% no-repeat !important;
+
+  border-color: #f4d35e;
+  box-shadow:
+    0 0 0 2px rgba(244, 211, 94, 0.28),
+    0 0 13px rgba(244, 211, 94, 0.86);
+}
+
+/* Any occupied tile may let its hover name extend beyond the tile. */
+.battlefield-cell:has(.unit-token) {
+  overflow: visible;
+  z-index: 3;
+}
+
+.battlefield-cell:has(.unit-token:hover),
+.battlefield-cell.cell-selected {
+  z-index: 70;
+}
+
+.unit-token,
+.unit-token--art {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+}
+
+/* The portrait itself stays completely clear. */
+.unit-token--art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Hovered Unit name. Long names wrap upward instead of covering the art. */
+.unit-name-banner {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  z-index: 95;
+
+  width: max-content;
+  min-width: 100%;
+  max-width: 170px;
+  padding: 4px 7px;
+
+  color: #fff;
+  background: rgba(8, 10, 13, 0.96);
+  border: 1px solid rgba(189, 196, 209, 0.72);
+  border-radius: 6px;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.16;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease,
+    transform 120ms ease;
+}
+
+/* When selected, the top stat row occupies the first space above the art.
+   Move the hover name above that row. */
+.cell-selected .unit-name-banner {
+  bottom: calc(100% + 39px);
+}
+
+.unit-token:hover .unit-name-banner {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* The selected control frame sits outside the portrait. */
+.selected-unit-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.selected-unit-controls__row {
+  position: absolute;
+  left: 50%;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(48px, 1fr));
+  gap: 4px;
+
+  width: calc(100% + 34px);
+  max-width: 150px;
+
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.selected-unit-controls__row--top {
+  bottom: calc(100% + 5px);
+}
+
+.selected-unit-controls__row--bottom {
+  top: calc(100% + 5px);
+}
+
+.selected-unit-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  min-height: 27px;
+  padding: 4px 7px;
+
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.67);
+  border-radius: 7px;
+
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.50),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22);
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    filter 110ms ease,
+    transform 110ms ease,
+    box-shadow 110ms ease,
+    opacity 110ms ease;
+}
+
+.selected-unit-control:hover:not(.is-disabled),
+.selected-unit-control:focus-visible:not(.is-disabled) {
+  filter: brightness(1.16);
+  transform: translateY(-1px);
+  outline: none;
+  box-shadow:
+    0 7px 15px rgba(0, 0, 0, 0.62),
+    0 0 8px rgba(255, 255, 255, 0.27);
+}
+
+.selected-unit-control.is-active {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.56),
+    0 0 13px currentColor;
+}
+
+.selected-unit-control.is-disabled {
+  color: #9a9da3;
+  background: linear-gradient(145deg, #4d5056, #292b2f) !important;
+  border-color: #666a71;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.36);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.selected-unit-control--range {
+  background: linear-gradient(145deg, #e28a1c, #834006);
+}
+
+.selected-unit-control--speed {
+  background: linear-gradient(145deg, #3188df, #0b3c76);
+}
+
+.selected-unit-control--attack {
+  background: linear-gradient(145deg, #d43b34, #74100c);
+}
+
+.selected-unit-control--health {
+  background: linear-gradient(145deg, #39a452, #0c5720);
+  cursor: default;
+}
+
+/* Damaged HP keeps its green panel but turns the current value red. */
+.selected-unit-control--health.is-damaged
+.selected-unit-control__value {
+  color: #ff6c64;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 6px rgba(255, 44, 35, 0.85);
+}
+
+.selected-unit-control__label {
+  opacity: 0.92;
+}
+
+.selected-unit-control__value {
+  font-size: 12px;
+}
+
+/* Make enough vertical room for controls outside the first and last rows. */
+.battlefield {
+  overflow: visible !important;
+}
+
+/* Keep action controls above neighboring tiles and zones. */
+.battlefield-stage,
+.battlefield-column {
+  overflow: visible;
+}
+
+@media (max-width: 760px) {
+  .selected-unit-controls__row {
+    width: calc(100% + 24px);
+    grid-template-columns: repeat(2, minmax(42px, 1fr));
+  }
+
+  .selected-unit-control {
+    min-height: 24px;
+    padding: 3px 5px;
+    font-size: 9px;
+  }
+
+  .cell-selected .unit-name-banner {
+    bottom: calc(100% + 35px);
+  }
+}
+
