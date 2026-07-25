@@ -966,29 +966,61 @@ function setSelectedUnitAction(action) {
 
 function createSelectedUnitControls(unit) {
   const controls = document.createElement("div");
+
   controls.className = "selected-unit-controls";
-  controls.setAttribute("aria-label", `${unit.name} statistics and actions`);
+  controls.setAttribute(
+    "aria-label",
+    `${unit.name} statistics and actions`
+  );
 
   const canMove = unit.remainingSpeed > 0;
-  const canAttack =
-    !unit.hasAttacked &&
-    unitHasLegalAttackTarget(unit);
+  const canAttack = !unit.hasAttacked;
 
   const topRow = document.createElement("div");
   topRow.className =
-    "selected-unit-controls__row selected-unit-controls__row--top";
+    "selected-unit-controls__row " +
+    "selected-unit-controls__row--top";
 
   const bottomRow = document.createElement("div");
   bottomRow.className =
-    "selected-unit-controls__row selected-unit-controls__row--bottom";
+    "selected-unit-controls__row " +
+    "selected-unit-controls__row--bottom";
 
+  /*
+   * RNG is always orange and is not an attack button.
+   * Hovering it temporarily displays the Unit's range.
+   */
   const rangeControl = createSelectedUnitControl({
     label: "RNG",
     value: unit.currentRange,
     kind: "range",
-    action: "attack",
-    isActive: GameState.selectedUnitAction === "attack",
-    isDisabled: !canAttack,
+    action: null,
+    isActive: false,
+    isDisabled: false,
+  });
+
+  rangeControl.classList.add("is-range-preview-control");
+  rangeControl.setAttribute("role", "button");
+  rangeControl.setAttribute(
+    "aria-label",
+    `Show ${unit.name}'s range: ${unit.currentRange}`
+  );
+  rangeControl.tabIndex = 0;
+
+  rangeControl.addEventListener("mouseenter", () => {
+    showSelectedUnitRangePreview(unit);
+  });
+
+  rangeControl.addEventListener("mouseleave", () => {
+    hideSelectedUnitRangePreview();
+  });
+
+  rangeControl.addEventListener("focus", () => {
+    showSelectedUnitRangePreview(unit);
+  });
+
+  rangeControl.addEventListener("blur", () => {
+    hideSelectedUnitRangePreview();
   });
 
   const speedControl = createSelectedUnitControl({
@@ -1000,6 +1032,10 @@ function createSelectedUnitControls(unit) {
     isDisabled: !canMove,
   });
 
+  /*
+   * ATK stays red until this Unit has used its attack.
+   * Clicking it enters attack mode.
+   */
   const attackControl = createSelectedUnitControl({
     label: "ATK",
     value: unit.currentAttack,
@@ -1009,13 +1045,16 @@ function createSelectedUnitControls(unit) {
     isDisabled: !canAttack,
   });
 
+  /*
+   * HP is display-only, but it is never disabled or gray.
+   */
   const healthControl = createSelectedUnitControl({
     label: "HP",
     value: unit.currentHP,
     kind: "health",
     action: null,
     isActive: false,
-    isDisabled: true,
+    isDisabled: false,
     isDamaged: unit.currentHP < unit.printedHP,
   });
 
@@ -1032,6 +1071,40 @@ function createSelectedUnitControls(unit) {
   });
 
   return controls;
+}
+function showSelectedUnitRangePreview(unit) {
+  if (!unit) {
+    return;
+  }
+
+  const cells =
+    elements.battlefield.querySelectorAll(".battlefield-cell");
+
+  cells.forEach((cell) => {
+    const x = Number(cell.dataset.x);
+    const y = Number(cell.dataset.y);
+
+    const distance =
+      Math.abs(unit.x - x) +
+      Math.abs(unit.y - y);
+
+    const isWithinRange =
+      distance > 0 &&
+      distance <= unit.currentRange;
+
+    cell.classList.toggle(
+      "cell-range-preview",
+      isWithinRange
+    );
+  });
+}
+
+function hideSelectedUnitRangePreview() {
+  elements.battlefield
+    .querySelectorAll(".cell-range-preview")
+    .forEach((cell) => {
+      cell.classList.remove("cell-range-preview");
+    });
 }
 
 function createSelectedUnitControl({

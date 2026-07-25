@@ -5564,4 +5564,93 @@ body::after {
     bottom: calc(100% + 35px);
   }
 }
+/* Keep selected Unit controls above the nearby stronghold. */
+.battlefield {
+  position: relative;
+  z-index: 10;
+  overflow: visible !important;
+}
 
+.stronghold-lane {
+  position: relative;
+  z-index: 2;
+}
+
+.battlefield-cell.cell-selected {
+  position: relative;
+  z-index: 100;
+  overflow: visible;
+}
+
+.selected-unit-controls {
+  z-index: 110;
+}
+
+.selected-unit-controls__row {
+  z-index: 111;
+  pointer-events: auto;
+}
+
+.selected-unit-control {
+  position: relative;
+  z-index: 112;
+  pointer-events: auto;
+}
+/* =========================================================
+   Selected Unit control state corrections
+========================================================= */
+
+/* RNG is informational and always remains orange. */
+.selected-unit-control--range,
+.selected-unit-control--range.is-disabled {
+  color: #fff;
+  background: linear-gradient(145deg, #e28a1c, #834006) !important;
+  border-color: rgba(255, 255, 255, 0.67);
+  cursor: help;
+  opacity: 1;
+}
+
+/* HP is display-only and always remains green. */
+.selected-unit-control--health,
+.selected-unit-control--health.is-disabled {
+  color: #fff;
+  background: linear-gradient(145deg, #39a452, #0c5720) !important;
+  border-color: rgba(255, 255, 255, 0.67);
+  cursor: default;
+  opacity: 1;
+}
+
+/* Temporary range preview caused by hovering RNG. */
+.battlefield-cell.cell-range-preview {
+  background:
+    linear-gradient(
+      rgba(196, 105, 15, 0.68),
+      rgba(128, 59, 4, 0.72)
+    ),
+    url("battlefield-stone.png")
+      center center / 100% 100% no-repeat !important;
+
+  border-color: #ffb34a !important;
+
+  box-shadow:
+    inset 0 0 16px rgba(255, 153, 38, 0.4),
+    0 0 7px rgba(255, 153, 38, 0.5);
+}
+
+/* Preserve visible Units while their spaces show the range preview. */
+.battlefield-cell.cell-range-preview .unit-token {
+  position: relative;
+  z-index: 3;
+}
+
+/* Speed and Attack are the only controls that gray out. */
+.selected-unit-control--speed.is-disabled,
+.selected-unit-control--attack.is-disabled {
+  color: #9a9da3;
+  background:
+    linear-gradient(145deg, #4d5056, #292b2f) !important;
+  border-color: #666a71;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.36);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
