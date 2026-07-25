@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=20">
+  <link rel="stylesheet" href="./game.css?v=21">
 </head>
 <body>
   <main class="game-layout">
@@ -240,26 +240,33 @@
       </button>
     </div>
 
-    <!-- Player Stronghold -->
-    <div class="stronghold-lane stronghold-lane--player">
-      <section
-        id="playerStronghold"
-        class="stronghold stronghold--player"
-        data-owner="1"
-        role="button"
-        tabindex="0"
-      >
-        <div>
-          <span class="stronghold__owner">Player 1</span>
-          <strong>Your Stronghold</strong>
-        </div>
+    <!-- Player Stronghold: Camelot -->
+<div class="stronghold-lane stronghold-lane--player">
+  <section
+    id="playerStronghold"
+    class="stronghold stronghold--player stronghold--card-art"
+    data-owner="1"
+    role="button"
+    tabindex="0"
+    aria-label="Camelot Stronghold, 15 HP"
+  >
+    <img
+      class="stronghold__card-image"
+      src="../cards/BOA-211Camelot.jpg"
+      alt="Camelot Stronghold card"
+      draggable="false"
+    >
 
-        <div class="stronghold__health">
-          <span>HP</span>
-          <strong id="playerStrongholdHP">15</strong>
-        </div>
-      </section>
+    <div class="stronghold__card-hud">
+      <strong class="stronghold__card-name">Camelot</strong>
+
+      <div class="stronghold__health">
+        <span>HP</span>
+        <strong id="playerStrongholdHP">15</strong>
+      </div>
     </div>
+  </section>
+</div>
 
     <!-- Player deck, discard, and banish -->
     <div class="zone-group zone-group--player-piles">
