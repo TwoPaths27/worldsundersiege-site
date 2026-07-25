@@ -407,29 +407,26 @@ body.builder-locked{overflow:hidden}
   }
 }
 
-/* Desktop columns match the natural height of the left preview.
-   The left side never scrolls; the middle and right stretch to the same height. */
+/* Synchronized desktop columns.
+   The left preview defines the shared height; middle/right scroll internally. */
 @media (min-width:1251px){
   .builder-layout{
     height:auto !important;
     min-height:0 !important;
-    align-items:stretch !important;
+    align-items:start !important;
   }
 
   .preview-panel{
     height:auto !important;
     min-height:0 !important;
-    align-self:stretch !important;
     overflow:hidden !important;
   }
 
   .preview-copy{
-    flex:0 0 auto !important;
-    min-height:0 !important;
     overflow:visible !important;
   }
 
-  /* Reserve a stable eight-line effect area without adding a scrollbar. */
+  /* Stable space for eight lines of effect text; no left-side scrollbar. */
   .effect-box{
     min-height:calc((1.55em * 8) + 42px);
     max-height:calc((1.55em * 8) + 42px);
@@ -440,43 +437,36 @@ body.builder-locked{overflow:hidden}
     height:calc(1.55em * 8);
     max-height:calc(1.55em * 8);
     overflow:hidden !important;
-    padding-right:0;
   }
 
   .deck-panel,
   .browser-panel{
-    height:auto !important;
+    height:var(--builder-column-height, 760px) !important;
     min-height:0 !important;
-    max-height:none !important;
-    align-self:stretch !important;
+    max-height:var(--builder-column-height, 760px) !important;
     overflow:hidden !important;
+    align-self:start !important;
   }
 
-  .deck-panel{
+  .deck-panel,
+  .browser-panel{
     display:flex;
     flex-direction:column;
   }
 
   .deck-list{
     flex:1 1 auto !important;
-    min-height:180px !important;
+    min-height:0 !important;
     max-height:none !important;
     overflow-x:hidden !important;
     overflow-y:auto !important;
     padding-bottom:24px !important;
     scroll-padding-bottom:24px;
+    overscroll-behavior:contain;
   }
 
   .army-section,
-  .deck-breakdown{
-    flex:0 0 auto;
-  }
-
-  .browser-panel{
-    display:flex;
-    flex-direction:column;
-  }
-
+  .deck-breakdown,
   .filters{
     flex:0 0 auto;
   }
@@ -488,8 +478,10 @@ body.builder-locked{overflow:hidden}
     max-height:none !important;
     overflow-x:hidden !important;
     overflow-y:auto !important;
-    padding-bottom:36px !important;
-    scroll-padding-bottom:36px;
+    padding-bottom:40px !important;
+    scroll-padding-bottom:40px;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
   }
 }
 

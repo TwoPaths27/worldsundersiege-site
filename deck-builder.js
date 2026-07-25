@@ -407,4 +407,30 @@ els.deckSort.addEventListener("change",renderDeck);["searchCards","typeFilter","
 });els.buySingles.addEventListener("change",()=>{renderBrowser();renderPreview();});els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
 function init(){populateFilters();populateSaved();mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);checkAssetsBeforeEntry();}
 init();
+
+/* Keep the center and right columns exactly as tall as the natural left preview. */
+function syncBuilderColumnHeight(){
+  const layout = document.querySelector(".builder-layout");
+  const preview = document.querySelector(".preview-panel");
+  if(!layout || !preview || window.innerWidth < 1251){
+    layout?.style.removeProperty("--builder-column-height");
+    return;
+  }
+  const height = Math.ceil(preview.getBoundingClientRect().height);
+  if(height > 0) layout.style.setProperty("--builder-column-height", `${height}px`);
+}
+
+const builderColumnObserver = typeof ResizeObserver !== "undefined"
+  ? new ResizeObserver(syncBuilderColumnHeight)
+  : null;
+
+if(builderColumnObserver){
+  const previewPanel = document.querySelector(".preview-panel");
+  if(previewPanel) builderColumnObserver.observe(previewPanel);
+}
+
+window.addEventListener("resize", syncBuilderColumnHeight);
+window.addEventListener("load", syncBuilderColumnHeight);
+requestAnimationFrame(syncBuilderColumnHeight);
+
 })();
