@@ -1807,7 +1807,7 @@ function selectCard(cardId) {
       `${card.name} selected. Choose who you wish to use the Action.`
     );
   }
-  } else {
+   else {
     addLog(
       `${card.name} selected. Choose a highlighted recruiting space.`
     );
