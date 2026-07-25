@@ -5735,3 +5735,76 @@ body::after {
   font-size: clamp(9px, 1.2vh, 12px);
   line-height: 1;
 }
+/* =========================================================
+   Camelot placement and player pile order
+========================================================= */
+
+/* Center the Stronghold beneath the three recruiting spaces. */
+.stronghold-lane--player {
+  justify-self: center;
+}
+
+.stronghold-lane--player .stronghold {
+  grid-column: 3 / 6;
+  justify-self: stretch;
+  width: 100%;
+}
+
+/* Put Banish directly above Discard. */
+.zone-group--player-piles .zone-group__banish {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.zone-group--player-piles #playerDeckZone {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.zone-group--player-piles #playerDiscardZone {
+  grid-column: 2;
+  grid-row: 2;
+}
+/* Camelot effect appears below the card on hover/focus. */
+.stronghold--card-art {
+  overflow: visible;
+}
+
+.stronghold__effect {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  z-index: 120;
+
+  width: min(360px, 95vw);
+  padding: 8px 10px;
+
+  color: #fff;
+  background: rgba(7, 9, 13, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 7px;
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.65);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease,
+    transform 120ms ease;
+}
+
+.stronghold--card-art:hover .stronghold__effect,
+.stronghold--card-art:focus-visible .stronghold__effect {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}

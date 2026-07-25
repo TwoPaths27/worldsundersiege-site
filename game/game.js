@@ -69,6 +69,22 @@ function getCardDatabaseEntry(cardId) {
       entry.gameplayId === cardId
   ) ?? null;
 }
+function getPlayerStrongholdCard() {
+  const databaseCard =
+    getCardDatabaseEntry("BOA-211") ??
+    getCardDatabaseEntry("BOA-211Camelot");
+
+  return {
+    id: databaseCard?.id ?? "BOA-211",
+    name: databaseCard?.name ?? "Camelot",
+    cardImage:
+      normalizeGameAssetPath(databaseCard?.image) ??
+      "../cards/BOA-211Camelot.jpg",
+    effectText:
+      databaseCard?.effectText ??
+      "Camelot Stronghold effect.",
+  };
+}
 
 function normalizeGameAssetPath(path) {
   if (!path) return null;
@@ -307,9 +323,12 @@ const elements = {
   endTurnButton: document.querySelector("#endTurnButton"),
 
   playerStronghold: document.querySelector("#playerStronghold"),
-  enemyStronghold: document.querySelector("#enemyStronghold"),
-  playerStrongholdHP: document.querySelector("#playerStrongholdHP"),
-  enemyStrongholdHP: document.querySelector("#enemyStrongholdHP"),
+enemyStronghold: document.querySelector("#enemyStronghold"),
+playerStrongholdHP: document.querySelector("#playerStrongholdHP"),
+enemyStrongholdHP: document.querySelector("#enemyStrongholdHP"),
+playerStrongholdEffect: document.querySelector(
+  "#playerStrongholdEffect"
+),
 
   selectedUnitPanel: document.querySelector("#selectedUnitPanel"),
   cardPreview: document.querySelector("#cardPreview"),
@@ -554,7 +573,21 @@ function bindEvents() {
   });
 
   elements.chatForm.addEventListener("submit", handleChatSubmit);
+elements.playerStronghold.addEventListener("mouseenter", () => {
+  renderStrongholdCardPreview(getPlayerStrongholdCard());
+});
 
+elements.playerStronghold.addEventListener("mouseleave", () => {
+  renderCardPreview();
+});
+
+elements.playerStronghold.addEventListener("focus", () => {
+  renderStrongholdCardPreview(getPlayerStrongholdCard());
+});
+
+elements.playerStronghold.addEventListener("blur", () => {
+  renderCardPreview();
+});
   elements.playerStronghold.addEventListener("click", () => handleStrongholdClick(1));
   elements.enemyStronghold.addEventListener("click", () => handleStrongholdClick(2));
   elements.playerStronghold.addEventListener("keydown", (event) => {
@@ -660,6 +693,36 @@ function renderGame() {
   renderGameLog();
 }
 
+function renderStrongholdCardPreview(strongholdCard) {
+  elements.cardPreview.replaceChildren();
+  elements.cardPreview.className = "card-preview";
+
+  const art = createCardArtPreview(
+    strongholdCard.cardImage,
+    `${strongholdCard.name} Stronghold card`
+  );
+
+  const details = document.createElement("div");
+  details.className = "card-preview__details";
+
+  const name = document.createElement("h3");
+  name.textContent = strongholdCard.name;
+
+  details.appendChild(name);
+
+  if (strongholdCard.effectText) {
+    const effect = document.createElement("p");
+    effect.className = "card-preview__effect";
+    effect.textContent = strongholdCard.effectText;
+    details.appendChild(effect);
+  }
+
+  if (art) {
+    elements.cardPreview.append(art, details);
+  } else {
+    elements.cardPreview.append(details);
+  }
+}s
 let activeAttackPreviewTargets = null;
 
 function getAttackPreviewBadge(kind) {
@@ -2907,6 +2970,10 @@ function renderCardPreview(unit = null) {
 }
 
 function renderStrongholds() {
+const playerStrongholdCard = getPlayerStrongholdCard();
+
+elements.playerStrongholdEffect.textContent =
+  playerStrongholdCard.effectText;
   elements.playerStrongholdHP.textContent = String(
     GameState.players[1].strongholdHP
   );
