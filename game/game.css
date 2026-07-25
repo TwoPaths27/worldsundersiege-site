@@ -4981,3 +4981,68 @@ body::after {
   }
 }
 
+
+/* =========================================================
+   Transparent HUD Panels + Centered Battlefield Correction
+   Keep this block at the absolute bottom of game.css.
+========================================================= */
+
+/* Let more of the forest artwork show through the main HUD. */
+.panel-card,
+.hand-panel {
+  background: rgba(22, 25, 29, 0.74) !important;
+  -webkit-backdrop-filter: blur(3px) brightness(0.82);
+  backdrop-filter: blur(3px) brightness(0.82);
+}
+
+/* Slightly clearer inner chat area while remaining translucent. */
+#chatMessages,
+.chat-messages,
+.chat-box,
+.chat-log {
+  background-color: rgba(10, 12, 16, 0.62) !important;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* Preserve readable cards and text over the lighter background. */
+.panel-card,
+.hand-panel,
+#chatMessages,
+.chat-messages,
+.chat-box,
+.chat-log {
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.30),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+/*
+ * The battlefield has 7px padding and a 3px border on both sides.
+ * Add that outer width to the center grid track so it cannot spill
+ * into either event-zone column.
+ */
+.battlefield-stage {
+  grid-template-columns:
+    calc(var(--battlefield-cell-size) * 1.65)
+    calc(
+      var(--battlefield-cell-size) * 7 +
+      var(--screen-gap) * 6 +
+      20px
+    )
+    calc(var(--battlefield-cell-size) * 1.65);
+}
+
+.battlefield {
+  box-sizing: border-box;
+  justify-self: center;
+  align-self: center;
+  margin-inline: auto;
+}
+
+/* Keep the event zones centered inside their own tracks. */
+#enemyEventZone,
+#playerEventZone {
+  justify-self: center;
+  align-self: center;
+}
