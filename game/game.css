@@ -4439,3 +4439,139 @@ body.end-screen-visible .victory-modal__dialog {
   filter: none;
   opacity: 1;
 }
+/* =========================================================
+   Stone Battlefield Tile Theme
+   Procedural texture: no external image required.
+========================================================= */
+
+:root {
+  --stone-base: #55575b;
+  --stone-dark: #303236;
+  --stone-mid: #45484d;
+  --stone-light: #777a80;
+  --stone-edge: #24262a;
+
+  --stone-texture:
+    radial-gradient(circle at 18% 24%, rgba(255,255,255,.12) 0 1px, transparent 2px),
+    radial-gradient(circle at 73% 68%, rgba(0,0,0,.20) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 38% 78%, rgba(255,255,255,.06) 0 7%, transparent 17%),
+    radial-gradient(ellipse at 82% 20%, rgba(0,0,0,.13) 0 9%, transparent 20%),
+    linear-gradient(118deg, transparent 0 42%, rgba(18,19,21,.24) 43% 44%, transparent 45% 100%),
+    linear-gradient(24deg, transparent 0 68%, rgba(190,193,198,.10) 69% 70%, transparent 71% 100%),
+    linear-gradient(145deg, var(--stone-light) 0%, var(--stone-mid) 30%, var(--stone-base) 58%, var(--stone-dark) 100%);
+}
+
+.battlefield-cell {
+  background: var(--stone-texture);
+  background-size:
+    19px 23px,
+    29px 31px,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+
+  border-color: #25272b;
+  border-width: 3px;
+  border-radius: 7px;
+
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,.16),
+    inset -3px -3px 0 rgba(0,0,0,.30),
+    inset 0 0 14px rgba(0,0,0,.20),
+    0 2px 2px rgba(0,0,0,.48);
+}
+
+.battlefield-cell:hover {
+  border-color: #9b9ea5;
+  filter: brightness(1.09);
+}
+
+/* Recruiting rows retain their faction tint over the stone. */
+.battlefield-cell.cell-recruit-enemy {
+  background:
+    linear-gradient(rgba(122, 31, 31, .42), rgba(122, 31, 31, .42)),
+    var(--stone-texture);
+  border-color: #8f4141;
+}
+
+.battlefield-cell.cell-recruit-player {
+  background:
+    linear-gradient(rgba(23, 99, 52, .42), rgba(23, 99, 52, .42)),
+    var(--stone-texture);
+  border-color: #438d60;
+}
+
+/* Movement, range, and attack colors remain readable over stone. */
+.battlefield-cell.cell-move {
+  background:
+    linear-gradient(rgba(34, 91, 218, .67), rgba(34, 91, 218, .67)),
+    var(--stone-texture);
+  border-color: #79a8ff;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,.16),
+    inset -3px -3px 0 rgba(0,0,0,.30),
+    inset 0 0 18px rgba(45, 109, 255, .55),
+    0 0 9px rgba(65, 128, 255, .45);
+}
+
+.battlefield-cell.cell-range {
+  background:
+    linear-gradient(rgba(183, 101, 18, .66), rgba(183, 101, 18, .66)),
+    var(--stone-texture);
+  border-color: #ffb458;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,.14),
+    inset -3px -3px 0 rgba(0,0,0,.30),
+    inset 0 0 18px rgba(255, 139, 28, .48),
+    0 0 9px rgba(255, 139, 28, .35);
+}
+
+.battlefield-cell.cell-attack,
+.battlefield-cell.cell-attack-target {
+  background:
+    linear-gradient(rgba(151, 34, 34, .68), rgba(151, 34, 34, .68)),
+    var(--stone-texture);
+}
+
+/* Selected unit action status: colored halves over visible stone. */
+.battlefield-cell.cell-selected.cell-unit-action-status--both {
+  background:
+    linear-gradient(90deg,
+      rgba(40,130,255,.60) 0 50%,
+      rgba(255,137,35,.60) 50% 100%),
+    var(--stone-texture);
+}
+
+.battlefield-cell.cell-selected.cell-unit-action-status--move-only {
+  background:
+    linear-gradient(90deg,
+      rgba(40,130,255,.60) 0 50%,
+      rgba(75,78,84,.60) 50% 100%),
+    var(--stone-texture);
+}
+
+.battlefield-cell.cell-selected.cell-unit-action-status--attack-only {
+  background:
+    linear-gradient(90deg,
+      rgba(75,78,84,.60) 0 50%,
+      rgba(255,137,35,.60) 50% 100%),
+    var(--stone-texture);
+}
+
+.battlefield-cell.cell-selected.cell-unit-action-status--none {
+  background:
+    linear-gradient(rgba(66,69,74,.68), rgba(66,69,74,.68)),
+    var(--stone-texture);
+}
+
+/* Selected border stays prominent against the darker stone edges. */
+.battlefield-cell.cell-selected {
+  border-color: #f6d45a;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,.16),
+    inset -3px -3px 0 rgba(0,0,0,.30),
+    0 0 0 2px rgba(255,215,0,.30),
+    0 0 14px rgba(255,215,0,.92);
+}
