@@ -70,22 +70,29 @@ function getCardDatabaseEntry(cardId) {
   ) ?? null;
 }
 function getPlayerStrongholdCard() {
-  const databaseCard =
-    getCardDatabaseEntry("BOA-211") ??
-    getCardDatabaseEntry("BOA-211Camelot");
+  const databaseCard = getCardDatabaseEntry("BOA-211");
+
+  if (!databaseCard) {
+    console.warn(
+      "Camelot BOA-211 was not found. Make sure " +
+      "card-database.js loads before game.js."
+    );
+
+    return {
+      id: "BOA-211",
+      name: "Camelot",
+      cardImage: "../cards/BOA-211Camelot.jpg",
+      effectText: "",
+    };
+  }
 
   return {
-    id: databaseCard?.id ?? "BOA-211",
-    name: databaseCard?.name ?? "Camelot",
-    cardImage:
-      normalizeGameAssetPath(databaseCard?.image) ??
-      "../cards/BOA-211Camelot.jpg",
-    effectText:
-      databaseCard?.effectText ??
-      "Camelot Stronghold effect.",
+    id: databaseCard.id,
+    name: databaseCard.name,
+    cardImage: normalizeGameAssetPath(databaseCard.image),
+    effectText: databaseCard.effectText ?? "",
   };
 }
-
 function normalizeGameAssetPath(path) {
   if (!path) return null;
 
