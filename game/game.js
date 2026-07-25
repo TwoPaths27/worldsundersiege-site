@@ -573,6 +573,7 @@ function bindEvents() {
   });
 
   elements.chatForm.addEventListener("submit", handleChatSubmit);
+
 elements.playerStronghold.addEventListener("mouseenter", () => {
   renderStrongholdCardPreview(getPlayerStrongholdCard());
 });
@@ -588,20 +589,16 @@ elements.playerStronghold.addEventListener("focus", () => {
 elements.playerStronghold.addEventListener("blur", () => {
   renderCardPreview();
 });
-  elements.playerStronghold.addEventListener("click", () => handleStrongholdClick(1));
-  elements.enemyStronghold.addEventListener("click", () => handleStrongholdClick(2));
-  elements.playerStronghold.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleStrongholdClick(1);
-    }
-  });
-  elements.enemyStronghold.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleStrongholdClick(2);
-    }
-  });
+
+elements.playerStronghold.addEventListener(
+  "click",
+  () => handleStrongholdClick(1)
+);
+
+elements.enemyStronghold.addEventListener(
+  "click",
+  () => handleStrongholdClick(2)
+);
 
   elements.playAgainButton.addEventListener("click", () => window.location.reload());
   elements.victoryHomeButton.addEventListener("click", () => {
@@ -722,7 +719,7 @@ function renderStrongholdCardPreview(strongholdCard) {
   } else {
     elements.cardPreview.append(details);
   }
-}s
+}
 let activeAttackPreviewTargets = null;
 
 function getAttackPreviewBadge(kind) {
