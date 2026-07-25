@@ -964,13 +964,6 @@ function setSelectedUnitAction(action) {
   renderGame();
 }
 
-function unitHasLegalAttackTarget(unit) {
-  return (
-    findAttackableUnits(unit).size > 0 ||
-    findAttackableStronghold(unit) !== null
-  );
-}
-
 function createSelectedUnitControls(unit) {
   const controls = document.createElement("div");
   controls.className = "selected-unit-controls";
