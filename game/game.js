@@ -1789,22 +1789,15 @@ function selectCard(cardId) {
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
   } else if (card.type === "Action") {
-
   if (
     GameState.priority.active &&
     GameState.priority.playerId !== getInteractionPlayerId()
   ) {
     addLog("That player does not currently have priority.");
     GameState.selectedCardId = null;
-
   } else if (!getEligibleActionUsers().length) {
-
-    addLog(
-      `${player.name} must control a Character to play ${card.name}.`
-    );
-
+    addLog(`${player.name} must control a Character to play ${card.name}.`);
   } else {
-
     GameState.pendingActionUserId = null;
     GameState.pendingActionTargetId = null;
     GameState.actionSelectionMessage =
@@ -1813,16 +1806,13 @@ function selectCard(cardId) {
     addLog(
       `${card.name} selected. Choose who you wish to use the Action.`
     );
-
   }
 
-} else {
-
-  addLog(
-    `${card.name} selected. Choose a highlighted recruiting space.`
-  );
-
-}
+  } else {
+    addLog(
+      `${card.name} selected. Choose a highlighted recruiting space.`
+    );
+  }
 
   renderGame();
 }
@@ -3317,83 +3307,6 @@ function getPriorityReason() {
 
 function isResolvingActionStack() {
   return GameState.priority.resolving;
-}
-
-function passPriority() {
-  if (!GameState.priorityOpen || GameState.resolvingStack) {
-    return;
-  }
-
-  const passingPlayer = GameState.priorityPlayerId;
-  GameState.priorityPasses += 1;
-
-  addLog(`${GameState.players[passingPlayer].name} passes priority.`);
-
-  if (GameState.priorityPasses >= 2) {
-    beginResolveTopAction();
-    return;
-  }
-
-  GameState.priorityPlayerId = passingPlayer === 1 ? 2 : 1;
-  GameState.selectedCardId = null;
-  GameState.pendingActionUserId = null;
-  GameState.pendingActionTargetId = null;
-  GameState.actionSelectionMessage =
-    `${GameState.players[GameState.priorityPlayerId].name} has priority. Play an Action or pass.`;
-
-  renderGame();
-}
-
-async function beginResolveTopAction() {
-  const entry = GameState.actionStack.at(-1);
-
-  if (!entry || GameState.resolvingStack) {
-    closePriorityWindow();
-    return;
-  }
-
-  GameState.resolvingStack = true;
-  GameState.priorityOpen = false;
-  GameState.selectedCardId = null;
-  GameState.pendingActionUserId = null;
-  entry.status = "resolving";
-  GameState.actionSelectionMessage = `${entry.card.name} is resolving...`;
-  renderGame();
-
-  // Keep the Action and its User connection visible long enough to read.
-  const elapsed = Date.now() - GameState.priorityOpenedAt;
-  const remainingPresentationTime = Math.max(0, 3000 - elapsed);
-
-  if (remainingPresentationTime > 0) {
-    await new Promise((resolve) =>
-      window.setTimeout(resolve, remainingPresentationTime)
-    );
-  }
-
-  resolveActionEffect(entry);
-  entry.status = "resolved";
-  renderGame();
-
-  await new Promise((resolve) => window.setTimeout(resolve, 1000));
-
-  GameState.players[entry.owner].discardCount += 1;
-  GameState.actionStack.pop();
-  GameState.resolvingStack = false;
-
-  if (GameState.actionStack.length) {
-    openPriorityWindow(GameState.activePlayer);
-  } else {
-    closePriorityWindow();
-  }
-
-  renderGame();
-}
-
-function closePriorityWindow() {
-  GameState.priorityOpen = false;
-  GameState.priorityPlayerId = null;
-  GameState.priorityPasses = 0;
-  GameState.actionSelectionMessage = "";
 }
 
 function resolveActionEffect(entry) {
