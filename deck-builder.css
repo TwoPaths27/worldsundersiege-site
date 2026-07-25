@@ -407,57 +407,51 @@ body.builder-locked{overflow:hidden}
   }
 }
 
-/* Final desktop sizing pass:
-   stable 8-line preview effect, full-height deck, and full-height card browser. */
+/* Desktop columns match the natural height of the left preview.
+   The left side never scrolls; the middle and right stretch to the same height. */
 @media (min-width:1251px){
   .builder-layout{
-    height:calc(100vh - 190px) !important;
-    min-height:620px;
+    height:auto !important;
+    min-height:0 !important;
     align-items:stretch !important;
   }
 
-  .preview-panel,
-  .deck-panel,
-  .browser-panel{
-    height:100% !important;
+  .preview-panel{
+    height:auto !important;
     min-height:0 !important;
     align-self:stretch !important;
     overflow:hidden !important;
   }
 
-  /* Keep the left preview from changing the page height when effects vary. */
-  .preview-panel{
-    display:flex;
-    flex-direction:column;
-  }
-
-  .preview-image-wrap{
-    flex:0 0 auto;
-  }
-
   .preview-copy{
-    flex:1 1 auto;
-    min-height:0;
-    overflow-y:auto;
-    padding-bottom:18px;
-    scrollbar-gutter:stable;
+    flex:0 0 auto !important;
+    min-height:0 !important;
+    overflow:visible !important;
   }
 
+  /* Reserve a stable eight-line effect area without adding a scrollbar. */
   .effect-box{
     min-height:calc((1.55em * 8) + 42px);
     max-height:calc((1.55em * 8) + 42px);
-    overflow:hidden;
+    overflow:hidden !important;
   }
 
   .effect-box p{
     height:calc(1.55em * 8);
     max-height:calc(1.55em * 8);
-    overflow-y:auto;
-    padding-right:4px;
-    scrollbar-gutter:stable;
+    overflow:hidden !important;
+    padding-right:0;
   }
 
-  /* Let the center deck use the full remaining height without hiding Armies. */
+  .deck-panel,
+  .browser-panel{
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    align-self:stretch !important;
+    overflow:hidden !important;
+  }
+
   .deck-panel{
     display:flex;
     flex-direction:column;
@@ -465,7 +459,7 @@ body.builder-locked{overflow:hidden}
 
   .deck-list{
     flex:1 1 auto !important;
-    min-height:0 !important;
+    min-height:180px !important;
     max-height:none !important;
     overflow-x:hidden !important;
     overflow-y:auto !important;
@@ -478,11 +472,9 @@ body.builder-locked{overflow:hidden}
     flex:0 0 auto;
   }
 
-  /* Extend the right card list all the way to the bottom. */
   .browser-panel{
     display:flex;
     flex-direction:column;
-    max-height:none !important;
   }
 
   .filters{
