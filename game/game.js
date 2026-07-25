@@ -1225,9 +1225,12 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
-      cell.classList.add("cell-selected");
-      cell.appendChild(createSelectedUnitControls(occupant));
-    }
+  cell.classList.add("cell-selected");
+
+  if (GameState.selectedUnitAction === "selected") {
+    cell.appendChild(createSelectedUnitControls(occupant));
+  }
+}
 
     if (isAttackTarget) {
       const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
@@ -1476,6 +1479,11 @@ function handleBattlefieldClick(x, y) {
   selectedUnit &&
   clickedUnit.id === selectedUnit.id
 ) {
+  GameState.selectedUnitAction = "selected";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+
   clearAttackHoverState();
   renderGame();
   return;
