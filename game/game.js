@@ -1789,15 +1789,22 @@ function selectCard(cardId) {
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
   } else if (card.type === "Action") {
+
   if (
     GameState.priority.active &&
     GameState.priority.playerId !== getInteractionPlayerId()
   ) {
     addLog("That player does not currently have priority.");
     GameState.selectedCardId = null;
+
   } else if (!getEligibleActionUsers().length) {
-    addLog(`${player.name} must control a Character to play ${card.name}.`);
+
+    addLog(
+      `${player.name} must control a Character to play ${card.name}.`
+    );
+
   } else {
+
     GameState.pendingActionUserId = null;
     GameState.pendingActionTargetId = null;
     GameState.actionSelectionMessage =
@@ -1806,12 +1813,16 @@ function selectCard(cardId) {
     addLog(
       `${card.name} selected. Choose who you wish to use the Action.`
     );
+
   }
-   else {
-    addLog(
-      `${card.name} selected. Choose a highlighted recruiting space.`
-    );
-  }
+
+} else {
+
+  addLog(
+    `${card.name} selected. Choose a highlighted recruiting space.`
+  );
+
+}
 
   renderGame();
 }
