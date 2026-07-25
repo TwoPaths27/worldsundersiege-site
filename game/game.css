@@ -5663,7 +5663,7 @@ body::after {
   display: block;
 
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 
   background: #101217;
   border: 2px solid rgba(105, 190, 255, 0.9);
