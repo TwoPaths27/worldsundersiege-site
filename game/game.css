@@ -885,22 +885,26 @@ body{
 
 .hand-card__cost {
   position: absolute;
-  top: 5px;
-  left: 5px;
+  top: -5px;
+  left: -5px;
+  z-index: 4;
 
   display: grid;
   place-items: center;
 
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 
-  background: #d7aa32;
-  border: 2px solid #f9dc81;
+  background: #000;
+  border: 2px solid #fff;
   border-radius: 50%;
 
-  color: #111;
+  color: #fff;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1;
+
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
 }
 
 .hand-dock.is-collapsed .hand-panel {
