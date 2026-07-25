@@ -2947,7 +2947,7 @@ async function playSelectedAction(user) {
 
   // This first Action build opens a visible stack moment, then resolves.
   // Later, opponent priority can pause here and add responses above it.
-  await new Promise((resolve) => window.setTimeout(resolve, 650));
+  await new Promise((resolve) => window.setTimeout(resolve, 3000));
   resolveTopAction();
 }
 
