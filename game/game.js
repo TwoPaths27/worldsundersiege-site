@@ -1191,41 +1191,50 @@ function createUnitToken(unit) {
     GameState.selectedUnitId === unit.id
   );
   token.classList.toggle("has-attacked", unit.hasAttacked);
+
   const {
-  canMove,
-  canAttack,
-} = getUnitActionAvailability(unit);
+    canMove,
+    canAttack,
+  } = getUnitActionAvailability(unit);
 
-const exhausted =
-  !canMove &&
-  !canAttack;
+  const exhausted =
+    !canMove &&
+    !canAttack;
 
-token.classList.toggle("can-move", canMove);
-token.classList.toggle("can-attack", canAttack);
-token.classList.toggle("is-exhausted", exhausted);
+  token.classList.toggle("can-move", canMove);
+  token.classList.toggle("can-attack", canAttack);
+  token.classList.toggle("is-exhausted", exhausted);
   token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
   );
+
   token.title = exhausted
     ? `${unit.name} — Player ${unit.owner} — no actions remaining`
     : `${unit.name} — Player ${unit.owner}`;
+
   token.setAttribute("aria-disabled", String(exhausted));
+  token.setAttribute(
+    "aria-label",
+    `${unit.name}. Range ${unit.currentRange}. ` +
+    `Speed ${unit.remainingSpeed}. ` +
+    `Attack ${unit.currentAttack}. ` +
+    `Health ${unit.currentHP}.`
+  );
 
   token.style.width = "calc(100% - 8px)";
   token.style.height = "calc(100% - 8px)";
   token.style.borderRadius = "8px";
-  token.style.padding = "6px";
-  token.style.display = "flex";
-  token.style.flexDirection = "column";
-  token.style.justifyContent = "space-between";
+  token.style.padding = "0";
+  token.style.display = "block";
   token.style.textAlign = "center";
   token.style.fontSize = "12px";
   token.style.fontWeight = "700";
+
   if (unit.tileImage) {
     token.classList.add("unit-token--art");
     token.style.backgroundImage =
-      `linear-gradient(to bottom, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.28)), ` +
+      `linear-gradient(to bottom, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.18)), ` +
       `url("${unit.tileImage}")`;
     token.style.backgroundPosition = "center";
     token.style.backgroundRepeat = "no-repeat";
@@ -1242,16 +1251,37 @@ token.classList.toggle("is-exhausted", exhausted);
       ? "2px solid rgba(255, 255, 255, 0.9)"
       : "2px solid rgba(255, 255, 255, 0.35)";
 
-  const name = document.createElement("span");
-  name.textContent = unit.name;
+  const statValues = [
+    {
+      className: "unit-stat-badge unit-stat-badge--range",
+      label: "Range",
+      value: unit.currentRange,
+    },
+    {
+      className: "unit-stat-badge unit-stat-badge--speed",
+      label: "Speed remaining",
+      value: unit.remainingSpeed,
+    },
+    {
+      className: "unit-stat-badge unit-stat-badge--attack",
+      label: "Attack",
+      value: unit.currentAttack,
+    },
+    {
+      className: "unit-stat-badge unit-stat-badge--health",
+      label: "Health",
+      value: unit.currentHP,
+    },
+  ];
 
-  const stats = document.createElement("span");
-  stats.textContent =
-    `ATK ${unit.currentAttack} · ` +
-    `HP ${unit.currentHP} · ` +
-    `SPD ${unit.remainingSpeed}`;
-
-  token.append(name, stats);
+  for (const stat of statValues) {
+    const badge = document.createElement("span");
+    badge.className = stat.className;
+    badge.textContent = String(stat.value);
+    badge.title = `${stat.label}: ${stat.value}`;
+    badge.setAttribute("aria-hidden", "true");
+    token.appendChild(badge);
+  }
 
   token.addEventListener("mouseenter", () => {
     renderCardPreview(unit);
