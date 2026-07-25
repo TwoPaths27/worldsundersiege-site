@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=26">
+  <link rel="stylesheet" href="./game.css?v=27">
 </head>
 <body>
   <main class="game-layout">
@@ -52,7 +52,17 @@
 
 <section class="battlefield-column">
   <div class="battlefield-stage">
-    <div id="actionPrompt" class="action-prompt" role="status" hidden></div>
+    <div id="actionPrompt" class="action-prompt" role="status" hidden>
+      <span id="actionPromptText"></span>
+      <button
+        id="passPriorityButton"
+        class="action-priority-pass"
+        type="button"
+        hidden
+      >
+        Pass Priority
+      </button>
+    </div>
 
     <svg
       id="actionArrowLayer"
@@ -463,6 +473,6 @@
   </noscript>
 
   <script src="../card-database.js?v=1"></script>
-<script type="module" src="./game.js?v=25"></script>
+<script type="module" src="./game.js?v=26"></script>
 </body>
 </html>

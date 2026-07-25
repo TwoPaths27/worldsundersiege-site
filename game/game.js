@@ -178,6 +178,13 @@ selectedUnitAction: "move",
 actionSelectionMessage: "",
 actionStack: [],
 nextActionStackId: 1,
+priorityOpen: false,
+priorityPlayerId: null,
+priorityPasses: 0,
+priorityOpenedAt: 0,
+resolvingStack: false,
+pendingActionUserId: null,
+pendingActionTargetId: null,
 reachableSpaces: new Map(),
 attackableUnitIds: new Set(),
 attackableStrongholdPlayerId: null,
@@ -353,6 +360,8 @@ const elements = {
   playerActionStack: document.querySelector("#playerActionStack"),
   enemyActionStack: document.querySelector("#enemyActionStack"),
   actionPrompt: document.querySelector("#actionPrompt"),
+  actionPromptText: document.querySelector("#actionPromptText"),
+  passPriorityButton: document.querySelector("#passPriorityButton"),
   actionArrowLayer: document.querySelector("#actionArrowLayer"),
 
   endTurnButton: document.querySelector("#endTurnButton"),
@@ -597,6 +606,7 @@ function bindEvents() {
   });
 
   elements.endTurnButton.addEventListener("click", endTurn);
+  elements.passPriorityButton.addEventListener("click", passPriority);
 
   elements.exitGameButton.addEventListener("click", openExitModal);
   elements.cancelExitButton.addEventListener("click", closeExitModal);
@@ -1100,6 +1110,10 @@ function createSelectedUnitControls(unit) {
     action: null,
     isActive: false,
     isDisabled: false,
+    modifierState: getStatModifierState(
+      unit.currentRange,
+      unit.printedRange
+    ),
   });
 
   rangeControl.classList.add("is-range-preview-control");
@@ -1133,6 +1147,10 @@ function createSelectedUnitControls(unit) {
     action: "move",
     isActive: GameState.selectedUnitAction === "move",
     isDisabled: !canMove,
+    modifierState: getStatModifierState(
+      unit.currentSpeed,
+      unit.printedSpeed
+    ),
   });
 
   /*
@@ -1146,6 +1164,10 @@ function createSelectedUnitControls(unit) {
     action: "attack",
     isActive: GameState.selectedUnitAction === "attack",
     isDisabled: !canAttack,
+    modifierState: getStatModifierState(
+      unit.currentAttack,
+      unit.printedAttack
+    ),
   });
 
   /*
@@ -1210,6 +1232,18 @@ function hideSelectedUnitRangePreview() {
     });
 }
 
+function getStatModifierState(currentValue, printedValue) {
+  if (currentValue > printedValue) {
+    return "raised";
+  }
+
+  if (currentValue < printedValue) {
+    return "lowered";
+  }
+
+  return "normal";
+}
+
 function createSelectedUnitControl({
   label,
   value,
@@ -1218,6 +1252,7 @@ function createSelectedUnitControl({
   isActive,
   isDisabled,
   isDamaged = false,
+  modifierState = "normal",
 }) {
   const control = document.createElement("span");
 
@@ -1232,6 +1267,8 @@ function createSelectedUnitControl({
   control.classList.toggle("is-active", isActive);
   control.classList.toggle("is-disabled", isDisabled);
   control.classList.toggle("is-damaged", isDamaged);
+  control.classList.toggle("is-stat-raised", modifierState === "raised");
+  control.classList.toggle("is-stat-lowered", modifierState === "lowered");
 
   const labelElement = document.createElement("span");
   labelElement.className = "selected-unit-control__label";
@@ -1508,6 +1545,10 @@ function createUnitToken(unit) {
     isChoosingActionUser() && isEligibleActionUser(unit)
   );
   token.classList.toggle(
+    "is-action-target-choice",
+    isChoosingActionTarget()
+  );
+  token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
   );
@@ -1577,13 +1618,25 @@ function handleBattlefieldClick(x, y) {
   const selectedCard = getSelectedCard();
 
   if (selectedCard?.type === "Action") {
-    if (clickedUnit && isEligibleActionUser(clickedUnit)) {
-      playSelectedAction(clickedUnit);
-    } else {
-      addLog("Choose one of your highlighted Characters to use the Action.");
-      renderGame();
+    if (!GameState.pendingActionUserId) {
+      if (clickedUnit && isEligibleActionUser(clickedUnit)) {
+        chooseActionUser(clickedUnit);
+      } else {
+        addLog("Choose one of your highlighted Characters to use the Action.");
+        renderGame();
+      }
+      return;
     }
-    return;
+
+    if (getActionTargetMode(selectedCard) === "unit") {
+      if (clickedUnit) {
+        commitSelectedAction(clickedUnit.id);
+      } else {
+        addLog("Choose a highlighted Unit as the Action target.");
+        renderGame();
+      }
+      return;
+    }
   }
 
   if (selectedCard) {
@@ -1699,6 +1752,12 @@ function selectCard(cardId) {
 
   if (GameState.selectedCardId === card.id) {
     GameState.selectedCardId = null;
+    GameState.pendingActionUserId = null;
+    GameState.pendingActionTargetId = null;
+    GameState.actionSelectionMessage =
+      GameState.priorityOpen
+        ? `${GameState.players[GameState.priorityPlayerId].name} has priority. Play an Action or pass.`
+        : "";
     renderGame();
     return;
   }
@@ -1715,9 +1774,17 @@ function selectCard(cardId) {
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
   } else if (card.type === "Action") {
-    if (!getEligibleActionUsers().length) {
+    if (
+      GameState.priorityOpen &&
+      GameState.priorityPlayerId !== getInteractionPlayerId()
+    ) {
+      addLog("That player does not currently have priority.");
+      GameState.selectedCardId = null;
+    } else if (!getEligibleActionUsers().length) {
       addLog(`${player.name} must control a Character to play ${card.name}.`);
     } else {
+      GameState.pendingActionUserId = null;
+      GameState.pendingActionTargetId = null;
       GameState.actionSelectionMessage =
         `Choose who you wish to use ${card.name}.`;
       addLog(
@@ -2465,6 +2532,8 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.selectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.actionSelectionMessage = "";
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
@@ -2886,17 +2955,30 @@ function getOrthogonalNeighbors(x, y) {
 
 function isChoosingActionUser() {
   const card = getSelectedCard();
+
   return Boolean(
     card &&
     card.type === "Action" &&
+    !GameState.pendingActionUserId &&
     getActivePlayer().energy >= card.cost
+  );
+}
+
+function isChoosingActionTarget() {
+  const card = getSelectedCard();
+
+  return Boolean(
+    card &&
+    card.type === "Action" &&
+    GameState.pendingActionUserId &&
+    getActionTargetMode(card) !== "user"
   );
 }
 
 function isEligibleActionUser(unit) {
   return Boolean(
     unit &&
-    unit.owner === GameState.activePlayer &&
+    unit.owner === getInteractionPlayerId() &&
     unit.cardType === "Character"
   );
 }
@@ -2905,11 +2987,52 @@ function getEligibleActionUsers() {
   return GameState.units.filter(isEligibleActionUser);
 }
 
-async function playSelectedAction(user) {
-  const card = getSelectedCard();
-  const player = getActivePlayer();
+function getActionTargetMode(card) {
+  switch (card?.databaseId ?? card?.id) {
+    case "BOA-146":
+      return "user";
 
-  if (!card || card.type !== "Action" || !isEligibleActionUser(user)) {
+    default:
+      return card?.targetMode ?? "user";
+  }
+}
+
+function chooseActionUser(user) {
+  const card = getSelectedCard();
+
+  if (!card || !isEligibleActionUser(user)) {
+    return;
+  }
+
+  GameState.pendingActionUserId = user.id;
+
+  if (getActionTargetMode(card) === "user") {
+    commitSelectedAction(user.id);
+    return;
+  }
+
+  GameState.actionSelectionMessage =
+    `Choose a target for ${card.name}.`;
+
+  addLog(
+    `${user.name} will use ${card.name}. Choose its target.`
+  );
+
+  renderGame();
+}
+
+function commitSelectedAction(targetId = null) {
+  const card = getSelectedCard();
+  const playerId = getInteractionPlayerId();
+  const player = GameState.players[playerId];
+  const user = getUnitById(GameState.pendingActionUserId);
+
+  if (
+    !card ||
+    card.type !== "Action" ||
+    !user ||
+    !isEligibleActionUser(user)
+  ) {
     return;
   }
 
@@ -2929,66 +3052,185 @@ async function playSelectedAction(user) {
 
   player.energy -= card.cost;
   player.hand.splice(cardIndex, 1);
-  GameState.selectedCardId = null;
-  GameState.actionSelectionMessage = "";
 
   const stackEntry = {
     stackId: `action-${GameState.nextActionStackId}`,
     card,
     userId: user.id,
-    owner: GameState.activePlayer,
-    status: "pending",
+    targetId,
+    owner: playerId,
+    status: "waiting",
   };
 
   GameState.nextActionStackId += 1;
   GameState.actionStack.push(stackEntry);
+  GameState.selectedCardId = null;
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+  GameState.actionSelectionMessage = "";
 
   addLog(`${user.name} uses ${card.name}.`);
   playOneShot(gameplayAudio.energy);
-  renderGame();
 
-  // This first Action build opens a visible stack moment, then resolves.
-  // Later, opponent priority can pause here and add responses above it.
-  await new Promise((resolve) => window.setTimeout(resolve, 3000));
-  resolveTopAction();
+  openPriorityWindow(playerId === 1 ? 2 : 1);
+  renderGame();
 }
 
-function resolveTopAction() {
-  const entry = GameState.actionStack.at(-1);
+function openPriorityWindow(playerId = GameState.activePlayer) {
+  GameState.priorityOpen = true;
+  GameState.priorityPlayerId = playerId;
+  GameState.priorityPasses = 0;
+  GameState.priorityOpenedAt = Date.now();
+  GameState.actionSelectionMessage =
+    `${GameState.players[playerId].name} has priority. Play an Action or pass.`;
+}
 
-  if (!entry) {
+function passPriority() {
+  if (!GameState.priorityOpen || GameState.resolvingStack) {
     return;
   }
 
-  const user = getUnitById(entry.userId);
+  const passingPlayer = GameState.priorityPlayerId;
+  GameState.priorityPasses += 1;
 
-  if (entry.card.databaseId === "BOA-146" || entry.card.id === "BOA-146") {
-    if (user) {
-      user.temporaryRangeBonus =
-        (user.temporaryRangeBonus ?? 0) + 2;
-      user.currentRange =
-        user.printedRange + user.temporaryRangeBonus;
-      addLog(
-        `${entry.card.name} resolves. ${user.name} gains +2 Range until the end of the turn.`
-      );
-    } else {
-      addLog(`${entry.card.name} resolves without a User.`);
-    }
-  } else {
-    addLog(`${entry.card.name} resolves.`);
+  addLog(`${GameState.players[passingPlayer].name} passes priority.`);
+
+  if (GameState.priorityPasses >= 2) {
+    beginResolveTopAction();
+    return;
   }
+
+  GameState.priorityPlayerId = passingPlayer === 1 ? 2 : 1;
+  GameState.selectedCardId = null;
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+  GameState.actionSelectionMessage =
+    `${GameState.players[GameState.priorityPlayerId].name} has priority. Play an Action or pass.`;
+
+  renderGame();
+}
+
+async function beginResolveTopAction() {
+  const entry = GameState.actionStack.at(-1);
+
+  if (!entry || GameState.resolvingStack) {
+    closePriorityWindow();
+    return;
+  }
+
+  GameState.resolvingStack = true;
+  GameState.priorityOpen = false;
+  GameState.selectedCardId = null;
+  GameState.pendingActionUserId = null;
+  entry.status = "resolving";
+  GameState.actionSelectionMessage = `${entry.card.name} is resolving...`;
+  renderGame();
+
+  // Keep the Action and its User connection visible long enough to read.
+  const elapsed = Date.now() - GameState.priorityOpenedAt;
+  const remainingPresentationTime = Math.max(0, 3000 - elapsed);
+
+  if (remainingPresentationTime > 0) {
+    await new Promise((resolve) =>
+      window.setTimeout(resolve, remainingPresentationTime)
+    );
+  }
+
+  resolveActionEffect(entry);
+  entry.status = "resolved";
+  renderGame();
+
+  await new Promise((resolve) => window.setTimeout(resolve, 1000));
 
   GameState.players[entry.owner].discardCount += 1;
   GameState.actionStack.pop();
+  GameState.resolvingStack = false;
+
+  if (GameState.actionStack.length) {
+    openPriorityWindow(GameState.activePlayer);
+  } else {
+    closePriorityWindow();
+  }
+
   renderGame();
+}
+
+function closePriorityWindow() {
+  GameState.priorityOpen = false;
+  GameState.priorityPlayerId = null;
+  GameState.priorityPasses = 0;
+  GameState.actionSelectionMessage = "";
+}
+
+function resolveActionEffect(entry) {
+  const actionId = entry.card.databaseId ?? entry.card.id;
+  const user = getUnitById(entry.userId);
+
+  switch (actionId) {
+    case "BOA-146":
+      resolveTakingAim(entry, user);
+      break;
+
+    default:
+      addLog(`${entry.card.name} resolves.`);
+      break;
+  }
+}
+
+function resolveTakingAim(entry, user) {
+  if (!user) {
+    addLog(`${entry.card.name} resolves without a User.`);
+    return;
+  }
+
+  user.temporaryRangeBonus =
+    (user.temporaryRangeBonus ?? 0) + 2;
+  user.currentRange =
+    user.printedRange + user.temporaryRangeBonus;
+
+  addLog(
+    `${entry.card.name} resolves. ${user.name} gains +2 Range until the end of the turn.`
+  );
+
+  showUnitActionFeedback(user, "+2 RNG");
+}
+
+function showUnitActionFeedback(unit, message) {
+  const token = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(unit.id)}"]`
+  );
+
+  if (!token) {
+    return;
+  }
+
+  token.classList.add("is-action-resolving-user");
+
+  const feedback = document.createElement("span");
+  feedback.className = "unit-action-feedback";
+  feedback.textContent = message;
+  token.appendChild(feedback);
+
+  window.setTimeout(() => {
+    feedback.remove();
+    token.classList.remove("is-action-resolving-user");
+  }, 1150);
 }
 
 function renderActionStacks() {
   renderActionStackForPlayer(1, elements.playerActionStack);
   renderActionStackForPlayer(2, elements.enemyActionStack);
 
-  elements.actionPrompt.hidden = !GameState.actionSelectionMessage;
-  elements.actionPrompt.textContent = GameState.actionSelectionMessage;
+  const promptText =
+    GameState.actionSelectionMessage ||
+    (GameState.priorityOpen
+      ? `${GameState.players[GameState.priorityPlayerId].name} has priority.`
+      : "");
+
+  elements.actionPrompt.hidden = !promptText;
+  elements.actionPromptText.textContent = promptText;
+  elements.passPriorityButton.hidden =
+    !GameState.priorityOpen || GameState.resolvingStack;
 
   window.requestAnimationFrame(renderActionArrows);
 }
@@ -3002,7 +3244,10 @@ function renderActionStackForPlayer(playerId, container) {
 
   if (!entries.length) {
     container.classList.add("is-empty");
-    container.setAttribute("aria-label", `Player ${playerId} Action stack empty`);
+    container.setAttribute(
+      "aria-label",
+      `Player ${playerId} Action stack empty`
+    );
     return;
   }
 
@@ -3011,10 +3256,22 @@ function renderActionStackForPlayer(playerId, container) {
   entries.forEach((entry, index) => {
     const actionCard = document.createElement("article");
     const user = getUnitById(entry.userId);
+    const target = entry.targetId
+      ? getUnitById(entry.targetId)
+      : null;
 
     actionCard.className = "action-stack-card";
+    actionCard.classList.toggle(
+      "is-resolving",
+      entry.status === "resolving"
+    );
+    actionCard.classList.toggle(
+      "is-resolved",
+      entry.status === "resolved"
+    );
     actionCard.dataset.actionStackId = entry.stackId;
     actionCard.style.setProperty("--stack-index", String(index));
+    actionCard.setAttribute("tabindex", "0");
     actionCard.setAttribute(
       "aria-label",
       `${entry.card.name}, used by ${user?.name ?? "unknown Character"}`
@@ -3030,9 +3287,37 @@ function renderActionStackForPlayer(playerId, container) {
     label.textContent = entry.card.name;
 
     const userLabel = document.createElement("span");
-    userLabel.textContent = user ? `User: ${user.name}` : "User unavailable";
+    userLabel.textContent =
+      user ? `User: ${user.name}` : "User unavailable";
 
-    actionCard.append(label, userLabel);
+    const inspector = document.createElement("div");
+    inspector.className = "action-stack-inspector";
+
+    const inspectorTitle = document.createElement("strong");
+    inspectorTitle.textContent = entry.card.name;
+
+    const inspectorUser = document.createElement("span");
+    inspectorUser.textContent =
+      `User: ${user?.name ?? "Unavailable"}`;
+
+    const inspectorTarget = document.createElement("span");
+    inspectorTarget.textContent =
+      target
+        ? `Target: ${target.name}`
+        : "Target: User";
+
+    const inspectorStatus = document.createElement("span");
+    inspectorStatus.textContent =
+      `Status: ${entry.status === "waiting" ? "Waiting for responses" : entry.status}`;
+
+    inspector.append(
+      inspectorTitle,
+      inspectorUser,
+      inspectorTarget,
+      inspectorStatus
+    );
+
+    actionCard.append(label, userLabel, inspector);
     container.appendChild(actionCard);
   });
 }
@@ -3048,7 +3333,10 @@ function renderActionArrows() {
   svg.replaceChildren();
 
   const stageRect = stage.getBoundingClientRect();
-  svg.setAttribute("viewBox", `0 0 ${stageRect.width} ${stageRect.height}`);
+  svg.setAttribute(
+    "viewBox",
+    `0 0 ${stageRect.width} ${stageRect.height}`
+  );
 
   for (const entry of GameState.actionStack) {
     const userToken = elements.battlefield.querySelector(
@@ -3070,14 +3358,31 @@ function renderActionArrows() {
       "line"
     );
 
-    line.setAttribute("x1", String(from.left + from.width / 2 - stageRect.left));
-    line.setAttribute("y1", String(from.top + from.height / 2 - stageRect.top));
-    line.setAttribute("x2", String(to.left + to.width / 2 - stageRect.left));
-    line.setAttribute("y2", String(to.top + to.height / 2 - stageRect.top));
-    line.setAttribute("marker-end", "url(#actionArrowHead)");
+    line.setAttribute(
+      "x1",
+      String(from.left + from.width / 2 - stageRect.left)
+    );
+    line.setAttribute(
+      "y1",
+      String(from.top + from.height / 2 - stageRect.top)
+    );
+    line.setAttribute(
+      "x2",
+      String(to.left + to.width / 2 - stageRect.left)
+    );
+    line.setAttribute(
+      "y2",
+      String(to.top + to.height / 2 - stageRect.top)
+    );
+    line.setAttribute(
+      "marker-end",
+      "url(#actionArrowHead)"
+    );
     line.classList.add(
       "action-user-arrow",
-      entry.owner === 1 ? "action-user-arrow--player" : "action-user-arrow--enemy"
+      entry.status === "resolved"
+        ? "is-resolved"
+        : "is-pending"
     );
 
     svg.appendChild(line);
@@ -3085,7 +3390,14 @@ function renderActionArrows() {
 }
 
 function endTurn() {
-  if (GameState.isAnimating) {
+  if (
+    GameState.isAnimating ||
+    GameState.priorityOpen ||
+    GameState.resolvingStack ||
+    GameState.actionStack.length
+  ) {
+    addLog("Resolve the current Action stack before ending the turn.");
+    renderGame();
     return;
   }
 
@@ -3454,8 +3766,14 @@ function addLog(message) {
   GameState.log.push(message);
 }
 
+function getInteractionPlayerId() {
+  return GameState.priorityOpen && GameState.priorityPlayerId
+    ? GameState.priorityPlayerId
+    : GameState.activePlayer;
+}
+
 function getActivePlayer() {
-  return GameState.players[GameState.activePlayer];
+  return GameState.players[getInteractionPlayerId()];
 }
 
 function getSelectedUnit() {

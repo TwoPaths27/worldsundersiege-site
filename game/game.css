@@ -5986,3 +5986,196 @@ body::after {
       0 0 30px rgba(255, 35, 35, 0.88);
   }
 }
+
+
+/* =========================================================
+   Action Priority, Resolution, Inspector, and Stat Modifiers
+========================================================= */
+
+.action-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.action-priority-pass {
+  padding: 7px 11px;
+  color: #fff;
+  background: #8e2222;
+  border: 1px solid #ff8585;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.action-priority-pass:hover,
+.action-priority-pass:focus-visible {
+  background: #b52b2b;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.unit-token.is-action-target-choice {
+  border-color: #ffcf5c !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 207, 92, 0.3),
+    0 0 22px rgba(255, 181, 47, 0.95);
+  cursor: crosshair;
+}
+
+.action-stack {
+  pointer-events: auto;
+}
+
+.action-stack-card {
+  transition:
+    opacity 260ms ease,
+    filter 260ms ease,
+    transform 260ms ease,
+    border-color 260ms ease;
+}
+
+.action-stack-card.is-resolving {
+  border-color: #ffd467;
+  filter: brightness(1.24);
+  animation: action-resolving-flash 0.34s ease-in-out infinite alternate;
+}
+
+.action-stack-card.is-resolved {
+  opacity: 0.62;
+  filter: saturate(0.35) brightness(1.35);
+  transform:
+    translate(
+      calc(var(--stack-index) * 5px),
+      calc(var(--stack-index) * -18px)
+    )
+    scale(0.94);
+  animation: none;
+}
+
+@keyframes action-resolving-flash {
+  from {
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.62),
+      0 0 10px rgba(255, 70, 70, 0.95);
+  }
+
+  to {
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.62),
+      0 0 14px rgba(255, 220, 105, 1),
+      0 0 34px rgba(255, 190, 42, 0.94);
+  }
+}
+
+.action-stack-inspector {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  z-index: 300;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  width: 190px;
+  padding: 10px;
+
+  color: #fff;
+  background: rgba(10, 12, 17, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.72);
+
+  font-size: 11px;
+  line-height: 1.3;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(5px);
+  transition:
+    opacity 130ms ease,
+    visibility 130ms ease,
+    transform 130ms ease;
+
+  pointer-events: none;
+}
+
+.action-stack--enemy .action-stack-inspector {
+  left: calc(100% + 10px);
+  right: auto;
+}
+
+.action-stack-card:hover .action-stack-inspector,
+.action-stack-card:focus-visible .action-stack-inspector {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+.action-user-arrow.is-resolved {
+  color: #ffd467;
+  stroke: #ffd467;
+  filter: drop-shadow(0 0 7px rgba(255, 212, 103, 1));
+  stroke-dasharray: none;
+}
+
+.unit-token.is-action-resolving-user {
+  filter: brightness(1.45);
+  box-shadow:
+    0 0 0 3px rgba(255, 215, 90, 0.55),
+    0 0 28px rgba(255, 196, 55, 1);
+}
+
+.unit-action-feedback {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  z-index: 600;
+
+  color: #79ff94;
+  font-size: 17px;
+  font-weight: 1000;
+  text-shadow:
+    0 2px 3px #000,
+    0 0 9px rgba(60, 255, 109, 0.9);
+
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: unit-action-feedback-rise 1.1s ease-out forwards;
+}
+
+@keyframes unit-action-feedback-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.84);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -38px) scale(1.12);
+  }
+}
+
+/* Only the displayed number changes color. The original stat labels retain
+   their RNG/SPD/ATK identity colors. */
+.selected-unit-control.is-stat-raised .selected-unit-control__value {
+  color: #62ef7c !important;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 7px rgba(70, 255, 109, 0.68);
+}
+
+.selected-unit-control.is-stat-lowered .selected-unit-control__value {
+  color: #ff6262 !important;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 7px rgba(255, 67, 67, 0.68);
+}
