@@ -1789,11 +1789,25 @@ function selectCard(cardId) {
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
   } else if (card.type === "Action") {
-    if (
-      if (
-  GameState.priority.active &&
-  GameState.priority.playerId !== getInteractionPlayerId()
-) {
+  if (
+    GameState.priority.active &&
+    GameState.priority.playerId !== getInteractionPlayerId()
+  ) {
+    addLog("That player does not currently have priority.");
+    GameState.selectedCardId = null;
+  } else if (!getEligibleActionUsers().length) {
+    addLog(`${player.name} must control a Character to play ${card.name}.`);
+  } else {
+    GameState.pendingActionUserId = null;
+    GameState.pendingActionTargetId = null;
+    GameState.actionSelectionMessage =
+      `Choose who you wish to use ${card.name}.`;
+
+    addLog(
+      `${card.name} selected. Choose who you wish to use the Action.`
+    );
+  }
+} else {
   addLog("That player does not currently have priority.");
   GameState.selectedCardId = null;
     } else if (!getEligibleActionUsers().length) {
