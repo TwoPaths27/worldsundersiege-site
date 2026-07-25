@@ -358,3 +358,52 @@ body.builder-locked{overflow:hidden}
     max-height:500px !important;
   }
 }
+
+/* Desktop column height and complete card-list scrolling fix */
+@media (min-width:1251px){
+  .builder-layout{
+    height:calc(100vh - 190px);
+    min-height:620px;
+    align-items:stretch;
+  }
+
+  .preview-panel,
+  .deck-panel,
+  .browser-panel{
+    height:100%;
+    min-height:0;
+  }
+
+  /* Let the Main Deck area use all remaining vertical space. */
+  .deck-list{
+    flex:1 1 auto;
+    min-height:180px;
+    max-height:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+    padding-bottom:24px;
+    scroll-padding-bottom:24px;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  /* Keep filters fixed while the entire card pool scrolls to its true bottom. */
+  .browser-panel{
+    max-height:none !important;
+    overflow:hidden !important;
+  }
+
+  .card-browser{
+    flex:1 1 auto;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    padding-bottom:32px !important;
+    scroll-padding-bottom:32px;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
