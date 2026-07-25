@@ -1807,20 +1807,6 @@ function selectCard(cardId) {
       `${card.name} selected. Choose who you wish to use the Action.`
     );
   }
-} else {
-  addLog("That player does not currently have priority.");
-  GameState.selectedCardId = null;
-    } else if (!getEligibleActionUsers().length) {
-      addLog(`${player.name} must control a Character to play ${card.name}.`);
-    } else {
-      GameState.pendingActionUserId = null;
-      GameState.pendingActionTargetId = null;
-      GameState.actionSelectionMessage =
-        `Choose who you wish to use ${card.name}.`;
-      addLog(
-        `${card.name} selected. Choose who you wish to use the Action.`
-      );
-    }
   } else {
     addLog(
       `${card.name} selected. Choose a highlighted recruiting space.`
