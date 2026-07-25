@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=23">
+  <link rel="stylesheet" href="./game.css?v=24">
 </head>
 <body>
   <main class="game-layout">
@@ -52,6 +52,27 @@
 
 <section class="battlefield-column">
   <div class="battlefield-stage">
+    <div id="actionPrompt" class="action-prompt" role="status" hidden></div>
+
+    <svg
+      id="actionArrowLayer"
+      class="action-arrow-layer"
+      aria-hidden="true"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <marker
+          id="actionArrowHead"
+          markerWidth="9"
+          markerHeight="7"
+          refX="8"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 9 3.5, 0 7"></polygon>
+        </marker>
+      </defs>
+    </svg>
 
     <!-- Enemy deck, discard, and banish -->
     <div class="zone-group zone-group--enemy-piles">
@@ -160,6 +181,12 @@
     <span>Empty</span>
   </button>
 
+  <div
+    id="enemyActionStack"
+    class="action-stack action-stack--enemy is-empty"
+    aria-label="Player 2 Action stack empty"
+  ></div>
+
   <div class="battlefield-energy battlefield-energy--enemy">
     <span>Energy</span>
     <strong>
@@ -193,6 +220,12 @@
     <strong>Player Event</strong>
     <span>Empty</span>
   </button>
+
+  <div
+    id="playerActionStack"
+    class="action-stack action-stack--player is-empty"
+    aria-label="Player 1 Action stack empty"
+  ></div>
 
   <div class="battlefield-energy battlefield-energy--player">
     <span>Energy</span>
@@ -430,6 +463,6 @@
   </noscript>
 
   <script src="../card-database.js?v=1"></script>
-<script type="module" src="./game.js?v=22"></script>
+<script type="module" src="./game.js?v=23"></script>
 </body>
 </html>

@@ -37,6 +37,7 @@ function createCard({
   hp,
   range,
   speed,
+  type = "Unit",
   cardImage = null,
   tileImage = null,
   effectText = "",
@@ -45,7 +46,7 @@ function createCard({
   return {
     id,
     name,
-    type: "Unit",
+    type,
     cost,
     attack,
     hp,
@@ -129,6 +130,7 @@ function createCardFromDatabase(cardId, overrides = {}) {
     id: entry.gameplayId ?? entry.id,
     name: entry.name,
     cost: entry.cost,
+    type: entry.type ?? entry.types?.[0] ?? "Unit",
     attack: entry.atk,
     hp: entry.hp,
     range: entry.range,
@@ -159,6 +161,7 @@ function createUnitFromDatabase(cardId, unitOptions) {
     range: entry.range,
     speed: entry.spd,
     cost: entry.cost,
+    cardType: entry.type ?? entry.types?.[0] ?? "Unit",
     cardImage: normalizeGameAssetPath(entry.image),
     tileImage: getDatabaseTilePath(entry),
     effectText: entry.effectText ?? "",
@@ -172,6 +175,9 @@ const GameState = {
   selectedUnitId: null,
 selectedCardId: null,
 selectedUnitAction: "move",
+actionSelectionMessage: "",
+actionStack: [],
+nextActionStackId: 1,
 reachableSpaces: new Map(),
 attackableUnitIds: new Set(),
 attackableStrongholdPlayerId: null,
@@ -184,8 +190,8 @@ attackableStrongholdPlayerId: null,
   players: {
     1: {
       name: "Player 1",
-      energy: 1,
-      maxEnergy: 1,
+      energy: 2,
+      maxEnergy: 2,
       strongholdHP: 15,
       discardCount: 0,
       hand: [
@@ -208,6 +214,24 @@ attackableStrongholdPlayerId: null,
     range: 3,
     speed: 2,
   }),
+
+    (
+    getCardDatabaseEntry("BOA-146")
+      ? createCardFromDatabase("BOA-146")
+      : createCard({
+          id: "BOA-146",
+          name: "Taking Aim",
+          type: "Action",
+          cost: 2,
+          attack: null,
+          hp: null,
+          range: null,
+          speed: null,
+          cardImage: "../cards/BOA-146 Taking Aim.jpg",
+          effectText: "The User gains +2 Range until the end of the turn.",
+          databaseId: "BOA-146",
+        })
+    ),
 
     (
     getCardDatabaseEntry("BOA-001")
@@ -326,6 +350,10 @@ const elements = {
   enemyMaxEnergy: document.querySelector("#enemyMaxEnergy"),
   playerDiscardCount: document.querySelector("#playerDiscardCount"),
   enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
+  playerActionStack: document.querySelector("#playerActionStack"),
+  enemyActionStack: document.querySelector("#enemyActionStack"),
+  actionPrompt: document.querySelector("#actionPrompt"),
+  actionArrowLayer: document.querySelector("#actionArrowLayer"),
 
   endTurnButton: document.querySelector("#endTurnButton"),
 
@@ -508,6 +536,7 @@ function createUnit({
   range,
   speed,
   cost,
+  cardType = "Unit",
   cardImage = null,
   tileImage = null,
   effectText = "",
@@ -534,6 +563,8 @@ function createUnit({
 
     remainingSpeed: speed,
     hasAttacked: false,
+    temporaryRangeBonus: 0,
+    cardType,
 
     cardImage,
     tileImage,
@@ -627,6 +658,10 @@ elements.enemyStronghold.addEventListener(
       isCollapsed ? "Show Hand" : "Hand";
   });
 
+  window.addEventListener("resize", () => {
+    window.requestAnimationFrame(renderActionArrows);
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       if (!elements.exitModal.hidden) {
@@ -693,6 +728,7 @@ function renderGame() {
   }
 
   renderStrongholds();
+  renderActionStacks();
   renderHand();
   renderGameLog();
 }
@@ -1468,6 +1504,10 @@ function createUnitToken(unit) {
   token.classList.toggle("can-attack", canAttack);
   token.classList.toggle("is-exhausted", exhausted);
   token.classList.toggle(
+    "is-action-user-choice",
+    isChoosingActionUser() && isEligibleActionUser(unit)
+  );
+  token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
   );
@@ -1535,6 +1575,16 @@ function handleBattlefieldClick(x, y) {
   const clickedUnit = getUnitAt(x, y);
   const selectedUnit = getSelectedUnit();
   const selectedCard = getSelectedCard();
+
+  if (selectedCard?.type === "Action") {
+    if (clickedUnit && isEligibleActionUser(clickedUnit)) {
+      playSelectedAction(clickedUnit);
+    } else {
+      addLog("Choose one of your highlighted Characters to use the Action.");
+      renderGame();
+    }
+    return;
+  }
 
   if (selectedCard) {
     recruitSelectedCard(x, y);
@@ -1658,11 +1708,22 @@ function selectCard(cardId) {
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
   GameState.selectedCardId = card.id;
+  GameState.actionSelectionMessage = "";
 
   if (player.energy < card.cost) {
     addLog(
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
+  } else if (card.type === "Action") {
+    if (!getEligibleActionUsers().length) {
+      addLog(`${player.name} must control a Character to play ${card.name}.`);
+    } else {
+      GameState.actionSelectionMessage =
+        `Choose who you wish to use ${card.name}.`;
+      addLog(
+        `${card.name} selected. Choose who you wish to use the Action.`
+      );
+    }
   } else {
     addLog(
       `${card.name} selected. Choose a highlighted recruiting space.`
@@ -1757,6 +1818,7 @@ async function recruitSelectedCard(x, y) {
       range: card.range,
       speed: card.speed,
       cost: card.cost,
+      cardType: card.type,
       cardImage: card.cardImage,
       tileImage: card.tileImage,
       effectText: card.effectText,
@@ -2400,6 +2462,7 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.winnerPlayerId = winnerPlayerId;
   GameState.selectedUnitId = null;
   GameState.selectedCardId = null;
+  GameState.actionSelectionMessage = "";
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
@@ -2818,6 +2881,207 @@ function getOrthogonalNeighbors(x, y) {
   });
 }
 
+
+function isChoosingActionUser() {
+  const card = getSelectedCard();
+  return Boolean(
+    card &&
+    card.type === "Action" &&
+    getActivePlayer().energy >= card.cost
+  );
+}
+
+function isEligibleActionUser(unit) {
+  return Boolean(
+    unit &&
+    unit.owner === GameState.activePlayer &&
+    unit.cardType === "Character"
+  );
+}
+
+function getEligibleActionUsers() {
+  return GameState.units.filter(isEligibleActionUser);
+}
+
+async function playSelectedAction(user) {
+  const card = getSelectedCard();
+  const player = getActivePlayer();
+
+  if (!card || card.type !== "Action" || !isEligibleActionUser(user)) {
+    return;
+  }
+
+  if (player.energy < card.cost) {
+    addLog(`${card.name} costs ${card.cost} Energy.`);
+    renderGame();
+    return;
+  }
+
+  const cardIndex = player.hand.findIndex(
+    (handCard) => handCard.id === card.id
+  );
+
+  if (cardIndex < 0) {
+    return;
+  }
+
+  player.energy -= card.cost;
+  player.hand.splice(cardIndex, 1);
+  GameState.selectedCardId = null;
+  GameState.actionSelectionMessage = "";
+
+  const stackEntry = {
+    stackId: `action-${GameState.nextActionStackId}`,
+    card,
+    userId: user.id,
+    owner: GameState.activePlayer,
+    status: "pending",
+  };
+
+  GameState.nextActionStackId += 1;
+  GameState.actionStack.push(stackEntry);
+
+  addLog(`${user.name} uses ${card.name}.`);
+  playOneShot(gameplayAudio.energy);
+  renderGame();
+
+  // This first Action build opens a visible stack moment, then resolves.
+  // Later, opponent priority can pause here and add responses above it.
+  await new Promise((resolve) => window.setTimeout(resolve, 650));
+  resolveTopAction();
+}
+
+function resolveTopAction() {
+  const entry = GameState.actionStack.at(-1);
+
+  if (!entry) {
+    return;
+  }
+
+  const user = getUnitById(entry.userId);
+
+  if (entry.card.databaseId === "BOA-146" || entry.card.id === "BOA-146") {
+    if (user) {
+      user.temporaryRangeBonus =
+        (user.temporaryRangeBonus ?? 0) + 2;
+      user.currentRange =
+        user.printedRange + user.temporaryRangeBonus;
+      addLog(
+        `${entry.card.name} resolves. ${user.name} gains +2 Range until the end of the turn.`
+      );
+    } else {
+      addLog(`${entry.card.name} resolves without a User.`);
+    }
+  } else {
+    addLog(`${entry.card.name} resolves.`);
+  }
+
+  GameState.players[entry.owner].discardCount += 1;
+  GameState.actionStack.pop();
+  renderGame();
+}
+
+function renderActionStacks() {
+  renderActionStackForPlayer(1, elements.playerActionStack);
+  renderActionStackForPlayer(2, elements.enemyActionStack);
+
+  elements.actionPrompt.hidden = !GameState.actionSelectionMessage;
+  elements.actionPrompt.textContent = GameState.actionSelectionMessage;
+
+  window.requestAnimationFrame(renderActionArrows);
+}
+
+function renderActionStackForPlayer(playerId, container) {
+  container.replaceChildren();
+
+  const entries = GameState.actionStack.filter(
+    (entry) => entry.owner === playerId
+  );
+
+  if (!entries.length) {
+    container.classList.add("is-empty");
+    container.setAttribute("aria-label", `Player ${playerId} Action stack empty`);
+    return;
+  }
+
+  container.classList.remove("is-empty");
+
+  entries.forEach((entry, index) => {
+    const actionCard = document.createElement("article");
+    const user = getUnitById(entry.userId);
+
+    actionCard.className = "action-stack-card";
+    actionCard.dataset.actionStackId = entry.stackId;
+    actionCard.style.setProperty("--stack-index", String(index));
+    actionCard.setAttribute(
+      "aria-label",
+      `${entry.card.name}, used by ${user?.name ?? "unknown Character"}`
+    );
+
+    if (entry.card.cardImage) {
+      actionCard.style.backgroundImage =
+        `linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.08)), ` +
+        `url("${entry.card.cardImage}")`;
+    }
+
+    const label = document.createElement("strong");
+    label.textContent = entry.card.name;
+
+    const userLabel = document.createElement("span");
+    userLabel.textContent = user ? `User: ${user.name}` : "User unavailable";
+
+    actionCard.append(label, userLabel);
+    container.appendChild(actionCard);
+  });
+}
+
+function renderActionArrows() {
+  const svg = elements.actionArrowLayer;
+  const stage = document.querySelector(".battlefield-stage");
+
+  if (!svg || !stage) {
+    return;
+  }
+
+  svg.replaceChildren();
+
+  const stageRect = stage.getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${stageRect.width} ${stageRect.height}`);
+
+  for (const entry of GameState.actionStack) {
+    const userToken = elements.battlefield.querySelector(
+      `[data-unit-id="${CSS.escape(entry.userId)}"]`
+    );
+    const actionCard = document.querySelector(
+      `[data-action-stack-id="${CSS.escape(entry.stackId)}"]`
+    );
+
+    if (!userToken || !actionCard) {
+      continue;
+    }
+
+    const from = userToken.getBoundingClientRect();
+    const to = actionCard.getBoundingClientRect();
+
+    const line = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line"
+    );
+
+    line.setAttribute("x1", String(from.left + from.width / 2 - stageRect.left));
+    line.setAttribute("y1", String(from.top + from.height / 2 - stageRect.top));
+    line.setAttribute("x2", String(to.left + to.width / 2 - stageRect.left));
+    line.setAttribute("y2", String(to.top + to.height / 2 - stageRect.top));
+    line.setAttribute("marker-end", "url(#actionArrowHead)");
+    line.classList.add(
+      "action-user-arrow",
+      entry.owner === 1 ? "action-user-arrow--player" : "action-user-arrow--enemy"
+    );
+
+    svg.appendChild(line);
+  }
+}
+
 function endTurn() {
   if (GameState.isAnimating) {
     return;
@@ -2825,6 +3089,13 @@ function endTurn() {
 
   const previousPlayer = GameState.activePlayer;
   const nextPlayer = previousPlayer === 1 ? 2 : 1;
+
+  for (const unit of GameState.units) {
+    if (unit.owner === previousPlayer && unit.temporaryRangeBonus) {
+      unit.temporaryRangeBonus = 0;
+      unit.currentRange = unit.printedRange;
+    }
+  }
 
   GameState.activePlayer = nextPlayer;
   GameState.selectedUnitId = null;
@@ -3075,9 +3346,15 @@ function renderHand() {
 
     const stats = document.createElement("span");
     stats.className = "hand-card__stats";
-    stats.textContent =
-      `ATK ${card.attack} · HP ${card.hp} · ` +
-      `RNG ${card.range} · SPD ${card.speed}`;
+
+    if (card.type === "Action") {
+      cardButton.classList.add("hand-card--action");
+      stats.textContent = "ACTION";
+    } else {
+      stats.textContent =
+        `ATK ${card.attack} · HP ${card.hp} · ` +
+        `RNG ${card.range} · SPD ${card.speed}`;
+    }
 
     cardButton.append(cost, stats, name);
 
@@ -3120,8 +3397,10 @@ function renderHandCardPreview(card) {
 
   const stats = document.createElement("p");
   stats.textContent =
-    `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
-    `RNG ${card.range} · SPD ${card.speed}`;
+    card.type === "Action"
+      ? `Action · Cost ${card.cost}`
+      : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
+        `RNG ${card.range} · SPD ${card.speed}`;
 
   details.append(name, stats);
 
