@@ -5290,7 +5290,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-211",
     "copyLimit": 1,
-    "effectText": "At the end of each of yoru turns, you may pay 3 Energy. If so, put into play one 'Camelot Soldier', one 'Camelot Spearman', or one 'Camelot Archer.' You can only activate this once per turn."
+    "effectText": "At the end of each of your turns, you may pay 3 Energy. If so, put into play one 'Camelot Soldier', one 'Camelot Spearman', or one 'Camelot Archer.' You can only activate this once per turn."
   },
   {
     "id": "BOA-212",

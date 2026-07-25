@@ -1459,12 +1459,18 @@ body {
   width: 100%;
   height: var(--hand-height);
 
-  overflow: visible;
-  pointer-events: none;
+  display: flex;
+flex-direction: column;
+align-items: flex-start;
+
+overflow: visible;
+pointer-events: none;
 }
 
 .hand-panel {
   box-sizing: border-box;
+
+  margin: 0 auto;
 
   width: min(100%, 1180px);
   height: calc(var(--hand-height) - 25px);
@@ -1482,6 +1488,12 @@ body {
   min-height: 24px;
   height: clamp(28px, 4vh, 38px);
   margin: 0;
+}
+.hand-dock__toggle {
+  align-self: flex-start;
+
+  margin-left: 24px;
+  margin-bottom: -1px;
 }
 
 .hand-panel__header h2 {
