@@ -190,8 +190,8 @@ attackableStrongholdPlayerId: null,
   players: {
     1: {
       name: "Player 1",
-      energy: 2,
-      maxEnergy: 2,
+      energy: 1,
+      maxEnergy: 1,
       strongholdHP: 15,
       discardCount: 0,
       hand: [
