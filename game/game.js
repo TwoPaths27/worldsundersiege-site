@@ -1750,8 +1750,10 @@ async function recruitSelectedCard(x, y) {
     GameState.activePlayer
   );
 
-  if (card.type !== "Unit") {
-    addLog(`${card.name} cannot be recruited as a Unit.`);
+  const recruitableCardTypes = new Set(["Unit", "Character"]);
+
+  if (!recruitableCardTypes.has(card.type)) {
+    addLog(`${card.name} cannot be recruited to the battlefield.`);
     renderGame();
     return;
   }
