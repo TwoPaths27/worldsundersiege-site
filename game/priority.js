@@ -339,85 +339,74 @@ function canInteractWithBattlefield() {
 function resolveActionEffect(entry) {
   if (!entry || typeof entry !== "object" || !entry.card) {
     addLog("An invalid Action fizzles and leaves the stack.");
-    return { resolved: false, reason: "invalid-entry" };
+    return createResolutionResult(false, "invalid-entry");
   }
 
   const cardName = entry.card.name ?? "Unknown Action";
+  const abilitySource = entry.abilityId || entry.card;
+  const ability = getAbility(abilitySource);
+
+  if (!ability) {
+    addLog(`${cardName} fizzles because it has no registered ability.`);
+    return createResolutionResult(false, "unknown-ability");
+  }
+
   const player = GameState.players[entry.owner];
 
   if (!player) {
     addLog(`${cardName} fizzles because its controller is unavailable.`);
-    return { resolved: false, reason: "missing-player" };
+    return createResolutionResult(false, "missing-player");
   }
 
   const opponent = GameState.players[entry.owner === 1 ? 2 : 1] ?? null;
   const user = entry.userId ? getUnitById(entry.userId) : null;
 
   if (!user) {
-    addLog(
-      `${cardName} fizzles because its User is no longer on the battlefield.`
-    );
-    return { resolved: false, reason: "missing-user" };
+    addLog(`${cardName} fizzles because its User left the battlefield.`);
+    return createResolutionResult(false, "missing-user");
   }
 
-  const target = entry.targetId ? getUnitById(entry.targetId) : null;
+  const targetMode =
+    entry.targetMode ?? getAbilityTargetMode(abilitySource);
 
-  if (entry.targetId && !target) {
-    addLog(
-      `${cardName} fizzles because its target is no longer on the battlefield.`
-    );
-    return { resolved: false, reason: "missing-target" };
-  }
+  const target =
+    targetMode === "user"
+      ? user
+      : entry.targetId
+        ? getUnitById(entry.targetId)
+        : null;
 
-  const abilitySource = entry.abilityId || entry.card;
-  const context = {
-    game: GameState,
+  const context = createAbilityContext({
+    source: abilitySource,
     stackEntry: entry,
     card: entry.card,
+    owner: entry.owner,
     playerId: entry.owner,
     player,
     opponent,
     user,
     target,
-  };
+  });
 
-  if (typeof isEligibleAbilityUser === "function" &&
-      !isEligibleAbilityUser(abilitySource, user, context)) {
-    addLog(`${cardName} fizzles because its User is no longer eligible.`);
-    return { resolved: false, reason: "ineligible-user" };
+  const result = executeAbility(abilitySource, context);
+
+  if (!result.resolved) {
+    const reasonText = {
+      "illegal-user": "its User is no longer legal",
+      "missing-target": "its target disappeared",
+      "illegal-target": "its target is no longer legal",
+      "resolution-error": "its effect encountered an error",
+      "ability-returned-false": "its effect could not complete",
+    }[result.reason];
+
+    addLog(
+      reasonText
+        ? `${cardName} fizzles because ${reasonText}.`
+        : `${cardName} fizzles.`
+    );
   }
 
-  if (entry.targetId &&
-      typeof isEligibleAbilityTarget === "function" &&
-      !isEligibleAbilityTarget(abilitySource, target, context)) {
-    addLog(`${cardName} fizzles because its target is no longer legal.`);
-    return { resolved: false, reason: "ineligible-target" };
-  }
-
-  if (typeof executeAbility !== "function") {
-    addLog(`${cardName} fizzles because the Ability Engine is unavailable.`);
-    return { resolved: false, reason: "missing-ability-engine" };
-  }
-
-  try {
-    const result = executeAbility(abilitySource, context);
-
-    if (!result?.resolved) {
-      if (result?.reason === "unknown-ability") {
-        addLog(`${cardName} resolves without an implemented effect.`);
-      } else if (result?.reason) {
-        addLog(`${cardName} fizzles (${result.reason}).`);
-      } else {
-        addLog(`${cardName} fizzles.`);
-      }
-    }
-
-    return result ?? { resolved: true };
-  } catch (error) {
-    console.error(`Failed to resolve ${cardName}.`, error);
-    addLog(`${cardName} fizzles because its effect could not resolve.`);
-    return { resolved: false, reason: "resolution-error", error };
-  }
+  return result;
 }
 
 function showUnitActionFeedback(unit, message) {

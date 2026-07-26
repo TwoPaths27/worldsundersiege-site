@@ -102,16 +102,24 @@ function createAbilityContext(overrides = {}) {
   };
 }
 
+function createResolutionResult(
+  resolved,
+  reason = null,
+  extra = {}
+) {
+  return {
+    resolved,
+    reason,
+    ...extra,
+  };
+}
+
 function executeAbility(source, context = {}) {
   const ability = getAbility(source);
 
   if (!ability) {
     console.warn("Unknown ability.", source);
-
-    return {
-      resolved: false,
-      reason: "unknown-ability",
-    };
+    return createResolutionResult(false, "unknown-ability");
   }
 
   const normalizedContext = createAbilityContext({
@@ -120,60 +128,31 @@ function executeAbility(source, context = {}) {
     ability,
   });
 
-  const {
-    user,
-    target,
-  } = normalizedContext;
+  normalizedContext.card ??= source;
+  normalizedContext.stackEntry ??= null;
 
-  /*
-   * The User must still be legal when the Action resolves.
-   *
-   * This catches cases where:
-   * - the Character left the battlefield,
-   * - control of the Character changed,
-   * - a future ability adds another User restriction.
-   */
+  const { user, target } = normalizedContext;
+
   if (
     typeof ability.isEligibleUser === "function" &&
     !ability.isEligibleUser(user, normalizedContext)
   ) {
-    return {
-      resolved: false,
-      reason: "illegal-user",
-    };
+    return createResolutionResult(false, "illegal-user");
   }
 
-  /*
-   * Target validation depends on the targeting mode.
-   *
-   * user:
-   *   The User is also the affected object. No separate target is required.
-   *
-   * none:
-   *   The Action does not require a selected target.
-   *
-   * anything else:
-   *   A separate legal target must still exist.
-   */
   if (
     ability.targetMode !== "user" &&
     ability.targetMode !== "none"
   ) {
     if (!target) {
-      return {
-        resolved: false,
-        reason: "missing-target",
-      };
+      return createResolutionResult(false, "missing-target");
     }
 
     if (
       typeof ability.isEligibleTarget === "function" &&
       !ability.isEligibleTarget(target, normalizedContext)
     ) {
-      return {
-        resolved: false,
-        reason: "illegal-target",
-      };
+      return createResolutionResult(false, "illegal-target");
     }
   }
 
@@ -181,35 +160,31 @@ function executeAbility(source, context = {}) {
     const result = ability.resolve(normalizedContext);
 
     if (result === undefined) {
-      return {
-        resolved: true,
-      };
+      return createResolutionResult(true);
     }
 
     if (!result || typeof result !== "object") {
-      return {
-        resolved: Boolean(result),
-        reason: result ? undefined : "ability-returned-false",
-      };
+      return createResolutionResult(
+        Boolean(result),
+        result ? null : "ability-returned-false"
+      );
     }
 
-    return {
-      resolved: result.resolved !== false,
-      ...result,
-    };
+    return createResolutionResult(
+      result.resolved !== false,
+      result.reason ?? null,
+      result
+    );
   } catch (error) {
     console.error(
       `Ability "${ability.id}" failed during resolution.`,
       error
     );
 
-    return {
-      resolved: false,
-      reason: "resolution-error",
-      error,
-    };
+    return createResolutionResult(false, "resolution-error", { error });
   }
 }
+
 registerAbility(
   "takingAim",
   {

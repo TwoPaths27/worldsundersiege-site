@@ -128,6 +128,387 @@ function createHandCard(card, player) {
 /* Action-card selection state */
 
 function getSelectedActionContext(extra = {}) {
+  const card = getSelectedCard();
+  const playerId = getInteractionPlayerId();
+  const player = GameState.players[playerId];
+
+  return {
+    game: GameState,
+    card,
+    playerId,
+    player,
+    opponent: GameState.players[playerId === 1 ? 2 : 1],
+    ...extra,
+  };
+}
+
+function isChoosingActionUser() {
+  const { card, player } = getSelectedActionContext();
+
+  return Boolean(
+    card &&
+    card.type === "Action" &&
+    !GameState.pendingActionUserId &&
+    player.energy >= card.cost &&
+    getAbility(card)
+  );
+}
+
+function isChoosingActionTarget() {
+  const card = getSelectedCard();
+
+  if (
+    !card ||
+    card.type !== "Action" ||
+    !GameState.pendingActionUserId
+  ) {
+    return false;
+  }
+
+  const targetMode = getAbilityTargetMode(card);
+
+  return (
+    targetMode !== "user" &&
+    targetMode !== "none"
+  );
+}
+function isEligibleActionUser(unit) {
+  const context = getSelectedActionContext({ user: unit });
+  return isEligibleAbilityUser(context.card, unit, context);
+}
+
+function getEligibleActionUsers() {
+  return GameState.units.filter(isEligibleActionUser);
+}
+
+function getActionTargetMode(card) {
+  return getAbilityTargetMode(card);
+}
+
+function isEligibleActionTarget(target) {
+  const card = getSelectedCard();
+
+  if (!card || card.type !== "Action") {
+    return false;
+  }
+
+  const user = getUnitById(
+    GameState.pendingActionUserId
+  );
+
+  if (!user) {
+    return false;
+  }
+
+  const targetMode = getAbilityTargetMode(card);
+
+  if (targetMode === "user") {
+    return target?.id === user.id;
+  }
+
+  if (targetMode === "none") {
+    return target == null;
+  }
+
+  const context = getSelectedActionContext({
+    user,
+    target,
+  });
+
+  return isEligibleAbilityTarget(
+    card,
+    target,
+    context
+  );
+}
+function chooseActionUser(user) {
+  const card = getSelectedCard();
+
+  if (
+    GameState.gameOver ||
+    GameState.isAnimating ||
+    GameState.priority.resolving
+  ) {
+    return;
+  }
+
+  if (
+    GameState.priority.active &&
+    GameState.priority.playerId !==
+      getInteractionPlayerId()
+  ) {
+    addLog(
+      "That player does not currently have priority."
+    );
+    renderGame();
+    return;
+  }
+
+  if (
+    !card ||
+    card.type !== "Action" ||
+    !isEligibleActionUser(user)
+  ) {
+    return;
+  }
+
+  GameState.pendingActionUserId = user.id;
+  GameState.pendingActionTargetId = null;
+
+  const targetMode = getAbilityTargetMode(card);
+
+  /*
+   * User-targeted Actions resolve immediately after choosing
+   * the User. The affected object is available through context.user.
+   */
+  if (targetMode === "user") {
+    commitSelectedAction(null);
+    return;
+  }
+
+  /*
+   * Targetless Actions also resolve immediately after choosing
+   * their User.
+   */
+  if (targetMode === "none") {
+    commitSelectedAction(null);
+    return;
+  }
+
+  const ability = getAbility(card);
+  const context = getSelectedActionContext({
+    user,
+  });
+
+  GameState.actionSelectionMessage =
+    ability.getTargetPrompt(context);
+
+  addLog(
+    `${user.name} will use ${card.name}. Choose its target.`
+  );
+
+  renderGame();
+}
+
+function commitSelectedAction(targetId = null) {
+  if (
+    GameState.gameOver ||
+    GameState.isAnimating ||
+    GameState.priority.resolving
+  ) {
+    return false;
+  }
+
+  const playerId = getInteractionPlayerId();
+
+  if (
+    GameState.priority.active &&
+    GameState.priority.playerId !== playerId
+  ) {
+    addLog(
+      "That player does not currently have priority."
+    );
+    renderGame();
+    return false;
+  }
+
+  const player = GameState.players[playerId];
+  const card = getSelectedCard();
+
+  if (!player || !card || card.type !== "Action") {
+    return false;
+  }
+
+  const ability = getAbility(card);
+
+  if (!ability) {
+    addLog(
+      `${card.name} has no registered ability and cannot be played.`
+    );
+    renderGame();
+    return false;
+  }
+
+  const user = getUnitById(
+    GameState.pendingActionUserId
+  );
+
+  if (!user) {
+    addLog(
+      `${card.name} needs a Character to use it.`
+    );
+    renderGame();
+    return false;
+  }
+
+  const targetMode = getAbilityTargetMode(card);
+  const target =
+    targetMode === "user"
+      ? user
+      : targetId
+        ? getUnitById(targetId)
+        : null;
+
+  const context = getSelectedActionContext({
+    user,
+    target,
+  });
+
+  if (!isEligibleAbilityUser(card, user, context)) {
+    addLog(
+      `${user.name} cannot currently use ${card.name}.`
+    );
+    renderGame();
+    return false;
+  }
+
+  if (!canPlayAbility(card, context)) {
+    addLog(
+      `${card.name} cannot be played right now.`
+    );
+    renderGame();
+    return false;
+  }
+
+  const requiresSeparateTarget =
+    targetMode !== "user" &&
+    targetMode !== "none";
+
+  if (
+    requiresSeparateTarget &&
+    (
+      !target ||
+      !isEligibleAbilityTarget(
+        card,
+        target,
+        context
+      )
+    )
+  ) {
+    addLog(
+      `Choose a valid target for ${card.name}.`
+    );
+    renderGame();
+    return false;
+  }
+
+  if (player.energy < card.cost) {
+    addLog(
+      `${card.name} costs ${card.cost} Energy.`
+    );
+    renderGame();
+    return false;
+  }
+
+  /*
+   * Recheck that this exact card is still in this player's
+   * hand before charging Energy.
+   */
+  const cardIndex = player.hand.findIndex(
+    (handCard) => handCard.id === card.id
+  );
+
+  if (cardIndex < 0) {
+    addLog(
+      `${card.name} is no longer in ${player.name}'s hand.`
+    );
+    renderGame();
+    return false;
+  }
+
+  /*
+   * All validation is complete. State mutation begins here.
+   */
+  player.energy -= card.cost;
+  player.hand.splice(cardIndex, 1);
+
+  const stackEntry = {
+    stackId:
+      `action-${GameState.nextActionStackId}`,
+
+    type: "action",
+    card,
+    abilityId: getAbilityId(card),
+    targetMode,
+
+    userId: user.id,
+
+    /*
+     * User-targeted and targetless Actions do not need a
+     * separate target ID.
+     */
+    targetId:
+      requiresSeparateTarget
+        ? target.id
+        : null,
+
+    owner: playerId,
+    status: "waiting",
+    createdAt: Date.now(),
+  };
+
+  GameState.nextActionStackId += 1;
+  GameState.actionStack.push(stackEntry);
+
+  emitGameEvent(
+    "cardPlayed",
+    {
+      card,
+      playerId,
+      user,
+      target,
+      stackEntry,
+    },
+    {
+      source: card,
+    }
+  );
+
+  emitGameEvent(
+    "actionAddedToStack",
+    {
+      stackEntry,
+      card,
+      playerId,
+    },
+    {
+      source: card,
+    }
+  );
+
+  clearPendingActionSelection();
+  GameState.actionSelectionMessage = "";
+
+  addLog(
+    `${user.name} plays ${card.name}.`
+  );
+
+  if (requiresSeparateTarget) {
+    addLog(
+      `${card.name} targets ${target.name}.`
+    );
+  }
+
+  addLog(
+    `${card.name} enters the Action Stack.`
+  );
+
+  playOneShot(gameplayAudio.energy);
+
+  /*
+   * The opponent receives the first chance to respond.
+   * Opening the window also resets the pass count.
+   */
+  openPriorityWindow(
+    playerId === 1 ? 2 : 1,
+    PRIORITY.ACTION
+  );
+
+  renderGame();
+  return true;
+}
+
+
 /* Card selection */
 
 function selectCard(cardId) {
