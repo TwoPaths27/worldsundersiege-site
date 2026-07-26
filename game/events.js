@@ -256,58 +256,130 @@ function unregisterTriggersForSource(source) {
   return removed;
 }
 
+function buildTriggerContext(trigger, event) {
+  const owner = trigger.owner ?? trigger.source?.owner ?? null;
+
+  return {
+    game: typeof GameState !== "undefined" ? GameState : null,
+    event,
+    eventType: event.type,
+    eventPayload: event.payload,
+    source: trigger.source,
+    card:
+      trigger.source?.cardType === "Action"
+        ? trigger.source
+        : null,
+    owner,
+    playerId: owner,
+    player:
+      owner && typeof GameState !== "undefined"
+        ? GameState.players?.[owner] ?? null
+        : null,
+    opponent:
+      owner && typeof GameState !== "undefined"
+        ? GameState.players?.[owner === 1 ? 2 : 1] ?? null
+        : null,
+    user: trigger.context?.user ?? trigger.source?.unit ?? null,
+    target: trigger.context?.target ?? null,
+    trigger,
+    ...trigger.context,
+  };
+}
+
+function getSimultaneousTriggerOrder(triggerRecords) {
+  const activePlayer =
+    typeof GameState !== "undefined"
+      ? GameState.activePlayer
+      : null;
+
+  /*
+   * APNAP ordering:
+   * - Active-player triggers are placed on the stack first.
+   * - Non-active-player triggers are placed on the stack second.
+   * Because the stack resolves last-in, first-out, the non-active player's
+   * simultaneous triggers resolve first.
+   *
+   * Unowned/global triggers are placed after player-owned triggers.
+   * Registration order is preserved within each group.
+   */
+  return triggerRecords
+    .map((record, registrationIndex) => ({
+      ...record,
+      registrationIndex,
+    }))
+    .sort((left, right) => {
+      const leftOwner = left.trigger.owner ?? left.trigger.source?.owner ?? null;
+      const rightOwner = right.trigger.owner ?? right.trigger.source?.owner ?? null;
+
+      const getGroup = (owner) => {
+        if (owner === activePlayer) return 0;
+        if (owner === 1 || owner === 2) return 1;
+        return 2;
+      };
+
+      const groupDifference =
+        getGroup(leftOwner) - getGroup(rightOwner);
+
+      return groupDifference ||
+        left.registrationIndex - right.registrationIndex;
+    });
+}
+
 function processRegisteredTriggers(event) {
+  const eligibleTriggers = [];
+
   for (const trigger of [...GameTriggerRegistry.values()]) {
     if (trigger.eventType !== event.type) continue;
 
-    const owner = trigger.owner ?? trigger.source?.owner ?? null;
-    const context = {
-      game: typeof GameState !== "undefined" ? GameState : null,
-      event,
-      eventType: event.type,
-      eventPayload: event.payload,
-      source: trigger.source,
-      card: trigger.source?.cardType === "Action"
-        ? trigger.source
-        : null,
-      owner,
-      playerId: owner,
-      player:
-        owner && typeof GameState !== "undefined"
-          ? GameState.players?.[owner] ?? null
-          : null,
-      opponent:
-        owner && typeof GameState !== "undefined"
-          ? GameState.players?.[owner === 1 ? 2 : 1] ?? null
-          : null,
-      user: trigger.context?.user ?? trigger.source?.unit ?? null,
-      target: trigger.context?.target ?? null,
-      trigger,
-      ...trigger.context,
-    };
+    const context = buildTriggerContext(trigger, event);
 
     let eligible = false;
+
     try {
       eligible = trigger.condition(context) !== false;
     } catch (error) {
-      console.error(`Trigger condition failed for "${trigger.id}".`, error);
-    }
-    if (!eligible) continue;
-
-    let stackEntry = null;
-
-    if (typeof queueTriggeredAbility === "function") {
-      stackEntry = queueTriggeredAbility({
-        trigger,
-        context,
-        originalEvent: event,
-      });
-    } else {
-      console.warn(
-        `Trigger "${trigger.id}" could not enter the stack because ` +
-        "queueTriggeredAbility() is unavailable."
+      console.error(
+        `Trigger condition failed for "${trigger.id}".`,
+        error
       );
     }
+
+    if (!eligible) continue;
+
+    eligibleTriggers.push({
+      trigger,
+      context,
+    });
+  }
+
+  if (!eligibleTriggers.length) {
+    return [];
+  }
+
+  if (typeof queueTriggeredAbility !== "function") {
+    console.warn(
+      `Triggers for "${event.type}" could not enter the stack because ` +
+      "queueTriggeredAbility() is unavailable."
+    );
+    return [];
+  }
+
+  const orderedTriggers =
+    getSimultaneousTriggerOrder(eligibleTriggers);
+
+  const queuedEntries = [];
+
+  for (const { trigger, context } of orderedTriggers) {
+    const stackEntry = queueTriggeredAbility({
+      trigger,
+      context,
+      originalEvent: event,
+      openPriority: false,
+    });
+
+    if (!stackEntry) continue;
+
+    queuedEntries.push(stackEntry);
 
     emitGameEvent(
       "triggerQueued",
@@ -317,14 +389,32 @@ function processRegisteredTriggers(event) {
         source: trigger.source,
         originalEvent: event,
         stackEntry,
+        simultaneousTriggerCount: orderedTriggers.length,
       },
       { source: trigger.source }
     );
 
-    if (trigger.once && stackEntry) {
+    if (trigger.once) {
       unregisterGameTrigger(trigger.id);
     }
   }
+
+  /*
+   * Open only one priority window after every simultaneous trigger has been
+   * placed on the stack. This prevents later triggers from resetting the
+   * priority state established by earlier triggers from the same event.
+   */
+  if (
+    queuedEntries.length &&
+    typeof openPriorityForQueuedTriggers === "function"
+  ) {
+    openPriorityForQueuedTriggers({
+      event,
+      entries: queuedEntries,
+    });
+  }
+
+  return queuedEntries;
 }
 
 function registerTriggersForSource(

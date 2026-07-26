@@ -150,10 +150,11 @@ function createTriggeredAbilityStackEntry({
     card: null,
     name:
       source?.name
-        ? `${source.name} — Triggered Ability`
-        : "Triggered Ability",
+        ? `${source.name} — Trigger`
+        : `Triggered Ability (${trigger.abilityId})`,
     abilityId: trigger.abilityId,
     triggerId: trigger.id,
+    originalEventId: originalEvent?.id ?? null,
     source,
     owner,
     userId: context.user?.id ?? null,
@@ -175,6 +176,7 @@ function queueTriggeredAbility({
   trigger,
   context = {},
   originalEvent = null,
+  openPriority = true,
 }) {
   const entry = createTriggeredAbilityStackEntry({
     trigger,
@@ -187,19 +189,64 @@ function queueTriggeredAbility({
   addLog(`${entry.name} is added to the stack.`);
 
   /*
-   * A trigger generated while another object is resolving waits on the stack.
-   * The current resolver will reopen priority after it finishes.
+   * Batch callers pass openPriority:false and open one shared priority window
+   * after all simultaneous triggers have entered the stack.
    */
-  if (!GameState.priority.resolving) {
-    beginPriorityWindow({
-      playerId: GameState.activePlayer,
-      reason: PRIORITY.ACTION,
+  if (openPriority && !GameState.priority.resolving) {
+    openPriorityForQueuedTriggers({
+      event: originalEvent,
+      entries: [entry],
     });
-
-    renderGame();
   }
 
   return entry;
+}
+
+function openPriorityForQueuedTriggers({
+  event = null,
+  entries = [],
+} = {}) {
+  if (!entries.length) {
+    return false;
+  }
+
+  /*
+   * Triggers created during resolution remain waiting. The current resolver
+   * will reopen priority after the resolving entry leaves the stack.
+   */
+  if (GameState.priority.resolving) {
+    renderGame();
+    return false;
+  }
+
+  const startingPlayer =
+    GameState.players[GameState.activePlayer]
+      ? GameState.activePlayer
+      : 1;
+
+  const opened = beginPriorityWindow({
+    playerId: startingPlayer,
+    reason: PRIORITY.ACTION,
+  });
+
+  if (opened !== false) {
+    const triggerWord =
+      entries.length === 1
+        ? "triggered ability is"
+        : "triggered abilities are";
+
+    GameState.actionSelectionMessage =
+      `${entries.length} ${triggerWord} on the stack. ` +
+      `${GameState.players[startingPlayer].name} has priority.`;
+
+    addLog(
+      `${entries.length} simultaneous ` +
+      `${entries.length === 1 ? "trigger" : "triggers"} entered the stack.`
+    );
+  }
+
+  renderGame();
+  return opened !== false;
 }
 
 function getStackEntryName(entry) {

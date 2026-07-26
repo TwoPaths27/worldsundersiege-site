@@ -1,22 +1,21 @@
-Worlds Under Siege — Trigger Stack Patch v8
+Worlds Under Siege — Simultaneous Trigger Ordering Patch v9
 
-Focus: triggered abilities now use the same stack and priority system as Actions.
+Focus: deterministic ordering for multiple triggers caused by one event.
 
 Changes:
-- Trigger listeners no longer execute abilities immediately.
-- Added createTriggeredAbilityStackEntry().
-- Added queueTriggeredAbility().
-- Triggered abilities are added to GameState.actionStack.
-- Players receive a priority window before a triggered ability resolves.
-- Triggers created during resolution wait safely above the current stack item.
-- Added resolveStackEntry() to route Action and Trigger entries correctly.
-- Trigger entries do not increase discardCount or move to the discard pile.
-- triggerResolved is emitted only after the triggered ability actually resolves.
-- Stack rendering now tolerates entries without an Action card.
+- Trigger conditions are evaluated first, before any matching trigger enters the stack.
+- Matching triggers are collected into one simultaneous-trigger batch.
+- Added APNAP ordering:
+  Active-player triggers enter first, then non-active-player triggers.
+- Registration order is preserved within each owner group.
+- Unowned/global triggers enter after player-owned triggers.
+- Only one priority window opens after the whole trigger batch is stacked.
+- Prevents later triggers from resetting priority opened by earlier triggers.
+- Added openPriorityForQueuedTriggers().
+- queueTriggeredAbility() now supports openPriority:false for batch placement.
+- Trigger stack entries record originalEventId for debugging.
+- Priority text reports how many simultaneous triggers entered the stack.
 - Updated cache versions for events.js and priority.js.
 - All JavaScript files passed `node --check`.
-
-This patch changes trigger timing infrastructure but does not add a specific new
-card trigger. Existing triggered definitions will now use priority automatically.
 
 Replace all included files and hard-refresh with Ctrl+Shift+R.
