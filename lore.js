@@ -524,5 +524,96 @@ Despite his frightening reputation, the Leshy is not inherently malicious. Hunte
 The Leshy represents the ancient Slavic belief that the wilderness possesses its own living guardian deserving of respect. Long before modern ideas of conservation, stories of the Leshy reminded people that the forest was not merely a resource to exploit, but a sacred place governed by powerful supernatural forces.`
 },
 
+"BOA-039": {
+  status: "Fictional Hero",
+  origin: "England / African Jungle",
+  first: "Tarzan of the Apes by Edgar Rice Burroughs (1912)",
+  period: "Late 19th Century",
+  aliases: "Tarzan; John Clayton II; Lord Greystoke; Ape-Man",
+  history: `Tarzan is the central character of Edgar Rice Burroughs' 1912 novel Tarzan of the Apes. Born John Clayton II, the infant son of English aristocrats stranded on the western coast of Africa, he is orphaned after his parents die in the jungle. Adopted by Kala, a great ape, Tarzan grows up knowing nothing of human civilization and learns to survive among the animals of the forest.
+
+Possessing extraordinary strength, agility, and intelligence, Tarzan masters the ways of the jungle while gradually teaching himself to read and write from books left behind by his parents. Though raised by apes, he discovers his human heritage after exploring his family's abandoned cabin and begins to struggle with the conflict between his civilized ancestry and the wild life that shaped him.
+
+Tarzan's world changes forever when an expedition from England arrives, introducing him to Jane Porter and the first humans he has ever truly known. Although he proves himself nobler than many of the civilized men he encounters, Tarzan ultimately faces difficult choices between his rightful inheritance as Lord Greystoke and the freedom of the jungle he calls home.
+
+Burroughs' original novel established Tarzan as one of literature's greatest adventure heroes. Unlike later adaptations, the original Tarzan is highly intelligent, multilingual, and equally comfortable discussing philosophy as surviving among wild animals, making him a unique blend of civilization and nature.`
+},
+
+"BOA-040": {
+  status: "Fictional Tribal Chief",
+  origin: "Africa",
+  first: "Tarzan of the Apes by Edgar Rice Burroughs (1912)",
+  period: "Late 19th Century",
+  aliases: "Chief Mbonga",
+  history: `Mbonga is the chief of a powerful African tribe in Edgar Rice Burroughs' Tarzan of the Apes. His hatred of Tarzan begins years before the events of the novel when Tarzan, still growing up among the apes, unknowingly kills Mbonga's young son while defending himself. Unable to understand the strange white youth living in the jungle, Mbonga vows revenge.
+
+As Tarzan matures, he frequently raids Mbonga's village to obtain weapons, tools, and other useful supplies. Although Tarzan rarely kills unless forced, these repeated raids reinforce Mbonga's belief that the mysterious "white ape" is a dangerous enemy who must be destroyed. Numerous attempts to capture or kill Tarzan ultimately fail due to Tarzan's superior knowledge of the jungle.
+
+Throughout the novel, Mbonga serves as one of Tarzan's recurring human adversaries. While courageous and determined, he is consistently outmatched by Tarzan's remarkable strength, speed, and ability to move unseen through the forest.
+
+Mbonga represents one of the many dangers Tarzan faces before encountering European civilization. His rivalry with Tarzan helps establish the Ape-Man's reputation as the undisputed master of the jungle while illustrating the misunderstandings that arise between vastly different worlds.`
+},
+
+"BOA-041": {
+  status: "Fictional Explorer",
+  origin: "United States",
+  first: "Tarzan of the Apes by Edgar Rice Burroughs (1912)",
+  period: "Late 19th Century",
+  aliases: "Jane Porter",
+  history: `Jane Porter is the heroine of Edgar Rice Burroughs' Tarzan of the Apes. The daughter of Professor Archimedes Q. Porter, she accompanies an expedition to Africa after being stranded on the coast following a mutiny at sea. There she becomes the first woman Tarzan has ever encountered.
+
+Initially frightened by the mysterious jungle man who secretly watches over the expedition, Jane gradually comes to recognize Tarzan's courage, kindness, and intelligence. Though he lacks formal education and civilized manners, Tarzan repeatedly risks his life to protect Jane from hostile animals and other dangers, earning her admiration and affection.
+
+Their growing relationship becomes complicated by Tarzan's discovery of his noble English heritage and Jane's engagement to his cousin, William Clayton, whom everyone mistakenly believes to be the rightful Lord Greystoke. Bound by honor and duty, Tarzan initially conceals the truth about his identity despite his love for Jane.
+
+Jane serves as the emotional heart of Burroughs' novel, representing the bridge between Tarzan's wild upbringing and the civilized world. Her compassion, intelligence, and unwavering loyalty make her far more than a traditional damsel in distress, establishing her as one of adventure literature's most enduring heroines.`
+},
+
+"BOA-042": {
+  status: "Fictional Professor",
+  origin: "United States",
+  first: "Tarzan of the Apes by Edgar Rice Burroughs (1912)",
+  period: "Late 19th Century",
+  aliases: "Professor Archimedes Q. Porter",
+  history: `Professor Archimedes Q. Porter is Jane Porter's absent-minded father in Edgar Rice Burroughs' Tarzan of the Apes. An accomplished scholar and inventor, the professor possesses remarkable intelligence but often becomes so absorbed in scientific thought that he loses track of practical concerns and the dangers surrounding him.
+
+After becoming stranded in Africa, Professor Porter spends much of his time studying the unfamiliar environment while relying upon others for protection. His gentle nature, curiosity, and optimistic outlook frequently place him in difficult situations, yet his kindness earns the respect of those around him.
+
+Although physically unsuited to the hardships of jungle life, Professor Porter remains determined to protect his daughter and maintain hope of eventually returning home. His absent-minded behavior often provides moments of humor amid the dangers faced by the expedition, contrasting sharply with Tarzan's natural instincts and practical survival skills.
+
+Professor Porter represents the educated world of science and academia that Tarzan eventually encounters. Despite his lack of wilderness experience, his compassion and intellectual curiosity embody many of the positive qualities of civilization that Tarzan comes to appreciate.`
+},
+
+"BOA-043": {
+  status: "Fictional Aristocrat",
+  origin: "England",
+  first: "Tarzan of the Apes by Edgar Rice Burroughs (1912)",
+  period: "Late 19th Century",
+  aliases: "William Cecil Clayton; William Clayton",
+  history: `William Clayton is Tarzan's cousin in Edgar Rice Burroughs' Tarzan of the Apes. Following the presumed deaths of Tarzan's parents and infant self, Clayton inherits the title of Lord Greystoke, unaware that the true heir has survived and grown to adulthood in the African jungle.
+
+Clayton accompanies Professor Porter's expedition to Africa and soon becomes engaged to Jane Porter. Handsome, well-mannered, and courageous by conventional standards, Clayton appears to embody the ideals of English nobility. However, his abilities are repeatedly overshadowed by Tarzan, whose extraordinary courage and selflessness exceed those of every other member of the expedition.
+
+Unknown to Clayton, Tarzan eventually discovers documents proving his true identity as John Clayton II, the rightful Lord Greystoke. Rather than expose his cousin and destroy Jane's future, Tarzan chooses to remain silent, sacrificing both his inheritance and his chance to marry the woman he loves.
+
+William Clayton is not portrayed as a villain in Burroughs' original novel. Instead, he serves as an honorable but ordinary man whose accidental inheritance contrasts with Tarzan's hidden nobility, reinforcing one of the novel's central themes—that true greatness comes from character rather than title alone.`
+
+},
+
+"BOA-044": {
+  status: "Fictional Criminal",
+  origin: "Russia",
+  first: "The Return of Tarzan by Edgar Rice Burroughs (1913)",
+  period: "Early 20th Century",
+  aliases: "Nikolas Rokoff",
+  history: `Nikolas Rokoff is one of Tarzan's most persistent enemies in Edgar Rice Burroughs' The Return of Tarzan. A Russian nobleman by birth, Rokoff hides his greed and cruelty beneath the appearance of a civilized gentleman. Ambitious and utterly without conscience, he seeks wealth and power through deception, betrayal, and murder.
+
+Rokoff's hatred for Tarzan begins after the Ape-Man repeatedly exposes his schemes and prevents him from exploiting others for personal gain. Driven by revenge, Rokoff orchestrates elaborate plots to destroy Tarzan, including kidnapping, piracy, mutiny, and attempts to strand him in the most dangerous regions of Africa. Despite his careful planning, his schemes repeatedly fail through Tarzan's strength, intelligence, and resilience.
+
+Unlike many of Tarzan's adversaries, Rokoff relies not on physical power but on manipulation and the willingness to sacrifice anyone who stands in his way. He frequently deceives allies, abandons accomplices, and places innocent lives at risk if doing so advances his ambitions. His treachery makes him one of the most dangerous human villains in the Tarzan novels.
+
+Throughout Burroughs' early Tarzan series, Rokoff serves as Tarzan's greatest recurring human nemesis. His relentless pursuit of revenge contrasts sharply with Tarzan's sense of honor, creating one of adventure literature's enduring rivalries between noble hero and calculating villain.`
+},
+
 };
 
