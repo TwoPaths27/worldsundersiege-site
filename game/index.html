@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=28">
+  <link rel="stylesheet" href="./game.css?v=29">
 </head>
 <body>
   <main class="game-layout">
@@ -27,6 +27,25 @@
             End Turn
           </button>
         </div>
+      </section>
+
+      <section
+        id="actionPrompt"
+        class="panel-card priority-panel action-prompt"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <div id="actionPromptText" class="priority-panel__message"></div>
+
+        <button
+          id="passPriorityButton"
+          class="action-priority-pass"
+          type="button"
+          hidden
+        >
+          Pass Priority
+        </button>
       </section>
 
       <section class="panel-card chat-panel">
@@ -52,17 +71,6 @@
 
 <section class="battlefield-column">
   <div class="battlefield-stage">
-    <div id="actionPrompt" class="action-prompt" role="status" hidden>
-      <span id="actionPromptText"></span>
-      <button
-        id="passPriorityButton"
-        class="action-priority-pass"
-        type="button"
-        hidden
-      >
-        Pass Priority
-      </button>
-    </div>
 
     <svg
       id="actionArrowLayer"
@@ -473,18 +481,17 @@
   </noscript>
 
 <script src="../card-database.js?v=1"></script>
-<script src="./card-data.js?v=2"></script>
-<script src="./events.js?v=1"></script>
-<script src="./abilities.js?v=3"></script>
+<script src="./card-data.js?v=1"></script>
+  <script src="./abilities.js?v=1"></script>
 <script src="./game-state.js?v=2"></script>
-<script src="./rules.js?v=2"></script>
+<script src="./rules.js?v=1"></script>
 <script src="./audio.js?v=1"></script>
 <script src="./ui.js?v=1"></script>
 <script src="./animation.js?v=1"></script>
-<script src="./priority.js?v=4"></script>
-<script src="./battlefield.js?v=6"></script>
-<script src="./cards.js?v=4"></script>
-<script src="./match.js?v=3"></script>
+<script src="./priority.js?v=2"></script>
+<script src="./battlefield.js?v=4"></script>
+<script src="./cards.js?v=2"></script>
+<script src="./match.js?v=1"></script>
 <script src="./game.js?v=37"></script>
 </body>
 </html>

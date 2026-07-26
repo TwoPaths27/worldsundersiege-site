@@ -12,6 +12,7 @@ const GameEventListeners = new Map();
 const GameTriggerRegistry = new Map();
 const GameEventQueue = [];
 let isProcessingGameEvents = false;
+let nextGameEventId = 1;
 let nextGameListenerId = 1;
 let nextGameTriggerId = 1;
 
@@ -60,10 +61,13 @@ function emitGameEvent(type, payload = {}, options = {}) {
   }
 
   const event = {
+    id: `event-${nextGameEventId++}`,
     type: type.trim(),
     payload,
     source: options.source ?? null,
     timestamp: Date.now(),
+    queuedAt: Date.now(),
+    dispatchedAt: null,
     cancelled: false,
     stopPropagation: false,
     cancel() { this.cancelled = true; },
@@ -90,6 +94,8 @@ function processGameEventQueue() {
 }
 
 function dispatchGameEvent(event) {
+  event.dispatchedAt = Date.now();
+
   const listeners = [
     ...(GameEventListeners.get(event.type) ?? []),
     ...(GameEventListeners.get("*") ?? []),
@@ -112,6 +118,24 @@ function dispatchGameEvent(event) {
   }
 
   processRegisteredTriggers(event);
+}
+
+
+function queueGameEvent(type, payload = {}, options = {}) {
+  return emitGameEvent(type, payload, options);
+}
+
+function isGameEventQueueProcessing() {
+  return isProcessingGameEvents;
+}
+
+function getPendingGameEvents() {
+  return GameEventQueue.map((event) => ({
+    id: event.id,
+    type: event.type,
+    source: event.source,
+    timestamp: event.timestamp,
+  }));
 }
 
 function registerGameTrigger(definition) {
@@ -179,9 +203,28 @@ function processRegisteredTriggers(event) {
     }
     if (!eligible) continue;
 
+    let resolution = null;
+
     if (typeof executeAbility === "function") {
-      executeAbility(trigger.abilityId, context);
+      resolution = executeAbility(trigger.abilityId, context);
+    } else {
+      console.warn(
+        `Trigger "${trigger.id}" could not execute because executeAbility() is unavailable.`
+      );
     }
+
+    emitGameEvent(
+      "triggerResolved",
+      {
+        triggerId: trigger.id,
+        abilityId: trigger.abilityId,
+        source: trigger.source,
+        originalEvent: event,
+        resolution,
+      },
+      { source: trigger.source }
+    );
+
     if (trigger.once) GameTriggerRegistry.delete(trigger.id);
   }
 }
@@ -201,5 +244,6 @@ function registerTriggersForSource(source, triggerDefinitions = source?.triggers
 
 /* Compatibility names used by earlier planning and prototype code. */
 const emitEvent = emitGameEvent;
+const queueEvent = queueGameEvent;
 const registerTrigger = registerGameTrigger;
 const unregisterTrigger = unregisterGameTrigger;

@@ -1,11 +1,14 @@
-Worlds Under Siege — Action Patch v4.1
+Worlds Under Siege — UI Patch v6
 
-Hotfix:
-- Restored defaultCharacterUserValidator() in abilities.js.
-- The missing function caused abilities.js to stop during registerAbility(),
-  preventing Taking Aim and later abilities from being registered.
-- The validator accepts Character units belonging to the acting player.
-- All included JavaScript files passed `node --check`.
+Changes:
+- Moved the Priority prompt and Pass Priority button out of the battlefield overlay.
+- Placed the Priority panel directly above Game Chat in the left HUD.
+- Long priority instructions now wrap downward inside a stable box.
+- The Pass Priority button fills the width beneath the instruction.
+- Added desktop and mobile layout rules.
+- Updated the stylesheet cache query to game.css?v=29.
+- Included the current v5 event and Action-engine files.
+- All JavaScript files passed `node --check`.
 
-After replacing the files, hard-refresh the browser with Ctrl+Shift+R.
-The favicon.ico 404 messages are unrelated to the Ability Engine.
+Replace index.html, game.css, events.js, abilities.js, cards.js, and priority.js.
+Then hard-refresh with Ctrl+Shift+R.
