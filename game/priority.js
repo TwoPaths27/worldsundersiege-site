@@ -61,56 +61,76 @@ function passPriority() {
   }
 
   const passingPlayer = GameState.priority.playerId;
+  const passingPlayerState = GameState.players[passingPlayer];
 
-  if (!passingPlayer || !GameState.players[passingPlayer]) {
+  if (!passingPlayerState) {
+    console.warn(`Cannot pass priority for unknown player ${passingPlayer}.`);
     closePriorityWindow();
     renderGame();
     return;
   }
 
   GameState.priority.passes += 1;
-  emitGameEvent("priorityPassed", { playerId: passingPlayer, passes: GameState.priority.passes }, { source: passingPlayer });
 
-  addLog(`${GameState.players[passingPlayer].name} passes priority.`);
+  emitGameEvent(
+    "priorityPassed",
+    {
+      playerId: passingPlayer,
+      passes: GameState.priority.passes,
+    },
+    { source: passingPlayer }
+  );
+
+  addLog(`${passingPlayerState.name} passes priority.`);
 
   if (GameState.priority.passes >= 2) {
+    addLog("Both players passed priority.");
     beginResolveTopAction();
     return;
   }
 
-  GameState.priority.playerId = passingPlayer === 1 ? 2 : 1;
-  GameState.selectedCardId = null;
-  GameState.pendingActionUserId = null;
-  GameState.pendingActionTargetId = null;
+  const nextPlayer = passingPlayer === 1 ? 2 : 1;
+
+  if (!GameState.players[nextPlayer]) {
+    console.warn(`Cannot give priority to unknown player ${nextPlayer}.`);
+    closePriorityWindow();
+    renderGame();
+    return;
+  }
+
+  GameState.priority.playerId = nextPlayer;
+  clearPendingActionSelection();
 
   GameState.actionSelectionMessage =
-    `${GameState.players[GameState.priority.playerId].name} has priority. Play an Action or pass.`;
+    `${GameState.players[nextPlayer].name} has priority. Play an Action or pass.`;
 
   renderGame();
 }
 
 async function beginResolveTopAction() {
+  // Resolution is asynchronous. Ignore repeated clicks while one entry is
+  // already resolving instead of accidentally closing the priority window.
+  if (GameState.priority.resolving) {
+    return;
+  }
+
   const entry = GameState.actionStack.at(-1);
 
-  if (!entry || GameState.priority.resolving) {
+  if (!entry) {
     closePriorityWindow();
-
-    if (!GameState.actionStack.length) {
-      resumePendingEvent();
-    }
-
+    resumePendingEvent();
     renderGame();
     return;
   }
 
   GameState.priority.resolving = true;
   GameState.priority.active = false;
-  GameState.selectedCardId = null;
-  GameState.pendingActionUserId = null;
-  GameState.pendingActionTargetId = null;
+  clearPendingActionSelection();
 
+  const cardName = entry.card?.name ?? "Unknown Action";
   entry.status = "resolving";
-  GameState.actionSelectionMessage = `${entry.card.name} is resolving...`;
+  GameState.actionSelectionMessage = `${cardName} is resolving...`;
+  addLog(`${cardName} begins resolving.`);
 
   renderGame();
 
@@ -119,37 +139,109 @@ async function beginResolveTopAction() {
   const remainingPresentationTime = Math.max(0, 3000 - elapsed);
 
   if (remainingPresentationTime > 0) {
-    await new Promise((resolve) =>
-      window.setTimeout(resolve, remainingPresentationTime)
+    await delayPriorityPresentation(remainingPresentationTime);
+  }
+
+  const eventSource = entry.card ?? entry;
+  emitGameEvent("beforeAbilityResolved", { entry }, { source: eventSource });
+
+  const resolution = resolveActionEffect(entry);
+  entry.status = resolution?.resolved ? "resolved" : "fizzled";
+
+  emitGameEvent(
+    "abilityResolved",
+    { entry, resolution },
+    { source: eventSource }
+  );
+
+  if (resolution?.resolved) {
+    addLog(`${cardName} finished resolving.`);
+  }
+
+  renderGame();
+  await delayPriorityPresentation(1000);
+
+  const owner = GameState.players[entry.owner];
+
+  if (owner) {
+    owner.discardCount = (owner.discardCount ?? 0) + 1;
+    addLog(`${cardName} moves to the discard pile.`);
+  } else {
+    console.warn(
+      `${cardName} left the stack without a valid owner; discard count was not updated.`
     );
   }
 
-  emitGameEvent("beforeAbilityResolved", { entry }, { source: entry.card });
-  const resolution = resolveActionEffect(entry);
-  entry.status = "resolved";
-  emitGameEvent("abilityResolved", { entry, resolution }, { source: entry.card });
+  removeActionStackEntry(entry);
+  emitGameEvent(
+    "actionRemovedFromStack",
+    { entry, resolution },
+    { source: eventSource }
+  );
 
-  renderGame();
-
-  await new Promise((resolve) => window.setTimeout(resolve, 1000));
-
-  GameState.players[entry.owner].discardCount += 1;
-  GameState.actionStack.pop();
-  emitGameEvent("actionRemovedFromStack", { entry }, { source: entry.card });
   GameState.priority.resolving = false;
 
   if (GameState.actionStack.length) {
-    openPriorityWindow(
-      GameState.activePlayer,
-      PRIORITY.ACTION
-    );
+    reopenPriorityWindowAfterResolution();
   } else {
     closePriorityWindow();
-    emitGameEvent("stackResolved", { lastEntry: entry }, { source: entry.card });
+    emitGameEvent(
+      "stackResolved",
+      { lastEntry: entry, resolution },
+      { source: eventSource }
+    );
     resumePendingEvent();
   }
 
   renderGame();
+}
+
+function delayPriorityPresentation(milliseconds) {
+  return new Promise((resolve) =>
+    window.setTimeout(resolve, Math.max(0, milliseconds))
+  );
+}
+
+function clearPendingActionSelection() {
+  GameState.selectedCardId = null;
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+}
+
+function removeActionStackEntry(entry) {
+  const index = GameState.actionStack.lastIndexOf(entry);
+
+  if (index >= 0) {
+    GameState.actionStack.splice(index, 1);
+    return true;
+  }
+
+  return false;
+}
+
+function getPriorityPlayerAfterResolution() {
+  return GameState.players[GameState.activePlayer]
+    ? GameState.activePlayer
+    : Object.keys(GameState.players)
+        .map(Number)
+        .find((playerId) => GameState.players[playerId]) ?? null;
+}
+
+function reopenPriorityWindowAfterResolution() {
+  if (!GameState.actionStack.length) {
+    closePriorityWindow();
+    return false;
+  }
+
+  const playerId = getPriorityPlayerAfterResolution();
+
+  if (!playerId) {
+    console.warn("The Action Stack could not reopen priority: no valid player.");
+    closePriorityWindow();
+    return false;
+  }
+
+  return openPriorityWindow(playerId, PRIORITY.ACTION);
 }
 
 function closePriorityWindow() {
@@ -228,14 +320,57 @@ function isResolvingActionStack() {
   return GameState.priority.resolving;
 }
 
-function resolveActionEffect(entry) {
-  const user = getUnitById(entry.userId);
-  const target = entry.targetId ? getUnitById(entry.targetId) : null;
-  const player = GameState.players[entry.owner];
-  const opponent = GameState.players[entry.owner === 1 ? 2 : 1];
-  const abilitySource = entry.abilityId || entry.card;
+function canInteractDuringPriority() {
+  return Boolean(
+    GameState.priority.active &&
+    !GameState.priority.resolving &&
+    !GameState.gameOver
+  );
+}
 
-  const result = executeAbility(abilitySource, {
+function canInteractWithBattlefield() {
+  return Boolean(
+    !GameState.priority.active &&
+    !GameState.priority.resolving &&
+    !GameState.gameOver
+  );
+}
+
+function resolveActionEffect(entry) {
+  if (!entry || typeof entry !== "object" || !entry.card) {
+    addLog("An invalid Action fizzles and leaves the stack.");
+    return { resolved: false, reason: "invalid-entry" };
+  }
+
+  const cardName = entry.card.name ?? "Unknown Action";
+  const player = GameState.players[entry.owner];
+
+  if (!player) {
+    addLog(`${cardName} fizzles because its controller is unavailable.`);
+    return { resolved: false, reason: "missing-player" };
+  }
+
+  const opponent = GameState.players[entry.owner === 1 ? 2 : 1] ?? null;
+  const user = entry.userId ? getUnitById(entry.userId) : null;
+
+  if (!user) {
+    addLog(
+      `${cardName} fizzles because its User is no longer on the battlefield.`
+    );
+    return { resolved: false, reason: "missing-user" };
+  }
+
+  const target = entry.targetId ? getUnitById(entry.targetId) : null;
+
+  if (entry.targetId && !target) {
+    addLog(
+      `${cardName} fizzles because its target is no longer on the battlefield.`
+    );
+    return { resolved: false, reason: "missing-target" };
+  }
+
+  const abilitySource = entry.abilityId || entry.card;
+  const context = {
     game: GameState,
     stackEntry: entry,
     card: entry.card,
@@ -244,12 +379,45 @@ function resolveActionEffect(entry) {
     opponent,
     user,
     target,
-  });
+  };
 
-  if (!result?.resolved && result?.reason === "unknown-ability") {
-    addLog(`${entry.card.name} resolves without an implemented effect.`);
+  if (typeof isEligibleAbilityUser === "function" &&
+      !isEligibleAbilityUser(abilitySource, user, context)) {
+    addLog(`${cardName} fizzles because its User is no longer eligible.`);
+    return { resolved: false, reason: "ineligible-user" };
   }
-  return result;
+
+  if (entry.targetId &&
+      typeof isEligibleAbilityTarget === "function" &&
+      !isEligibleAbilityTarget(abilitySource, target, context)) {
+    addLog(`${cardName} fizzles because its target is no longer legal.`);
+    return { resolved: false, reason: "ineligible-target" };
+  }
+
+  if (typeof executeAbility !== "function") {
+    addLog(`${cardName} fizzles because the Ability Engine is unavailable.`);
+    return { resolved: false, reason: "missing-ability-engine" };
+  }
+
+  try {
+    const result = executeAbility(abilitySource, context);
+
+    if (!result?.resolved) {
+      if (result?.reason === "unknown-ability") {
+        addLog(`${cardName} resolves without an implemented effect.`);
+      } else if (result?.reason) {
+        addLog(`${cardName} fizzles (${result.reason}).`);
+      } else {
+        addLog(`${cardName} fizzles.`);
+      }
+    }
+
+    return result ?? { resolved: true };
+  } catch (error) {
+    console.error(`Failed to resolve ${cardName}.`, error);
+    addLog(`${cardName} fizzles because its effect could not resolve.`);
+    return { resolved: false, reason: "resolution-error", error };
+  }
 }
 
 function showUnitActionFeedback(unit, message) {
@@ -286,8 +454,8 @@ function renderActionStacks() {
 
 elements.actionPrompt.hidden = !promptText;
 elements.actionPromptText.textContent = promptText;
-elements.passPriorityButton.hidden =
-  !GameState.priority.active || GameState.priority.resolving;
+elements.passPriorityButton.hidden = !GameState.priority.active;
+elements.passPriorityButton.disabled = GameState.priority.resolving;
 
   window.requestAnimationFrame(renderActionArrows);
 }
