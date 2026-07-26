@@ -627,3 +627,28 @@ function selectCard(cardId) {
 
   renderGame();
 }
+
+
+function auditCurrentActionCards() {
+  const sources = [
+    typeof GameState !== "undefined" ? GameState.players : null,
+    typeof GameState !== "undefined" ? GameState.actionStack : null,
+    typeof CardDatabase !== "undefined" ? CardDatabase : null,
+    typeof CARD_DATABASE !== "undefined" ? CARD_DATABASE : null,
+  ].filter(Boolean);
+
+  const audit = auditActionAbilityRegistrations(sources);
+
+  if (audit.invalid.length) {
+    console.warn(
+      "Action cards with missing or unknown abilities:",
+      audit.invalid
+    );
+  } else {
+    console.info(
+      `Action ability audit passed for ${audit.total} Action cards.`
+    );
+  }
+
+  return audit;
+}

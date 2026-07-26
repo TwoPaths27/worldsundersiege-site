@@ -1,20 +1,39 @@
-Worlds Under Siege — Trigger Lifecycle Patch v10
+Worlds Under Siege — Interactive Trigger Choices Patch v12
 
-Focus: automatic trigger registration and cleanup as units enter and leave play.
+This consolidation pass follows the fixed stack rule:
+LAST ENTERED / LAST PLAYED IS ALWAYS FIRST TO RESOLVE.
+Players cannot reorder Action or effect stacks.
 
-Changes:
-- Events now snapshot matching trigger registrations when the event is created.
-- A source can still produce its own death/leave-play trigger even when it is
-  unregistered immediately after leaving the battlefield.
-- destroyUnit() now emits:
-    1. unitLeavingPlay
-    2. unitDestroyed
-    3. unitLeftPlay
-- destroyUnit() unregisters all triggers belonging to the removed unit.
-- Recruited units register their triggers before enter-play events are emitted.
-- Added unitEnteredPlay while preserving the existing unitSummoned event.
-- Added initialBattlefieldReady after starting units register their triggers.
-- Updated cache versions for events.js, rules.js, battlefield.js, and match.js.
-- All included JavaScript files passed `node --check`.
+STACK ORDER
+- Removed APNAP/player-controlled ordering assumptions.
+- Simultaneous triggers preserve deterministic registration/discovery order.
+- Triggers enter in that order.
+- The shared stack remains strict LIFO, so the final entry resolves first.
+- No reorder controls or reorder APIs were added.
 
-Replace all included files and hard-refresh with Ctrl+Shift+R.
+OPTIONAL TRIGGERS
+- Added visible Yes and No controls inside the left priority panel.
+- Optional triggers pause only when they reach the top of the stack.
+- Yes continues toward resolution.
+- No resolves the trigger as optional-trigger-declined without executing it.
+- Escape also declines an optional trigger.
+- Priority passing is hidden while a required trigger choice is pending.
+
+TRIGGER TARGETING
+- Triggered abilities that require a target pause when they reach the top.
+- If exactly one legal target exists, it is selected automatically.
+- If multiple legal targets exist, legal battlefield Units are highlighted.
+- Clicking a highlighted Unit selects it and resumes resolution.
+- If no legal target remains, normal resolution validation causes the trigger
+  to fizzle rather than changing stack order.
+
+SAFETY AND STATE
+- Pending trigger choices are tied to a specific stack ID.
+- Choice state is cleared when the stack entry leaves.
+- Match selection resets clear pending trigger choices.
+- Trigger entries remain on the stack during choices; they are never moved.
+- Added safe UI bindings and target-highlight styling.
+
+All included JavaScript files passed `node --check`.
+
+Replace every included file and hard-refresh with Ctrl+Shift+R.

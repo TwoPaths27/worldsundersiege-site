@@ -823,6 +823,12 @@ function createUnitToken(unit) {
     isChoosingActionTarget() && isEligibleActionTarget(unit)
   );
   token.classList.toggle(
+    "is-trigger-target-choice",
+    typeof isChoosingTriggeredTarget === "function" &&
+      isChoosingTriggeredTarget() &&
+      isEligibleTriggeredTarget(unit)
+  );
+  token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
   );
@@ -890,6 +896,19 @@ function handleBattlefieldClick(x, y) {
   const clickedUnit = getUnitAt(x, y);
   const selectedUnit = getSelectedUnit();
   const selectedCard = getSelectedCard();
+
+  if (
+    typeof isChoosingTriggeredTarget === "function" &&
+    isChoosingTriggeredTarget()
+  ) {
+    if (clickedUnit) {
+      chooseTriggeredTarget(clickedUnit);
+    } else {
+      addLog("Choose a highlighted Unit as the triggered ability target.");
+      renderGame();
+    }
+    return;
+  }
 
   if (selectedCard?.type === "Action") {
     if (!GameState.pendingActionUserId) {

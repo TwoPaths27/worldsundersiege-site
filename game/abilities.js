@@ -42,6 +42,7 @@ function registerAbility(id, definition, aliases = []) {
     id: abilityId,
     targetMode: "user",
     requiresUser: true,
+    requiresTarget: null,
     canPlay: () => true,
     isEligibleUser: defaultCharacterUserValidator,
     isEligibleTarget: () => true,
@@ -155,20 +156,24 @@ function executeAbility(source, context = {}) {
     return createResolutionResult(false, "illegal-user");
   }
 
-  if (
-    ability.targetMode !== "user" &&
-    ability.targetMode !== "none"
-  ) {
-    if (!target) {
-      return createResolutionResult(false, "missing-target");
-    }
+  const targetMode = ability.targetMode ?? "user";
+  const requiresTarget =
+    ability.requiresTarget ??
+    (
+      targetMode !== "user" &&
+      targetMode !== "none"
+    );
 
-    if (
-      typeof ability.isEligibleTarget === "function" &&
-      !ability.isEligibleTarget(target, normalizedContext)
-    ) {
-      return createResolutionResult(false, "illegal-target");
-    }
+  if (requiresTarget && !target) {
+    return createResolutionResult(false, "missing-target");
+  }
+
+  if (
+    target &&
+    typeof ability.isEligibleTarget === "function" &&
+    !ability.isEligibleTarget(target, normalizedContext)
+  ) {
+    return createResolutionResult(false, "illegal-target");
   }
 
   try {
@@ -239,6 +244,87 @@ function getAbilityTriggerDefinitions(source) {
   return Array.isArray(ability.triggers)
     ? [...ability.triggers]
     : [ability.triggers];
+}
+
+
+function validateAbilityRegistration(source) {
+  const abilityId = getAbilityId(source);
+  const ability = getAbility(source);
+
+  if (!abilityId) {
+    return {
+      valid: false,
+      abilityId: "",
+      reason: "missing-ability-id",
+      source,
+    };
+  }
+
+  if (!ability) {
+    return {
+      valid: false,
+      abilityId,
+      reason: "unknown-ability",
+      source,
+    };
+  }
+
+  return {
+    valid: true,
+    abilityId,
+    ability,
+    source,
+  };
+}
+
+function auditActionAbilityRegistrations(cards = []) {
+  const results = [];
+  const seenObjects = new WeakSet();
+  const seenCards = new Set();
+
+  const visit = (value) => {
+    if (!value) return;
+
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+
+    if (typeof value !== "object") return;
+    if (seenObjects.has(value)) return;
+    seenObjects.add(value);
+
+    if (value.cardType === "Action" || value.type === "Action") {
+      const key =
+        value.databaseId ??
+        value.id ??
+        `${value.name ?? "Unknown Action"}:${getAbilityId(value)}`;
+
+      if (!seenCards.has(key)) {
+        seenCards.add(key);
+        results.push({
+          name: value.name ?? "Unknown Action",
+          databaseId: value.databaseId ?? value.id ?? null,
+          ...validateAbilityRegistration(value),
+        });
+      }
+    }
+
+    for (const nested of Object.values(value)) {
+      if (nested && typeof nested === "object") {
+        visit(nested);
+      }
+    }
+  };
+
+  visit(cards);
+
+  return {
+    total: results.length,
+    valid: results.filter((result) => result.valid),
+    invalid: results.filter((result) => !result.valid),
+    results,
+  };
 }
 
 /* Backward-compatible facade retained for older module code. */

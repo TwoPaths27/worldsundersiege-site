@@ -22,6 +22,9 @@ const elements = {
   enemyActionStack: document.querySelector("#enemyActionStack"),
   actionPrompt: document.querySelector("#actionPrompt"),
   actionPromptText: document.querySelector("#actionPromptText"),
+  triggerChoiceControls: document.querySelector("#triggerChoiceControls"),
+  acceptTriggerButton: document.querySelector("#acceptTriggerButton"),
+  declineTriggerButton: document.querySelector("#declineTriggerButton"),
   passPriorityButton: document.querySelector("#passPriorityButton"),
   actionArrowLayer: document.querySelector("#actionArrowLayer"),
 
@@ -89,6 +92,16 @@ function bindEvents() {
   elements.endTurnButton.addEventListener("click", endTurn);
   elements.passPriorityButton.addEventListener("click", passPriority);
 
+  elements.acceptTriggerButton?.addEventListener(
+    "click",
+    acceptPendingTriggeredChoice
+  );
+
+  elements.declineTriggerButton?.addEventListener(
+    "click",
+    declinePendingTriggeredChoice
+  );
+
   elements.exitGameButton.addEventListener("click", openExitModal);
   elements.cancelExitButton.addEventListener("click", closeExitModal);
   elements.confirmExitButton.addEventListener("click", () => {
@@ -155,6 +168,16 @@ elements.enemyStronghold.addEventListener(
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      const pendingTriggerChoice =
+        typeof getPendingTriggeredChoice === "function"
+          ? getPendingTriggeredChoice()
+          : null;
+
+      if (pendingTriggerChoice?.kind === "optional") {
+        declinePendingTriggeredChoice();
+        return;
+      }
+
       if (!elements.exitModal.hidden) {
         closeExitModal();
         return;

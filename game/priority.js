@@ -156,6 +156,11 @@ function createTriggeredAbilityStackEntry({
     triggerId: trigger.id,
     originalEventId: originalEvent?.id ?? null,
     source,
+    optional: Boolean(trigger.optional),
+    triggerPrompt: trigger.prompt ?? null,
+    optionalDecision: trigger.optional ? null : true,
+    pendingChoiceKind: null,
+    interveningCondition: trigger.interveningCondition ?? null,
     owner,
     userId: context.user?.id ?? null,
     targetId: context.target?.id ?? null,
@@ -262,6 +267,41 @@ function resolveTriggeredAbility(entry) {
   const source = entry.abilityId;
   const storedContext = entry.triggerContext ?? {};
 
+  if (typeof entry.interveningCondition === "function") {
+    let stillLegal = false;
+
+    try {
+      stillLegal =
+        entry.interveningCondition({
+          ...storedContext,
+          game: GameState,
+          stackEntry: entry,
+          source: entry.source,
+        }) !== false;
+    } catch (error) {
+      console.error(
+        `Intervening condition failed for trigger "${entry.triggerId}".`,
+        error
+      );
+
+      return createResolutionResult(
+        false,
+        "intervening-condition-error"
+      );
+    }
+
+    if (!stillLegal) {
+      addLog(
+        `${getStackEntryName(entry)} fizzles because its trigger condition is no longer true.`
+      );
+
+      return createResolutionResult(
+        false,
+        "intervening-condition-false"
+      );
+    }
+  }
+
   const owner =
     entry.owner ??
     storedContext.owner ??
@@ -296,10 +336,305 @@ function resolveTriggeredAbility(entry) {
 
 function resolveStackEntry(entry) {
   if (entry?.type === "trigger") {
+    if (entry.optional && entry.optionalDecision === false) {
+      return createResolutionResult(
+        false,
+        entry.choiceCancellationReason ?? "optional-trigger-declined"
+      );
+    }
+
     return resolveTriggeredAbility(entry);
   }
 
   return resolveActionEffect(entry);
+}
+
+
+
+function getPendingTriggeredChoice() {
+  return GameState.pendingTriggeredChoice ?? null;
+}
+
+function clearPendingTriggeredChoice() {
+  GameState.pendingTriggeredChoice = null;
+}
+
+function getTriggeredEntryAbility(entry) {
+  return getAbility(entry?.abilityId ?? entry?.source);
+}
+
+function triggeredEntryRequiresTarget(entry) {
+  if (!entry || entry.type !== "trigger") {
+    return false;
+  }
+
+  const ability = getTriggeredEntryAbility(entry);
+  const targetMode =
+    entry.targetMode ??
+    ability?.targetMode ??
+    "none";
+
+  const requiresTarget =
+    ability?.requiresTarget ??
+    (
+      targetMode !== "none" &&
+      targetMode !== "user"
+    );
+
+  return Boolean(requiresTarget);
+}
+
+function isChoosingTriggeredTarget() {
+  const choice = getPendingTriggeredChoice();
+
+  return Boolean(
+    choice &&
+    choice.kind === "target" &&
+    GameState.actionStack.at(-1)?.stackId === choice.stackId
+  );
+}
+
+function getPendingTriggeredEntry() {
+  const choice = getPendingTriggeredChoice();
+
+  if (!choice) {
+    return null;
+  }
+
+  return GameState.actionStack.find(
+    (entry) => entry.stackId === choice.stackId
+  ) ?? null;
+}
+
+function isEligibleTriggeredTarget(target) {
+  const entry = getPendingTriggeredEntry();
+
+  if (!entry || !target || entry.type !== "trigger") {
+    return false;
+  }
+
+  const ability = getTriggeredEntryAbility(entry);
+
+  if (!ability) {
+    return false;
+  }
+
+  const storedContext = entry.triggerContext ?? {};
+  const owner =
+    entry.owner ??
+    storedContext.owner ??
+    entry.source?.owner ??
+    null;
+
+  const user =
+    entry.userId
+      ? getUnitById(entry.userId)
+      : storedContext.user ?? null;
+
+  const context = createAbilityContext({
+    ...storedContext,
+    game: GameState,
+    source: entry.source ?? entry.abilityId,
+    stackEntry: entry,
+    owner,
+    playerId: owner,
+    player: owner ? GameState.players[owner] ?? null : null,
+    opponent:
+      owner
+        ? GameState.players[owner === 1 ? 2 : 1] ?? null
+        : null,
+    user,
+    target,
+  });
+
+  return isEligibleAbilityTarget(
+    entry.abilityId,
+    target,
+    context
+  );
+}
+
+function beginTriggeredOptionalChoice(entry) {
+  GameState.priority.active = false;
+  GameState.priority.resolving = false;
+
+  entry.pendingChoiceKind = "optional";
+  GameState.pendingTriggeredChoice = {
+    stackId: entry.stackId,
+    kind: "optional",
+    playerId: entry.owner ?? GameState.activePlayer,
+  };
+
+  GameState.actionSelectionMessage =
+    entry.triggerPrompt ??
+    `Use ${getStackEntryName(entry)}?`;
+
+  addLog(
+    `${getStackEntryName(entry)} is waiting for a Yes or No decision.`
+  );
+
+  renderGame();
+  return false;
+}
+
+function beginTriggeredTargetChoice(entry) {
+  GameState.priority.active = false;
+  GameState.priority.resolving = false;
+
+  entry.pendingChoiceKind = "target";
+  GameState.pendingTriggeredChoice = {
+    stackId: entry.stackId,
+    kind: "target",
+    playerId: entry.owner ?? GameState.activePlayer,
+  };
+
+  const ability = getTriggeredEntryAbility(entry);
+  const storedContext = entry.triggerContext ?? {};
+
+  GameState.actionSelectionMessage =
+    typeof ability?.getTargetPrompt === "function"
+      ? ability.getTargetPrompt({
+          ...storedContext,
+          game: GameState,
+          stackEntry: entry,
+          source: entry.source,
+        })
+      : `Choose a highlighted target for ${getStackEntryName(entry)}.`;
+
+  addLog(
+    `${getStackEntryName(entry)} is waiting for a target.`
+  );
+
+  renderGame();
+  return false;
+}
+
+function acceptPendingTriggeredChoice() {
+  const entry = getPendingTriggeredEntry();
+  const choice = getPendingTriggeredChoice();
+
+  if (!entry || !choice || choice.kind !== "optional") {
+    return false;
+  }
+
+  entry.optionalDecision = true;
+  entry.pendingChoiceKind = null;
+  clearPendingTriggeredChoice();
+
+  addLog(`${getStackEntryName(entry)} was accepted.`);
+
+  if (triggeredEntryRequiresTarget(entry) && !entry.targetId) {
+    return beginTriggeredTargetChoice(entry);
+  }
+
+  GameState.actionSelectionMessage =
+    `${getStackEntryName(entry)} is resolving...`;
+
+  renderGame();
+  beginResolveTopAction();
+  return true;
+}
+
+function declinePendingTriggeredChoice() {
+  const entry = getPendingTriggeredEntry();
+  const choice = getPendingTriggeredChoice();
+
+  if (!entry || !choice || choice.kind !== "optional") {
+    return false;
+  }
+
+  entry.optionalDecision = false;
+  entry.pendingChoiceKind = null;
+  clearPendingTriggeredChoice();
+
+  addLog(`${getStackEntryName(entry)} was declined.`);
+  renderGame();
+  beginResolveTopAction();
+  return true;
+}
+
+function chooseTriggeredTarget(target) {
+  const entry = getPendingTriggeredEntry();
+  const choice = getPendingTriggeredChoice();
+
+  if (
+    !entry ||
+    !choice ||
+    choice.kind !== "target"
+  ) {
+    return false;
+  }
+
+  if (!isEligibleTriggeredTarget(target)) {
+    addLog("Choose a highlighted legal target.");
+    renderGame();
+    return false;
+  }
+
+  entry.targetId = target.id;
+  entry.triggerContext = {
+    ...(entry.triggerContext ?? {}),
+    target,
+  };
+  entry.pendingChoiceKind = null;
+  clearPendingTriggeredChoice();
+
+  addLog(
+    `${target.name} was chosen as the target for ${getStackEntryName(entry)}.`
+  );
+
+  GameState.actionSelectionMessage =
+    `${getStackEntryName(entry)} is resolving...`;
+
+  renderGame();
+  beginResolveTopAction();
+  return true;
+}
+
+function cancelPendingTriggeredChoice(reason = "cancelled") {
+  const entry = getPendingTriggeredEntry();
+
+  if (!entry) {
+    clearPendingTriggeredChoice();
+    return false;
+  }
+
+  entry.optionalDecision = false;
+  entry.pendingChoiceKind = null;
+  entry.choiceCancellationReason = reason;
+  clearPendingTriggeredChoice();
+
+  addLog(`${getStackEntryName(entry)} was declined.`);
+  renderGame();
+  beginResolveTopAction();
+  return true;
+}
+
+function recordStackResolution(entry, resolution) {
+  GameState.stackResolutionHistory ??= [];
+
+  GameState.stackResolutionHistory.push({
+    stackId: entry.stackId,
+    type: entry.type,
+    name: getStackEntryName(entry),
+    abilityId: entry.abilityId ?? null,
+    triggerId: entry.triggerId ?? null,
+    owner: entry.owner ?? null,
+    status: entry.status,
+    resolution,
+    createdAt: entry.createdAt ?? null,
+    resolutionStartedAt: entry.resolutionStartedAt ?? null,
+    resolutionFinishedAt: entry.resolutionFinishedAt ?? Date.now(),
+  });
+
+  const maximumHistory = 100;
+
+  if (GameState.stackResolutionHistory.length > maximumHistory) {
+    GameState.stackResolutionHistory.splice(
+      0,
+      GameState.stackResolutionHistory.length - maximumHistory
+    );
+  }
 }
 
 async function beginResolveTopAction() {
@@ -322,6 +657,65 @@ async function beginResolveTopAction() {
 
   if (entry.status === "resolving") {
     return false;
+  }
+
+  if (
+    entry.type === "trigger" &&
+    entry.optional &&
+    entry.optionalDecision === null
+  ) {
+    return beginTriggeredOptionalChoice(entry);
+  }
+
+  if (
+    entry.type === "trigger" &&
+    entry.optionalDecision !== false &&
+    triggeredEntryRequiresTarget(entry) &&
+    !entry.targetId
+  ) {
+    const ability = getTriggeredEntryAbility(entry);
+    const storedContext = entry.triggerContext ?? {};
+    const owner =
+      entry.owner ??
+      storedContext.owner ??
+      entry.source?.owner ??
+      null;
+    const user =
+      entry.userId
+        ? getUnitById(entry.userId)
+        : storedContext.user ?? null;
+
+    const legalTargets = GameState.units.filter((target) =>
+      isEligibleAbilityTarget(
+        entry.abilityId,
+        target,
+        createAbilityContext({
+          ...storedContext,
+          game: GameState,
+          source: entry.source ?? entry.abilityId,
+          stackEntry: entry,
+          owner,
+          playerId: owner,
+          player: owner ? GameState.players[owner] ?? null : null,
+          opponent:
+            owner
+              ? GameState.players[owner === 1 ? 2 : 1] ?? null
+              : null,
+          user,
+          target,
+        })
+      )
+    );
+
+    if (legalTargets.length === 1) {
+      entry.targetId = legalTargets[0].id;
+      entry.triggerContext = {
+        ...storedContext,
+        target: legalTargets[0],
+      };
+    } else if (legalTargets.length > 1) {
+      return beginTriggeredTargetChoice(entry);
+    }
   }
 
   const cardName = getStackEntryName(entry);
@@ -413,6 +807,8 @@ async function beginResolveTopAction() {
       `${cardName} fizzles because stack resolution encountered an error.`
     );
   } finally {
+    recordStackResolution(entry, resolution);
+
     if (entry.type === "action") {
       const owner = GameState.players[entry.owner];
 
@@ -427,6 +823,12 @@ async function beginResolveTopAction() {
       }
     } else {
       addLog(`${cardName} leaves the stack.`);
+    }
+
+    if (
+      GameState.pendingTriggeredChoice?.stackId === entry.stackId
+    ) {
+      clearPendingTriggeredChoice();
     }
 
     removeActionStackEntry(entry);
@@ -760,12 +1162,32 @@ function renderActionStacks() {
   elements.actionPrompt.hidden = !promptText;
   elements.actionPromptText.textContent = promptText;
 
+  const pendingTriggerChoice =
+    getPendingTriggeredChoice();
+
+  if (elements.triggerChoiceControls) {
+    elements.triggerChoiceControls.hidden =
+      pendingTriggerChoice?.kind !== "optional";
+  }
+
+  if (elements.acceptTriggerButton) {
+    elements.acceptTriggerButton.disabled =
+      pendingTriggerChoice?.kind !== "optional";
+  }
+
+  if (elements.declineTriggerButton) {
+    elements.declineTriggerButton.disabled =
+      pendingTriggerChoice?.kind !== "optional";
+  }
+
   /*
-   * Keep the control visible so the layout does not jump, but disable it
-   * whenever passing is not legal.
+   * Passing is hidden while an optional decision or target selection is
+   * pending. Stack order itself is never player-controlled.
    */
-  elements.passPriorityButton.hidden = false;
+  elements.passPriorityButton.hidden =
+    Boolean(pendingTriggerChoice);
   elements.passPriorityButton.disabled =
+    Boolean(pendingTriggerChoice) ||
     !canPassPriority();
 
   elements.passPriorityButton.textContent =
@@ -831,63 +1253,77 @@ function renderActionStackForPlayer(playerId, container) {
       `${getStackEntryName(entry)}, used by ${user?.name ?? "no Character"}, ` +
       `${targetDescription}, ${statusLabel}`
     );
-const showStackCardPreview = () => {
-  renderHandCardPreview(entry.card);
-};
+    const previewSource =
+      entry.card ??
+      entry.source ??
+      null;
 
-const restorePreviewAfterStackCard = () => {
-  const selectedCard = getSelectedCard();
+    const showStackCardPreview = () => {
+      if (previewSource && typeof renderHandCardPreview === "function") {
+        renderHandCardPreview(previewSource);
+      }
+    };
 
-  if (selectedCard) {
-    renderHandCardPreview(selectedCard);
-    return;
-  }
+    const restorePreviewAfterStackCard = () => {
+      const selectedCard =
+        typeof getSelectedCard === "function"
+          ? getSelectedCard()
+          : null;
 
-  renderCardPreview();
-};
+      if (
+        selectedCard &&
+        typeof renderHandCardPreview === "function"
+      ) {
+        renderHandCardPreview(selectedCard);
+        return;
+      }
 
-actionCard.addEventListener(
-  "mouseenter",
-  showStackCardPreview
-);
+      if (typeof renderCardPreview === "function") {
+        renderCardPreview();
+      }
+    };
 
-actionCard.addEventListener(
-  "mouseleave",
-  restorePreviewAfterStackCard
-);
+    actionCard.addEventListener("mouseenter", showStackCardPreview);
+    actionCard.addEventListener("mouseleave", restorePreviewAfterStackCard);
+    actionCard.addEventListener("focus", showStackCardPreview);
+    actionCard.addEventListener("blur", restorePreviewAfterStackCard);
 
-actionCard.addEventListener(
-  "focus",
-  showStackCardPreview
-);
+    const image =
+      entry.card?.cardImage ??
+      entry.source?.cardImage ??
+      entry.source?.image ??
+      "";
 
-actionCard.addEventListener(
-  "blur",
-  restorePreviewAfterStackCard
-);
-
-    if (entry.card.cardImage) {
+    if (image) {
       actionCard.style.backgroundImage =
         `linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.08)), ` +
-        `url("${entry.card.cardImage}")`;
+        `url("${image}")`;
     }
 
     const label = document.createElement("strong");
-    label.textContent = entry.card.name;
+    label.textContent = getStackEntryName(entry);
 
     const userLabel = document.createElement("span");
     userLabel.textContent =
-      user ? `User: ${user.name}` : "User unavailable";
+      user
+        ? `User: ${user.name}`
+        : entry.type === "trigger"
+          ? "Triggered ability"
+          : "User unavailable";
 
     const inspector = document.createElement("div");
     inspector.className = "action-stack-inspector";
 
     const inspectorTitle = document.createElement("strong");
-    inspectorTitle.textContent = entry.card.name;
+    inspectorTitle.textContent = getStackEntryName(entry);
 
     const inspectorUser = document.createElement("span");
     inspectorUser.textContent =
-      `User: ${user?.name ?? "Unavailable"}`;
+      user
+        ? `User: ${user.name}`
+        : entry.type === "trigger"
+          ? "User: Not required"
+          : "User: Unavailable";
 
     const inspectorTarget = document.createElement("span");
 

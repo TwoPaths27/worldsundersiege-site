@@ -26,6 +26,10 @@ function initializeGame() {
   );
 
   emitGameEvent("matchStarted", { game: GameState, activePlayer: GameState.activePlayer });
+
+  if (typeof auditCurrentActionCards === "function") {
+    auditCurrentActionCards();
+  }
   emitGameEvent("turnStarted", { playerId: GameState.activePlayer, turn: GameState.turn });
   renderGame();
 }
@@ -104,6 +108,7 @@ function resetMatchSelection() {
   GameState.selectedUnitAction = "move";
   GameState.pendingActionUserId = null;
   GameState.pendingActionTargetId = null;
+  GameState.pendingTriggeredChoice = null;
   GameState.actionSelectionMessage = "";
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();

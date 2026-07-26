@@ -17,6 +17,14 @@ let nextGameListenerId = 1;
 let nextGameTriggerId = 1;
 const RegisteredTriggerIdsBySource = new Map();
 
+const GAME_EVENT_LIMITS = Object.freeze({
+  maxEventsPerDrain: 250,
+  maxTriggerEntriesPerDrain: 100,
+  maxRepeatedSignature: 25,
+});
+
+let currentEventDrainState = null;
+
 function onGameEvent(eventType, handler, options = {}) {
   if (typeof eventType !== "string" || !eventType.trim()) {
     throw new TypeError("Event type must be a non-empty string.");
@@ -83,17 +91,79 @@ function emitGameEvent(type, payload = {}, options = {}) {
   return event;
 }
 
+function createGameEventDrainState() {
+  return {
+    processedEvents: 0,
+    queuedTriggers: 0,
+    signatureCounts: new Map(),
+    startedAt: Date.now(),
+    aborted: false,
+  };
+}
+
+function getGameEventSignature(event) {
+  const sourceKey = getTriggerSourceKey(event.source) ?? "no-source";
+  return `${event.type}:${sourceKey}`;
+}
+
+function registerGameEventDrainStep(event) {
+  if (!currentEventDrainState) {
+    currentEventDrainState = createGameEventDrainState();
+  }
+
+  const state = currentEventDrainState;
+  state.processedEvents += 1;
+
+  const signature = getGameEventSignature(event);
+  const count = (state.signatureCounts.get(signature) ?? 0) + 1;
+  state.signatureCounts.set(signature, count);
+
+  if (
+    state.processedEvents > GAME_EVENT_LIMITS.maxEventsPerDrain ||
+    count > GAME_EVENT_LIMITS.maxRepeatedSignature
+  ) {
+    state.aborted = true;
+    console.error(
+      "The game event queue was stopped to prevent an infinite event loop.",
+      {
+        event,
+        processedEvents: state.processedEvents,
+        repeatedSignature: signature,
+        repeatedCount: count,
+      }
+    );
+
+    if (typeof addLog === "function") {
+      addLog(
+        "A repeating event loop was stopped. Check the involved triggered abilities."
+      );
+    }
+
+    GameEventQueue.length = 0;
+    return false;
+  }
+
+  return true;
+}
+
 function processGameEventQueue() {
   if (isProcessingGameEvents) return;
   isProcessingGameEvents = true;
+  currentEventDrainState = createGameEventDrainState();
 
   try {
     while (GameEventQueue.length) {
       const event = GameEventQueue.shift();
+
+      if (!registerGameEventDrainStep(event)) {
+        break;
+      }
+
       dispatchGameEvent(event);
     }
   } finally {
     isProcessingGameEvents = false;
+    currentEventDrainState = null;
   }
 }
 
@@ -203,9 +273,31 @@ function registerGameTrigger(definition) {
     source: definition.source ?? null,
     owner: definition.owner ?? null,
     once: Boolean(definition.once),
-    condition: typeof definition.condition === "function"
-      ? definition.condition
-      : () => true,
+    optional: Boolean(definition.optional),
+    prompt:
+      definition.prompt ??
+      definition.optionalPrompt ??
+      null,
+    condition:
+      typeof definition.condition === "function"
+        ? definition.condition
+        : () => true,
+    interveningCondition:
+      typeof definition.interveningCondition === "function"
+        ? definition.interveningCondition
+        : null,
+    prepareContext:
+      typeof definition.prepareContext === "function"
+        ? definition.prepareContext
+        : null,
+    chooseTarget:
+      typeof definition.chooseTarget === "function"
+        ? definition.chooseTarget
+        : null,
+    shouldTrigger:
+      typeof definition.shouldTrigger === "function"
+        ? definition.shouldTrigger
+        : null,
     context: definition.context ?? {},
   };
 
@@ -290,42 +382,14 @@ function buildTriggerContext(trigger, event) {
 }
 
 function getSimultaneousTriggerOrder(triggerRecords) {
-  const activePlayer =
-    typeof GameState !== "undefined"
-      ? GameState.activePlayer
-      : null;
-
   /*
-   * APNAP ordering:
-   * - Active-player triggers are placed on the stack first.
-   * - Non-active-player triggers are placed on the stack second.
-   * Because the stack resolves last-in, first-out, the non-active player's
-   * simultaneous triggers resolve first.
+   * Worlds Under Siege does not allow players to reorder effect stacks.
+   * Preserve deterministic trigger registration/discovery order exactly.
    *
-   * Unowned/global triggers are placed after player-owned triggers.
-   * Registration order is preserved within each group.
+   * Entries are pushed in this order and the shared stack is strict LIFO,
+   * therefore the last trigger added is always the first trigger resolved.
    */
-  return triggerRecords
-    .map((record, registrationIndex) => ({
-      ...record,
-      registrationIndex,
-    }))
-    .sort((left, right) => {
-      const leftOwner = left.trigger.owner ?? left.trigger.source?.owner ?? null;
-      const rightOwner = right.trigger.owner ?? right.trigger.source?.owner ?? null;
-
-      const getGroup = (owner) => {
-        if (owner === activePlayer) return 0;
-        if (owner === 1 || owner === 2) return 1;
-        return 2;
-      };
-
-      const groupDifference =
-        getGroup(leftOwner) - getGroup(rightOwner);
-
-      return groupDifference ||
-        left.registrationIndex - right.registrationIndex;
-    });
+  return [...triggerRecords];
 }
 
 function processRegisteredTriggers(event) {
@@ -353,10 +417,16 @@ function processRegisteredTriggers(event) {
     }
 
     if (!eligible) continue;
+    if (!shouldQueueOptionalTrigger(trigger, context)) continue;
+
+    const preparedContext =
+      prepareTriggeredAbilityContext(trigger, context);
+
+    if (!preparedContext) continue;
 
     eligibleTriggers.push({
       trigger,
-      context,
+      context: preparedContext,
     });
   }
 
@@ -378,6 +448,10 @@ function processRegisteredTriggers(event) {
   const queuedEntries = [];
 
   for (const { trigger, context } of orderedTriggers) {
+    if (!registerQueuedTriggerForLoopProtection(trigger, event)) {
+      break;
+    }
+
     const stackEntry = queueTriggeredAbility({
       trigger,
       context,
@@ -482,6 +556,25 @@ function getRegisteredTriggersForSource(source) {
   return ids
     .map((id) => GameTriggerRegistry.get(id))
     .filter(Boolean);
+}
+
+
+function getGameEventEngineDiagnostics() {
+  return {
+    processing: isProcessingGameEvents,
+    pendingEvents: getPendingGameEvents(),
+    registeredTriggerCount: GameTriggerRegistry.size,
+    registeredSourceCount: RegisteredTriggerIdsBySource.size,
+    limits: { ...GAME_EVENT_LIMITS },
+    currentDrain: currentEventDrainState
+      ? {
+          processedEvents: currentEventDrainState.processedEvents,
+          queuedTriggers: currentEventDrainState.queuedTriggers,
+          aborted: currentEventDrainState.aborted,
+          startedAt: currentEventDrainState.startedAt,
+        }
+      : null,
+  };
 }
 
 /* Compatibility names used by earlier planning and prototype code. */
