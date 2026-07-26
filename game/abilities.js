@@ -73,8 +73,81 @@ function getAbilityId(source) {
   return AbilityAliases[normalizedId] ?? normalizedId;
 }
 
+function createFallbackActionAbility(source) {
+  if (!source || typeof source !== "object") return null;
+
+  const actionLike =
+    source.cardType === "Action" ||
+    source.type === "Action" ||
+    (Array.isArray(source.types) && source.types.includes("Action")) ||
+    (typeof isAction === "function" && isAction(source));
+
+  if (!actionLike) return null;
+
+  const primaryId =
+    normalizeAbilityId(source.abilityId) ||
+    normalizeAbilityId(source.ability) ||
+    normalizeAbilityId(source.gameplayId) ||
+    normalizeAbilityId(source.databaseId) ||
+    normalizeAbilityId(source.id) ||
+    normalizeAbilityId(source.name);
+
+  if (!primaryId) return null;
+
+  const aliases = [
+    source.gameplayId,
+    source.databaseId,
+    source.id,
+    source.name,
+  ]
+    .map(normalizeAbilityId)
+    .filter((value) => value && value !== primaryId);
+
+  /*
+   * v17 compatibility fallback:
+   * Card-database Actions currently do not all declare an explicit abilityId.
+   * Register them lazily so they can still enter and resolve through the
+   * Action Stack while their individual effects are implemented.
+   */
+  return registerAbility(
+    primaryId,
+    {
+      targetMode: "user",
+
+      resolve({ card, user }) {
+        addLog(
+          `${card?.name ?? source.name ?? "Action"} resolves` +
+          `${user ? ` with ${user.name} as its User` : ""}.`
+        );
+
+        if (card?.effectText) {
+          console.info(
+            `Action effect pending implementation: ${card.name}`,
+            card.effectText
+          );
+        }
+
+        return {
+          resolved: true,
+          fallback: true,
+          abilityId: primaryId,
+          userId: user?.id ?? null,
+        };
+      },
+    },
+    aliases
+  );
+}
+
 function getAbility(source) {
-  return AbilityRegistry[getAbilityId(source)] ?? null;
+  const abilityId = getAbilityId(source);
+  const registered = AbilityRegistry[abilityId] ?? null;
+
+  if (registered) {
+    return registered;
+  }
+
+  return createFallbackActionAbility(source);
 }
 
 function getAbilityTargetMode(source) {
