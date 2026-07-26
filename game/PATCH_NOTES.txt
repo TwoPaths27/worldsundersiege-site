@@ -1,0 +1,11 @@
+Worlds Under Siege — Action Patch v3
+
+Changes:
+- Blocks opening a new priority window while stack resolution is active.
+- Prevents an already-resolving stack entry from resolving twice.
+- Keeps Pass Priority visible but disables it whenever passing is illegal.
+- Shows the current priority player's name on the Pass button.
+- Correctly distinguishes User-targeted, targetless, and separately targeted Actions.
+- Adds clearer stack status labels and fizzled-state classes.
+- Improves stack-card accessibility labels.
+- All included JavaScript files passed `node --check`.

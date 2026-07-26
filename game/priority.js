@@ -12,6 +12,11 @@ function beginPriorityWindow({
   reason = PRIORITY.NONE,
   event = null,
 } = {}) {
+  if (GameState.priority.resolving) {
+    console.warn("Cannot open a priority window while the stack is resolving.");
+    return false;
+  }
+
   if (!GameState.players[playerId]) {
     console.warn(`Cannot open priority for unknown player ${playerId}.`);
     return false;
@@ -120,6 +125,10 @@ async function beginResolveTopAction() {
     closePriorityWindow();
     resumePendingEvent();
     renderGame();
+    return;
+  }
+
+  if (entry.status === "resolving") {
     return;
   }
 
@@ -431,20 +440,77 @@ function showUnitActionFeedback(unit, message) {
   }, 1150);
 }
 
+
+function getActionStackTarget(entry) {
+  const targetMode =
+    entry.targetMode ?? getAbilityTargetMode(entry.abilityId || entry.card);
+
+  if (targetMode === "user") {
+    return {
+      mode: targetMode,
+      unit: entry.userId ? getUnitById(entry.userId) : null,
+      label: "User",
+    };
+  }
+
+  if (targetMode === "none") {
+    return {
+      mode: targetMode,
+      unit: null,
+      label: "None",
+    };
+  }
+
+  return {
+    mode: targetMode,
+    unit: entry.targetId ? getUnitById(entry.targetId) : null,
+    label: "Target",
+  };
+}
+
+function getActionStackStatusLabel(status) {
+  return {
+    waiting: "Waiting for responses",
+    resolving: "Resolving",
+    resolved: "Resolved",
+    fizzled: "Fizzled",
+  }[status] ?? "Waiting";
+}
+
 function renderActionStacks() {
   renderActionStackForPlayer(1, elements.playerActionStack);
   renderActionStackForPlayer(2, elements.enemyActionStack);
 
-  const promptText =
-  GameState.actionSelectionMessage ||
-  (GameState.priority.active && GameState.priority.playerId
-    ? `${GameState.players[GameState.priority.playerId].name} has priority.`
-    : "");
+  const priorityPlayer =
+    GameState.priority.playerId
+      ? GameState.players[GameState.priority.playerId]
+      : null;
 
-elements.actionPrompt.hidden = !promptText;
-elements.actionPromptText.textContent = promptText;
-elements.passPriorityButton.hidden = !GameState.priority.active;
-elements.passPriorityButton.disabled = GameState.priority.resolving;
+  const promptText =
+    GameState.actionSelectionMessage ||
+    (GameState.priority.active && priorityPlayer
+      ? `${priorityPlayer.name} has priority. Play an Action or pass.`
+      : "");
+
+  elements.actionPrompt.hidden = !promptText;
+  elements.actionPromptText.textContent = promptText;
+
+  /*
+   * Keep the control visible so the layout does not jump, but disable it
+   * whenever passing is not legal.
+   */
+  elements.passPriorityButton.hidden = false;
+  elements.passPriorityButton.disabled =
+    !GameState.priority.active ||
+    GameState.priority.resolving ||
+    GameState.gameOver;
+
+  elements.passPriorityButton.textContent =
+    GameState.priority.resolving
+      ? "Resolving..."
+      : GameState.priority.active && priorityPlayer
+        ? `${priorityPlayer.name}: Pass Priority`
+        : "Pass Priority";
 
   window.requestAnimationFrame(renderActionArrows);
 }
@@ -470,9 +536,9 @@ function renderActionStackForPlayer(playerId, container) {
   entries.forEach((entry, index) => {
     const actionCard = document.createElement("article");
     const user = getUnitById(entry.userId);
-    const target = entry.targetId
-      ? getUnitById(entry.targetId)
-      : null;
+    const targetInfo = getActionStackTarget(entry);
+    const target = targetInfo.unit;
+    const statusLabel = getActionStackStatusLabel(entry.status);
 
     actionCard.className = "action-stack-card";
     actionCard.classList.toggle(
@@ -483,12 +549,24 @@ function renderActionStackForPlayer(playerId, container) {
       "is-resolved",
       entry.status === "resolved"
     );
+    actionCard.classList.toggle(
+      "is-fizzled",
+      entry.status === "fizzled"
+    );
     actionCard.dataset.actionStackId = entry.stackId;
     actionCard.style.setProperty("--stack-index", String(index));
     actionCard.setAttribute("tabindex", "0");
+    const targetDescription =
+      targetInfo.mode === "none"
+        ? "no target"
+        : target
+          ? `${targetInfo.label.toLowerCase()} ${target.name}`
+          : `${targetInfo.label.toLowerCase()} unavailable`;
+
     actionCard.setAttribute(
       "aria-label",
-      `${entry.card.name}, used by ${user?.name ?? "unknown Character"}`
+      `${entry.card.name}, used by ${user?.name ?? "unknown Character"}, ` +
+      `${targetDescription}, ${statusLabel}`
     );
 const showStackCardPreview = () => {
   renderHandCardPreview(entry.card);
@@ -549,14 +627,19 @@ actionCard.addEventListener(
       `User: ${user?.name ?? "Unavailable"}`;
 
     const inspectorTarget = document.createElement("span");
-    inspectorTarget.textContent =
-      target
-        ? `Target: ${target.name}`
-        : "Target: User";
+
+    if (targetInfo.mode === "none") {
+      inspectorTarget.textContent = "Target: None";
+    } else if (target) {
+      inspectorTarget.textContent =
+        `${targetInfo.label}: ${target.name}`;
+    } else {
+      inspectorTarget.textContent =
+        `${targetInfo.label}: Unavailable`;
+    }
 
     const inspectorStatus = document.createElement("span");
-    inspectorStatus.textContent =
-      `Status: ${entry.status === "waiting" ? "Waiting for responses" : entry.status}`;
+    inspectorStatus.textContent = `Status: ${statusLabel}`;
 
     inspector.append(
       inspectorTitle,
