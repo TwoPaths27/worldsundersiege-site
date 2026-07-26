@@ -322,20 +322,31 @@ function setSelectedUnitAction(action) {
   }
 
   if (action === "attack") {
+    if (isConstruct(unit)) {
+      const operators = getEligibleConstructOperators(unit);
+      const hasAttackTarget = constructHasLegalAttackTarget(unit);
 
-    const hasAttackTarget =
+      if (!operators.length || !hasAttackTarget) return;
+
+      GameState.selectedUnitAction = "choose-construct-operator";
+      GameState.constructOperatorIds = new Set(operators.map((operator) => operator.id));
+      GameState.pendingConstructOperatorId = null;
+      GameState.reachableSpaces = new Map();
+      GameState.attackableUnitIds = new Set();
+      GameState.attackableStrongholdPlayerId = null;
+      addLog(`Choose an adjacent Character to operate ${unit.name}.`);
+    } else {
+      const hasAttackTarget =
         findAttackableUnits(unit).size > 0 ||
         findAttackableStronghold(unit) !== null;
 
-    if (unit.hasAttacked || !hasAttackTarget) {
-        return;
-    }
+      if (unit.hasAttacked || !hasAttackTarget) return;
 
-    GameState.selectedUnitAction = "attack";
-    GameState.reachableSpaces = new Map();
-    GameState.attackableUnitIds = findAttackableUnits(unit);
-    GameState.attackableStrongholdPlayerId =
-      findAttackableStronghold(unit);
+      GameState.selectedUnitAction = "attack";
+      GameState.reachableSpaces = new Map();
+      GameState.attackableUnitIds = findAttackableUnits(unit);
+      GameState.attackableStrongholdPlayerId = findAttackableStronghold(unit);
+    }
   }
 
   clearAttackHoverState();
@@ -351,8 +362,10 @@ function createSelectedUnitControls(unit) {
     `${unit.name} statistics and actions`
   );
 
-  const canMove = unit.remainingSpeed > 0;
-  const canAttack = !unit.hasAttacked;
+  const canMove = !isConstruct(unit) && unit.remainingSpeed > 0;
+  const canAttack = isConstruct(unit)
+    ? constructHasLegalAttackTarget(unit)
+    : canAttack(unit) && !unit.hasAttacked && unitHasLegalAttackTarget(unit);
 
   const topRow = document.createElement("div");
   topRow.className =
@@ -427,7 +440,8 @@ function createSelectedUnitControls(unit) {
     value: unit.currentAttack,
     kind: "attack",
     action: "attack",
-    isActive: GameState.selectedUnitAction === "attack",
+    isActive: GameState.selectedUnitAction === "attack" ||
+      GameState.selectedUnitAction === "choose-construct-operator",
     isDisabled: !canAttack,
     modifierState: getStatModifierState(
       unit.currentAttack,
@@ -588,8 +602,7 @@ function createBattlefieldCell(x, y) {
   );
   const canRecruitSelectedCard =
     selectedCard &&
-    (selectedCard.type === "Unit" ||
-      selectedCard.type === "Character") &&
+    isBattlefieldCard(selectedCard) &&
     getActivePlayer().energy >= selectedCard.cost;
 
   const isAttackTarget =
@@ -751,20 +764,22 @@ function getUnitActionAvailability(unit) {
   }
 
   const canMove =
-    unit.remainingSpeed > 0;
+    !isConstruct(unit) && unit.remainingSpeed > 0;
 
-  const canAttack =
-    !unit.hasAttacked &&
-    unitHasLegalAttackTarget(unit);
+  const canAttackNow = isConstruct(unit)
+    ? constructHasLegalAttackTarget(unit)
+    : canAttack(unit) &&
+      !unit.hasAttacked &&
+      unitHasLegalAttackTarget(unit);
 
   return {
     canMove,
-    canAttack,
+    canAttack: canAttackNow,
   };
 }
 
 function unitHasLegalAttackTarget(unit) {
-  if (!unit || unit.hasAttacked) {
+  if (!unit || !canAttack(unit) || unit.hasAttacked) {
     return false;
   }
 
@@ -831,6 +846,10 @@ function createUnitToken(unit) {
   token.classList.toggle(
     "is-attack-target",
     GameState.attackableUnitIds.has(unit.id)
+  );
+  token.classList.toggle(
+    "is-construct-operator-choice",
+    GameState.constructOperatorIds.has(unit.id)
   );
 
   token.title = "";
@@ -910,7 +929,7 @@ function handleBattlefieldClick(x, y) {
     return;
   }
 
-  if (selectedCard?.type === "Action") {
+  if (isAction(selectedCard)) {
     if (!GameState.pendingActionUserId) {
       if (clickedUnit && isEligibleActionUser(clickedUnit)) {
         chooseActionUser(clickedUnit);
@@ -932,6 +951,15 @@ function handleBattlefieldClick(x, y) {
     }
   }
 
+  if (
+    GameState.selectedUnitAction === "choose-construct-operator" &&
+    clickedUnit &&
+    GameState.constructOperatorIds.has(clickedUnit.id)
+  ) {
+    chooseConstructOperator(clickedUnit);
+    return;
+  }
+
   if (selectedCard) {
     recruitSelectedCard(x, y);
     return;
@@ -946,6 +974,8 @@ function handleBattlefieldClick(x, y) {
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
 
   clearAttackHoverState();
   renderGame();
@@ -959,7 +989,7 @@ function handleBattlefieldClick(x, y) {
       GameState.attackableUnitIds.has(clickedUnit.id);
 
     if (isValidAttack) {
-      attackUnit(selectedUnit, clickedUnit);
+      attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
       return;
     }
 
@@ -995,6 +1025,30 @@ clearInspection();
 clearSelection();
 }
 
+
+function getPendingConstructOperator() {
+  return GameState.pendingConstructOperatorId
+    ? getUnitById(GameState.pendingConstructOperatorId)
+    : null;
+}
+
+function chooseConstructOperator(operator) {
+  const construct = getSelectedUnit();
+  if (!canOperateConstruct(operator, construct)) {
+    addLog(`${operator?.name ?? "That Unit"} cannot operate ${construct?.name ?? "that Construct"}.`);
+    renderGame();
+    return;
+  }
+
+  GameState.pendingConstructOperatorId = operator.id;
+  GameState.constructOperatorIds = new Set();
+  GameState.selectedUnitAction = "attack";
+  GameState.attackableUnitIds = findConstructAttackableUnits(construct);
+  GameState.attackableStrongholdPlayerId = findConstructAttackableStronghold(construct);
+  addLog(`${operator.name} is operating ${construct.name}. Choose an attack target.`);
+  renderGame();
+}
+
 function clearSelection() {
   if (GameState.gameOver || GameState.isAnimating) {
     return;
@@ -1011,6 +1065,8 @@ function clearSelection() {
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
 
   clearAttackHoverState();
   renderGame();
@@ -1039,11 +1095,15 @@ GameState.selectedUnitAction = "selected";
 GameState.reachableSpaces = new Map();
 GameState.attackableUnitIds = new Set();
 GameState.attackableStrongholdPlayerId = null;
+GameState.constructOperatorIds = new Set();
+GameState.pendingConstructOperatorId = null;
 
 addLog(
-  unit.hasAttacked
-    ? `${unit.name} selected. Its attack has already been used this turn.`
-    : `${unit.name} selected. Choose RNG, SPD, or ATK.`
+  isConstruct(unit)
+    ? `${unit.name} selected. Choose ATK, then select an adjacent Character to operate it.`
+    : unit.hasAttacked
+      ? `${unit.name} selected. Its attack has already been used this turn.`
+      : `${unit.name} selected. Choose RNG, SPD, or ATK.`
 );
 
   renderGame();
@@ -1067,10 +1127,8 @@ async function recruitSelectedCard(x, y) {
     GameState.activePlayer
   );
 
-  const recruitableCardTypes = new Set(["Unit", "Character"]);
-
-  if (!recruitableCardTypes.has(card.type)) {
-    addLog(`${card.name} cannot be recruited to the battlefield.`);
+  if (!isBattlefieldCard(card)) {
+    addLog(`${card.name} cannot be deployed to the battlefield.`);
     renderGame();
     return;
   }
@@ -1138,11 +1196,18 @@ async function recruitSelectedCard(x, y) {
       speed: card.speed,
       cost: card.cost,
       cardType: card.type,
+      type: card.type,
+      types: [...getCardTypes(card)],
+      traits: [...getTraits(card)],
+      capabilities: { ...card.capabilities },
+      capabilityOverrides: { ...card.capabilityOverrides },
       cardImage: card.cardImage,
       tileImage: card.tileImage,
       effectText: card.effectText,
       databaseId: card.databaseId,
     });
+
+    normalizeCard(unit);
 
     GameState.nextUnitId += 1;
 
@@ -1184,7 +1249,7 @@ async function recruitSelectedCard(x, y) {
     GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
 
-    addLog(`⚔ ${player.name} recruited ${card.name}.`);
+    addLog(`⚔ ${player.name} deployed ${card.name}.`);
     addLog(`🔋 −${card.cost} Energy.`);
     addLog(`📍 Deployed to ${formatCoordinate(x, y)}.`);
 
@@ -1303,8 +1368,15 @@ function handleStrongholdClick(targetPlayerId) {
     return;
   }
 
-  if (attacker.hasAttacked) {
+  if (!isConstruct(attacker) && attacker.hasAttacked) {
     addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return;
+  }
+
+  const constructOperator = getPendingConstructOperator();
+  if (isConstruct(attacker) && !canOperateConstruct(constructOperator, attacker)) {
+    addLog(`${attacker.name} requires an adjacent Character with an unused attack.`);
     renderGame();
     return;
   }
@@ -1315,10 +1387,16 @@ function handleStrongholdClick(targetPlayerId) {
     return;
   }
 
-  attackStronghold(attacker, targetPlayerId);
+  attackStronghold(attacker, targetPlayerId, constructOperator);
 }
 
-async function attackStronghold(attacker, targetPlayerId) {
+async function attackStronghold(attacker, targetPlayerId, constructOperator = null) {
+  if (isConstruct(attacker) && !canOperateConstruct(constructOperator, attacker)) {
+    addLog(`${attacker.name} no longer has a legal operator.`);
+    renderGame();
+    return;
+  }
+
   const targetStronghold = targetPlayerId === 1
     ? elements.playerStronghold
     : elements.enemyStronghold;
@@ -1339,10 +1417,17 @@ async function attackStronghold(attacker, targetPlayerId) {
       targetPlayerId,
       attacker.currentAttack
     );
-    attacker.hasAttacked = true;
+    if (isConstruct(attacker)) {
+      if (!consumeConstructOperatorAttack(constructOperator, attacker)) {
+        addLog(`${attacker.name} no longer has a legal operator.`);
+        return;
+      }
+    } else {
+      attacker.hasAttacked = true;
+    }
 
     addLog(
-      `🏰 Player ${attacker.owner}'s ${attacker.name} struck Player ${targetPlayerId}'s Stronghold for ${attacker.currentAttack} damage.`
+      `🏰 Player ${attacker.owner}'s ${attacker.name}${constructOperator ? `, operated by ${constructOperator.name},` : ""} struck Player ${targetPlayerId}'s Stronghold for ${attacker.currentAttack} damage.`
     );
     addLog(`❤ Player ${targetPlayerId}'s Stronghold has ${targetPlayer.strongholdHP} HP remaining.`);
 
@@ -1357,6 +1442,8 @@ async function attackStronghold(attacker, targetPlayerId) {
 
 GameState.attackableUnitIds = new Set();
 GameState.attackableStrongholdPlayerId = null;
+GameState.constructOperatorIds = new Set();
+GameState.pendingConstructOperatorId = null;
 
 renderGame();
 
@@ -1382,6 +1469,8 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
 
   clearAttackHoverState();
   addLog(`🏆 Player ${winnerPlayerId} destroyed Player ${losingPlayerId}'s Stronghold and won the match!`);
@@ -1427,13 +1516,19 @@ async function endGame(winnerPlayerId, losingPlayerId) {
 }
 
 
-async function attackUnit(attacker, defender) {
+async function attackUnit(attacker, defender, constructOperator = null) {
   if (GameState.isAnimating || !attacker || !defender) {
     return;
   }
 
-  if (attacker.hasAttacked) {
+  if (!isConstruct(attacker) && attacker.hasAttacked) {
     addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return;
+  }
+
+  if (isConstruct(attacker) && !canOperateConstruct(constructOperator, attacker)) {
+    addLog(`${attacker.name} requires an adjacent Character with an unused attack.`);
     renderGame();
     return;
   }
@@ -1473,6 +1568,11 @@ const combatResult = applyUnitCombatDamage(
   defender,
   canRetaliate
 );
+
+if (isConstruct(attacker)) {
+  attacker.hasAttacked = false;
+  consumeConstructOperatorAttack(constructOperator, attacker);
+}
 
 addLog(
   `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`

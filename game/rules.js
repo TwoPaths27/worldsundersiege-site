@@ -69,6 +69,7 @@ function findAttackableUnits(unit) {
 
   if (
     !unit ||
+    !canAttack(unit) ||
     unit.hasAttacked ||
     (typeof hasStatus === "function" &&
       (hasStatus(unit, StatusTypes.STUNNED) ||
@@ -94,7 +95,7 @@ function findAttackableUnits(unit) {
 }
 
 function findAttackableStronghold(unit) {
-  if (!unit || unit.hasAttacked || GameState.gameOver) {
+  if (!unit || !canAttack(unit) || unit.hasAttacked || GameState.gameOver) {
     return null;
   }
 
@@ -250,4 +251,92 @@ function applyTemporaryRangeBonus(unit, amount) {
   unit.temporaryRangeBonus = (unit.temporaryRangeBonus ?? 0) + amount;
   unit.currentRange = unit.printedRange + unit.temporaryRangeBonus;
   return unit.currentRange;
+}
+
+/* v15 — Construct operation rules */
+function getOrthogonallyAdjacentUnits(source) {
+  if (!source) return [];
+
+  return GameState.units.filter((candidate) =>
+    candidate.id !== source.id &&
+    Math.abs(candidate.x - source.x) + Math.abs(candidate.y - source.y) === 1
+  );
+}
+
+function getEligibleConstructOperators(construct) {
+  if (!construct || !isConstruct(construct)) return [];
+
+  return getOrthogonallyAdjacentUnits(construct).filter((candidate) =>
+    candidate.owner === construct.owner &&
+    canBeConstructOperator(candidate) &&
+    !candidate.hasAttacked &&
+    !(typeof hasStatus === "function" &&
+      (hasStatus(candidate, StatusTypes.STUNNED) ||
+       hasStatus(candidate, StatusTypes.FROZEN)))
+  );
+}
+
+function canOperateConstruct(operator, construct) {
+  if (!operator || !construct || !isConstruct(construct)) return false;
+  return getEligibleConstructOperators(construct)
+    .some((candidate) => candidate.id === operator.id);
+}
+
+function constructHasLegalAttackTarget(construct) {
+  if (!construct || !isConstruct(construct) || GameState.gameOver) return false;
+  if (getEligibleConstructOperators(construct).length === 0) return false;
+
+  return (
+    findConstructAttackableUnits(construct).size > 0 ||
+    findConstructAttackableStronghold(construct) !== null
+  );
+}
+
+function findConstructAttackableUnits(construct) {
+  const targets = new Set();
+  if (!construct || !isConstruct(construct)) return targets;
+
+  for (const candidate of GameState.units) {
+    if (candidate.owner === construct.owner) continue;
+
+    const distance = Math.abs(candidate.x - construct.x) + Math.abs(candidate.y - construct.y);
+    const range = typeof getCurrentRange === "function"
+      ? getCurrentRange(construct)
+      : construct.currentRange;
+
+    if (distance > 0 && distance <= range && !isUnitProtected(construct, candidate)) {
+      targets.add(candidate.id);
+    }
+  }
+
+  return targets;
+}
+
+function findConstructAttackableStronghold(construct) {
+  if (!construct || !isConstruct(construct) || GameState.gameOver) return null;
+
+  const enemyPlayerId = construct.owner === 1 ? 2 : 1;
+  const strongholdY = enemyPlayerId === 2 ? -1 : BOARD_ROWS;
+  const range = typeof getCurrentRange === "function"
+    ? getCurrentRange(construct)
+    : construct.currentRange;
+
+  for (const column of [2, 3, 4]) {
+    const distance = Math.abs(construct.x - column) + Math.abs(construct.y - strongholdY);
+    if (
+      distance > 0 &&
+      distance <= range &&
+      !isStrongholdLaneProtected(construct, column, enemyPlayerId)
+    ) {
+      return enemyPlayerId;
+    }
+  }
+
+  return null;
+}
+
+function consumeConstructOperatorAttack(operator, construct) {
+  if (!canOperateConstruct(operator, construct)) return false;
+  operator.hasAttacked = true;
+  return true;
 }

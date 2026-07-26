@@ -22,7 +22,7 @@ function defaultCharacterUserValidator(unit, context = {}) {
 
   return Boolean(
     unit &&
-    unit.cardType === "Character" &&
+    canUseActions(unit) &&
     (playerId == null || unit.owner === playerId)
   );
 }
@@ -294,7 +294,7 @@ function auditActionAbilityRegistrations(cards = []) {
     if (seenObjects.has(value)) return;
     seenObjects.add(value);
 
-    if (value.cardType === "Action" || value.type === "Action") {
+    if (value.cardType === "Action" || isAction(value)) {
       const key =
         value.databaseId ??
         value.id ??

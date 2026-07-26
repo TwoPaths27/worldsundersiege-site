@@ -23,7 +23,7 @@ function renderHandCardPreview(card) {
 
   const stats = document.createElement("p");
   stats.textContent =
-    card.type === "Action"
+    isAction(card)
       ? `Action · Cost ${card.cost}`
       : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
         `RNG ${card.range} · SPD ${card.speed}`;
@@ -91,7 +91,7 @@ function createHandCard(card, player) {
     !GameState.priority.active ||
     GameState.priority.playerId === getInteractionPlayerId();
   const legalDuringPriority =
-    !GameState.priority.active || card.type === "Action";
+    !GameState.priority.active || isAction(card);
   const isPlayable =
     card.cost <= player.energy &&
     hasPriority &&
@@ -115,7 +115,7 @@ function createHandCard(card, player) {
   const cost=document.createElement("span"); cost.className="hand-card__cost"; cost.textContent=String(card.cost);
   const name=document.createElement("strong"); name.className="hand-card__name"; name.textContent=card.name;
   const stats=document.createElement("span"); stats.className="hand-card__stats";
-  if(card.type==="Action"){cardButton.classList.add("hand-card--action"); stats.textContent="ACTION";}
+  if(isAction(card)){cardButton.classList.add("hand-card--action"); stats.textContent="ACTION";}
   else{stats.textContent=`ATK ${card.attack} · HP ${card.hp} · RNG ${card.range} · SPD ${card.speed}`;}
   cardButton.append(cost,stats,name);
   cardButton.addEventListener("click",()=>selectCard(card.id));
@@ -147,7 +147,7 @@ function isChoosingActionUser() {
 
   return Boolean(
     card &&
-    card.type === "Action" &&
+    isAction(card) &&
     !GameState.pendingActionUserId &&
     player.energy >= card.cost &&
     getAbility(card)
@@ -159,7 +159,7 @@ function isChoosingActionTarget() {
 
   if (
     !card ||
-    card.type !== "Action" ||
+    !isAction(card) ||
     !GameState.pendingActionUserId
   ) {
     return false;
@@ -188,7 +188,7 @@ function getActionTargetMode(card) {
 function isEligibleActionTarget(target) {
   const card = getSelectedCard();
 
-  if (!card || card.type !== "Action") {
+  if (!card || !isAction(card)) {
     return false;
   }
 
@@ -246,7 +246,7 @@ function chooseActionUser(user) {
 
   if (
     !card ||
-    card.type !== "Action" ||
+    !isAction(card) ||
     !isEligibleActionUser(user)
   ) {
     return;
@@ -354,7 +354,7 @@ function commitSelectedAction(targetId = null) {
   const player = GameState.players[playerId];
   const card = getSelectedCard();
 
-  if (!player || !card || card.type !== "Action") {
+  if (!player || !card || !isAction(card)) {
     return false;
   }
 
@@ -570,7 +570,7 @@ function selectCard(cardId) {
     return;
   }
 
-  if (GameState.priority.active && card.type !== "Action") {
+  if (GameState.priority.active && !isAction(card)) {
     addLog("Only Action cards may be played while priority is open.");
     return;
   }
@@ -598,7 +598,7 @@ function selectCard(cardId) {
     addLog(
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
-  } else if (card.type === "Action") {
+  } else if (isAction(card)) {
   if (
     GameState.priority.active &&
     GameState.priority.playerId !== getInteractionPlayerId()
