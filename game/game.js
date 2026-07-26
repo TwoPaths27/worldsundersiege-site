@@ -212,13 +212,6 @@ function primeEndGameAudio() {
 
 initializeGame();
 
-function initializeGame() {
-  validateRequiredElements();
-  bindEvents();
-  renderGame();
-}
-
-
 function validateRequiredElements() {
   const missingElements = Object.entries(elements)
     .filter(([, element]) => !element)
@@ -359,77 +352,6 @@ function closeExitModal() {
   elements.exitModal.hidden = true;
   document.body.classList.remove("modal-open");
   elements.exitGameButton.focus();
-}
-
-function renderGame() {
-  renderStatusBar();
-  renderBattlefield();
-  renderSelectedUnitPanel();
-
-  const selectedCard = getSelectedCard();
-
-  if (selectedCard) {
-    renderHandCardPreview(selectedCard);
-  } else {
-    renderCardPreview();
-  }
-
-  renderStrongholds();
-  renderActionStacks();
-  renderHand();
-  renderGameLog();
-}
-
-
-function endTurn() {
-  if (
-  GameState.isAnimating ||
-  GameState.priority.active ||
-  GameState.priority.resolving ||
-  GameState.actionStack.length
-) {
-    addLog("Resolve the current Action stack before ending the turn.");
-    renderGame();
-    return;
-  }
-
-  const previousPlayer = GameState.activePlayer;
-  const nextPlayer = previousPlayer === 1 ? 2 : 1;
-
-  for (const unit of GameState.units) {
-    if (unit.owner === previousPlayer && unit.temporaryRangeBonus) {
-      unit.temporaryRangeBonus = 0;
-      unit.currentRange = unit.printedRange;
-    }
-  }
-
-  GameState.activePlayer = nextPlayer;
-  GameState.selectedUnitId = null;
-  GameState.selectedCardId = null;
-  GameState.reachableSpaces = new Map();
-
-  if (nextPlayer === 1) {
-    GameState.turn += 1;
-  }
-
-  const player = GameState.players[nextPlayer];
-
-  player.maxEnergy = Math.min(player.maxEnergy + 1, 10);
-  player.energy = player.maxEnergy;
-
-  for (const unit of GameState.units) {
-    if (unit.owner === nextPlayer) {
-      unit.remainingSpeed = unit.currentSpeed;
-      unit.hasAttacked = false;
-    }
-  }
-
-  addLog(
-    `Player ${previousPlayer} ended their turn. ` +
-      `Player ${nextPlayer} is now active.`
-  );
-
-  renderGame();
 }
 
 function renderGameLog() {
