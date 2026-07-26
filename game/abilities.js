@@ -81,12 +81,38 @@ function isEligibleAbilityTarget(source, target, context = {}) {
   return Boolean(ability && ability.isEligibleTarget(target, context) !== false);
 }
 
+
+
+function createAbilityContext(overrides = {}) {
+  const owner = overrides.owner ?? overrides.playerId ?? overrides.stackEntry?.owner;
+  const player = owner ? GameState.players[owner] : null;
+  const opponent = owner ? GameState.players[owner===1?2:1] : null;
+  return {
+    game: GameState,
+    owner,
+    playerId: owner,
+    player,
+    opponent,
+    source: null,
+    stackEntry: null,
+    card: null,
+    user: null,
+    target: null,
+    ...overrides
+  };
+}
+
 function executeAbility(source, context = {}) {
+  context = createAbilityContext(context);
   const ability = getAbility(source);
 
   if (!ability) {
     console.warn("Unknown ability.", source);
     return { resolved: false, reason: "unknown-ability" };
+  }
+
+  if (ability.targetMode !== 'none' && context.target && ability.isEligibleTarget && !ability.isEligibleTarget(context.target, context)) {
+    return {resolved:false, reason:'illegal-target'};
   }
 
   const result = ability.resolve({
@@ -157,19 +183,4 @@ const Abilities = {
 
 function triggerAbilities(eventType, context = {}) {
   return emitGameEvent(eventType, context, { source: context.source ?? null });
-}
-
-
-function createAbilityContext(base = {}) {
-  return {
-    game: GameState,
-    stackEntry: null,
-    card: null,
-    owner: null,
-    player: null,
-    opponent: null,
-    user: null,
-    target: null,
-    ...base,
-  };
 }
