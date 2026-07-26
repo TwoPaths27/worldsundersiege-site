@@ -244,10 +244,7 @@ function resolveTakingAim(entry, user) {
     return;
   }
 
-  user.temporaryRangeBonus =
-    (user.temporaryRangeBonus ?? 0) + 2;
-  user.currentRange =
-    user.printedRange + user.temporaryRangeBonus;
+  applyTemporaryRangeBonus(user, 2);
 
   addLog(
     `${entry.card.name} resolves. ${user.name} gains +2 Range until the end of the turn.`
