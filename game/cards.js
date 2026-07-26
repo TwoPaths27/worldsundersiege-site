@@ -43,3 +43,109 @@ function renderHandCardPreview(card) {
     elements.cardPreview.append(details);
   }
 }
+
+function renderHand() {
+  const player = getActivePlayer();
+  const cardCount = player.hand.length;
+
+  const handHeading = elements.handPanel.querySelector(".hand-panel__header h2");
+
+  if (handHeading) {
+    handHeading.textContent = `${player.name} Hand`;
+  }
+
+  // Kept for screen readers and older HTML builds. The compact desktop
+  // layout visually hides this duplicate owner line.
+  elements.handOwnerLabel.textContent = player.name;
+  elements.handCount.textContent =
+    `${cardCount} ${cardCount === 1 ? "card" : "cards"}`;
+
+  elements.hand.replaceChildren();
+
+  if (cardCount === 0) {
+    const message = document.createElement("p");
+
+    message.textContent = "Your hand is empty.";
+    message.style.color = "#bfbfbf";
+
+    elements.hand.appendChild(message);
+    return;
+  }
+
+  for (const card of player.hand) {
+    const cardButton = document.createElement("button");
+
+    cardButton.type = "button";
+    cardButton.className = "hand-card";
+    cardButton.dataset.cardId = card.id;
+
+    const isSelected = GameState.selectedCardId === card.id;
+    const isPlayable = card.cost <= player.energy;
+
+    cardButton.classList.toggle("is-selected", isSelected);
+    cardButton.classList.toggle("is-playable", isPlayable);
+    cardButton.classList.toggle("is-unplayable", !isPlayable);
+    cardButton.setAttribute("aria-pressed", String(isSelected));
+    cardButton.setAttribute(
+      "aria-label",
+      `${card.name}, cost ${card.cost}, ${
+        isPlayable ? "playable" : `needs ${card.cost - player.energy} more Energy`
+      }`
+    );
+    cardButton.title = isPlayable
+      ? `${card.name} can be played for ${card.cost} Energy`
+      : `${card.name} requires ${card.cost} Energy; you have ${player.energy}`;
+
+    if (card.cardImage) {
+      cardButton.classList.add("hand-card--art");
+      cardButton.style.backgroundImage =
+        `linear-gradient(to top, rgba(0, 0, 0, 0.76), rgba(0, 0, 0, 0.03) 64%), ` +
+        `url("${card.cardImage}")`;
+      cardButton.style.backgroundPosition = "center";
+      cardButton.style.backgroundRepeat = "no-repeat";
+      cardButton.style.backgroundSize = "cover";
+    }
+
+    const cost = document.createElement("span");
+    cost.className = "hand-card__cost";
+    cost.textContent = String(card.cost);
+
+    const name = document.createElement("strong");
+    name.className = "hand-card__name";
+    name.textContent = card.name;
+
+    const stats = document.createElement("span");
+    stats.className = "hand-card__stats";
+
+    if (card.type === "Action") {
+      cardButton.classList.add("hand-card--action");
+      stats.textContent = "ACTION";
+    } else {
+      stats.textContent =
+        `ATK ${card.attack} · HP ${card.hp} · ` +
+        `RNG ${card.range} · SPD ${card.speed}`;
+    }
+
+    cardButton.append(cost, stats, name);
+
+    cardButton.addEventListener("click", () => {
+      selectCard(card.id);
+    });
+
+    cardButton.addEventListener("mouseenter", () => {
+      renderHandCardPreview(card);
+    });
+
+    cardButton.addEventListener("mouseleave", () => {
+      const selectedCard = getSelectedCard();
+
+      if (selectedCard) {
+        renderHandCardPreview(selectedCard);
+      } else {
+        renderCardPreview();
+      }
+    });
+
+    elements.hand.appendChild(cardButton);
+  }
+}
