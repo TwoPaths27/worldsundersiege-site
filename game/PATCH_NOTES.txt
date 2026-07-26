@@ -1,14 +1,24 @@
-Worlds Under Siege — UI Patch v6
+Worlds Under Siege — Priority UI Patch v6.1
 
-Changes:
-- Moved the Priority prompt and Pass Priority button out of the battlefield overlay.
-- Placed the Priority panel directly above Game Chat in the left HUD.
-- Long priority instructions now wrap downward inside a stable box.
-- The Pass Priority button fills the width beneath the instruction.
-- Added desktop and mobile layout rules.
-- Updated the stylesheet cache query to game.css?v=29.
-- Included the current v5 event and Action-engine files.
-- All JavaScript files passed `node --check`.
+Hotfix:
+- Added the missing events.js script tag to index.html.
+- Moved game-state.js before events.js and abilities.js.
+- Ensured events.js loads before match.js calls registerTriggersForSource().
+- Increased cache query versions for updated engine files.
 
-Replace index.html, game.css, events.js, abilities.js, cards.js, and priority.js.
-Then hard-refresh with Ctrl+Shift+R.
+Required order now:
+1. card-database.js
+2. card-data.js
+3. game-state.js
+4. events.js
+5. abilities.js
+6. rules/audio/ui/animation
+7. priority.js
+8. battlefield.js
+9. cards.js
+10. match.js
+11. game.js
+
+The favicon.ico 404 warning is unrelated and does not stop the game.
+
+After replacing the files, hard-refresh with Ctrl+Shift+R.
