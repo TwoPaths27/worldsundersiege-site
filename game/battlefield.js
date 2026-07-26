@@ -1000,72 +1000,7 @@ addLog(
 
   renderGame();
 }
-function selectCard(cardId) {
-  if (GameState.gameOver || GameState.isAnimating) {
-    return;
-  }
 
-  const player = getActivePlayer();
-
-  const card = player.hand.find(
-    (handCard) => handCard.id === cardId
-  );
-
-  if (!card) {
-    return;
-  }
-
-  if (GameState.selectedCardId === card.id) {
-    GameState.selectedCardId = null;
-    GameState.pendingActionUserId = null;
-    GameState.pendingActionTargetId = null;
-    GameState.actionSelectionMessage =
-  GameState.priority.active
-    ? `${GameState.players[GameState.priority.playerId].name} has priority. Play an Action or pass.`
-    : "";
-    renderGame();
-    return;
-  }
-
-  GameState.selectedUnitId = null;
-  GameState.reachableSpaces = new Map();
-  GameState.attackableUnitIds = new Set();
-  GameState.attackableStrongholdPlayerId = null;
-  GameState.selectedCardId = card.id;
-  GameState.actionSelectionMessage = "";
-
-  if (player.energy < card.cost) {
-    addLog(
-      `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
-    );
-  } else if (card.type === "Action") {
-  if (
-    GameState.priority.active &&
-    GameState.priority.playerId !== getInteractionPlayerId()
-  ) {
-    addLog("That player does not currently have priority.");
-    GameState.selectedCardId = null;
-  } else if (!getEligibleActionUsers().length) {
-    addLog(`${player.name} must control a Character to play ${card.name}.`);
-  } else {
-    GameState.pendingActionUserId = null;
-    GameState.pendingActionTargetId = null;
-    GameState.actionSelectionMessage =
-      `Choose who you wish to use ${card.name}.`;
-
-    addLog(
-      `${card.name} selected. Choose who you wish to use the Action.`
-    );
-  }
-
-  } else {
-    addLog(
-      `${card.name} selected. Choose a highlighted recruiting space.`
-    );
-  }
-
-  renderGame();
-}
 
 async function recruitSelectedCard(x, y) {
   if (GameState.isAnimating) {
