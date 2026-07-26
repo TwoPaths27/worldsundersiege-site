@@ -363,7 +363,7 @@ function createSelectedUnitControls(unit) {
   );
 
   const canMove = !isConstruct(unit) && unit.remainingSpeed > 0;
-  const canAttack = isConstruct(unit)
+  const attackAvailable = isConstruct(unit)
     ? constructHasLegalAttackTarget(unit)
     : canAttack(unit) && !unit.hasAttacked && unitHasLegalAttackTarget(unit);
 
@@ -442,7 +442,7 @@ function createSelectedUnitControls(unit) {
     action: "attack",
     isActive: GameState.selectedUnitAction === "attack" ||
       GameState.selectedUnitAction === "choose-construct-operator",
-    isDisabled: !canAttack,
+    isDisabled: !attackAvailable,
     modifierState: getStatModifierState(
       unit.currentAttack,
       unit.printedAttack

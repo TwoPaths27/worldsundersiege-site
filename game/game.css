@@ -6277,25 +6277,23 @@ body::after {
 }
 
 
+
 /* =========================================================
-   v16.1 Selection / Priority UI hotfix
+   v16.2 Selection / Priority UI correction
 ========================================================= */
 
-/* Keep the priority control away from the enemy Stronghold. */
-.action-prompt {
-  top: auto !important;
-  bottom: calc(var(--hand-height, 118px) + 12px);
-  left: 50%;
+/* The prompt is already placed in the left side panel between
+   Selected Unit and Game Chat. Keep it in normal document flow. */
+.side-panel > .action-prompt {
+  position: static;
+  inset: auto;
+  left: auto;
+  top: auto;
   right: auto;
-  max-width: min(620px, calc(100vw - 24px));
-  transform: translateX(-50%);
-  z-index: 650;
-}
-
-@media (max-width: 760px) {
-  .action-prompt {
-    bottom: 12px;
-    width: calc(100vw - 24px);
-    border-radius: 12px;
-  }
+  bottom: auto;
+  width: auto;
+  max-width: none;
+  transform: none;
+  border-radius: 12px;
+  z-index: auto;
 }
