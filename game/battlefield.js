@@ -1209,6 +1209,12 @@ async function recruitSelectedCard(x, y) {
     return false;
   }
 
+  if (playerControlsUniqueCopy(card, GameState.activePlayer)) {
+    addLog(`${player.name} already controls ${card.name}. Characters and Animals are unique unless an effect says otherwise.`);
+    renderGame();
+    return false;
+  }
+
   if (!recruitingSpaces.has(destinationKey)) {
     addLog(
       `Choose one of ${player.name}'s highlighted recruiting spaces.`
@@ -1335,6 +1341,43 @@ async function recruitSelectedCard(x, y) {
     setInteractionLock(false);
   }
 }
+
+
+function getUniqueCardIdentity(card) {
+  return (
+    card?.gameplayId ??
+    card?.databaseId ??
+    card?.sourceCard?.gameplayId ??
+    card?.sourceCard?.databaseId ??
+    card?.id ??
+    null
+  );
+}
+
+function isUniqueBattlefieldCard(card) {
+  return isCharacter(card) || isAnimal(card);
+}
+
+function isCardCurrentlyUnique(card) {
+  return (
+    isUniqueBattlefieldCard(card) &&
+    card?.isUnique !== false &&
+    card?.sourceCard?.isUnique !== false
+  );
+}
+
+function playerControlsUniqueCopy(card, playerId) {
+  if (!isCardCurrentlyUnique(card)) return false;
+  const identity = getUniqueCardIdentity(card);
+  if (!identity) return false;
+
+  return GameState.units.some((unit) =>
+    unit.owner === playerId &&
+    isCardCurrentlyUnique(unit) &&
+    getUniqueCardIdentity(unit) === identity
+  );
+}
+
 
 function createRecruitGhost(card, owner) {
   const ghost = document.createElement("div");
