@@ -17,7 +17,13 @@ function initializeStrongholdPermanents() {
       name: "Enemy Stronghold",
       effectText: "",
     };
-    const stronghold = normalizeCard({ ...base, type: CardTypes.STRONGHOLD, types: [CardTypes.STRONGHOLD] });
+    const stronghold = {
+      ...base,
+      type: CardTypes.STRONGHOLD,
+      types: [CardTypes.STRONGHOLD],
+    };
+
+    normalizeCard(stronghold);
     stronghold.id = `${base.id}-player-${playerId}`;
     stronghold.owner = playerId;
     stronghold.controller = playerId;
@@ -31,10 +37,39 @@ function initializeGame() {
   bindEvents();
 
   for (const unit of GameState.units) {
+    /*
+     * GameState.units is the authoritative battlefield Unit collection.
+     * Older saved/setup objects may predate the unified card-type model, so
+     * ensure they have a Unit type before entering the permanent lifecycle.
+     */
+    normalizeCard(unit);
+
+    const unitType =
+      typeof CardTypes !== "undefined"
+        ? CardTypes.UNIT
+        : "unit";
+
+    unit.type ??= unitType;
+
+    const unitTypes = Array.isArray(unit.types)
+      ? unit.types
+      : [];
+
+    if (!unitTypes.includes(unitType)) {
+      unitTypes.push(unitType);
+    }
+
+    unit.types = unitTypes;
+
     if (typeof normalizeUnitBaseStats === "function") {
       normalizeUnitBaseStats(unit);
     }
-    enterPermanent(unit, { owner: unit.owner, controller: unit.owner, cause: "initial-battlefield" });
+
+    enterPermanent(unit, {
+      owner: unit.owner,
+      controller: unit.controller ?? unit.owner,
+      cause: "initial-battlefield",
+    });
   }
 
   initializeStrongholdPermanents();
