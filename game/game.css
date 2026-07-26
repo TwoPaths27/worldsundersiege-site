@@ -6275,3 +6275,27 @@ body::after {
   box-shadow: 0 0 18px rgba(255, 196, 48, .72);
   cursor: pointer;
 }
+
+
+/* =========================================================
+   v16.1 Selection / Priority UI hotfix
+========================================================= */
+
+/* Keep the priority control away from the enemy Stronghold. */
+.action-prompt {
+  top: auto !important;
+  bottom: calc(var(--hand-height, 118px) + 12px);
+  left: 50%;
+  right: auto;
+  max-width: min(620px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  z-index: 650;
+}
+
+@media (max-width: 760px) {
+  .action-prompt {
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    border-radius: 12px;
+  }
+}

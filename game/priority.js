@@ -29,6 +29,18 @@ function beginPriorityWindow({
   GameState.priority.openedAt = Date.now();
   GameState.priority.resolving = false;
 
+  // Do not allow a stale recruit/equipment selection to remain active under
+  // a newly opened priority window. Action-card selection is handled by the
+  // priority flow and is therefore preserved.
+  const selectedCard =
+    typeof getSelectedCard === "function" ? getSelectedCard() : null;
+
+  if (selectedCard && !(typeof isAction === "function" && isAction(selectedCard))) {
+    GameState.selectedCardId = null;
+    GameState.pendingActionUserId = null;
+    GameState.pendingActionTargetId = null;
+  }
+
   if (event !== null) {
     setPendingEvent(event);
   }

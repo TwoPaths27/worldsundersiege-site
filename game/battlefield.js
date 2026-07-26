@@ -601,6 +601,7 @@ function createBattlefieldCell(x, y) {
     GameState.activePlayer
   );
   const canRecruitSelectedCard =
+    !GameState.priority.active &&
     selectedCard &&
     isBattlefieldCard(selectedCard) &&
     getActivePlayer().energy >= selectedCard.cost;
