@@ -11,7 +11,20 @@
 function initializeGame() {
   validateRequiredElements();
   bindEvents();
-  for (const unit of GameState.units) registerTriggersForSource(unit);
+
+  for (const unit of GameState.units) {
+    registerTriggersForSource(unit);
+  }
+
+  emitGameEvent(
+    "initialBattlefieldReady",
+    {
+      units: [...GameState.units],
+      activePlayer: GameState.activePlayer,
+    },
+    { source: GameState }
+  );
+
   emitGameEvent("matchStarted", { game: GameState, activePlayer: GameState.activePlayer });
   emitGameEvent("turnStarted", { playerId: GameState.activePlayer, turn: GameState.turn });
   renderGame();

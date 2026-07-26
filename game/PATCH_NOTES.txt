@@ -1,21 +1,20 @@
-Worlds Under Siege — Simultaneous Trigger Ordering Patch v9
+Worlds Under Siege — Trigger Lifecycle Patch v10
 
-Focus: deterministic ordering for multiple triggers caused by one event.
+Focus: automatic trigger registration and cleanup as units enter and leave play.
 
 Changes:
-- Trigger conditions are evaluated first, before any matching trigger enters the stack.
-- Matching triggers are collected into one simultaneous-trigger batch.
-- Added APNAP ordering:
-  Active-player triggers enter first, then non-active-player triggers.
-- Registration order is preserved within each owner group.
-- Unowned/global triggers enter after player-owned triggers.
-- Only one priority window opens after the whole trigger batch is stacked.
-- Prevents later triggers from resetting priority opened by earlier triggers.
-- Added openPriorityForQueuedTriggers().
-- queueTriggeredAbility() now supports openPriority:false for batch placement.
-- Trigger stack entries record originalEventId for debugging.
-- Priority text reports how many simultaneous triggers entered the stack.
-- Updated cache versions for events.js and priority.js.
-- All JavaScript files passed `node --check`.
+- Events now snapshot matching trigger registrations when the event is created.
+- A source can still produce its own death/leave-play trigger even when it is
+  unregistered immediately after leaving the battlefield.
+- destroyUnit() now emits:
+    1. unitLeavingPlay
+    2. unitDestroyed
+    3. unitLeftPlay
+- destroyUnit() unregisters all triggers belonging to the removed unit.
+- Recruited units register their triggers before enter-play events are emitted.
+- Added unitEnteredPlay while preserving the existing unitSummoned event.
+- Added initialBattlefieldReady after starting units register their triggers.
+- Updated cache versions for events.js, rules.js, battlefield.js, and match.js.
+- All included JavaScript files passed `node --check`.
 
 Replace all included files and hard-refresh with Ctrl+Shift+R.

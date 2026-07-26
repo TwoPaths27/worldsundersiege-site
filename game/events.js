@@ -69,6 +69,9 @@ function emitGameEvent(type, payload = {}, options = {}) {
     timestamp: Date.now(),
     queuedAt: Date.now(),
     dispatchedAt: null,
+    triggerSnapshot: [
+      ...GameTriggerRegistry.values(),
+    ].filter((trigger) => trigger.eventType === type.trim()),
     cancelled: false,
     stopPropagation: false,
     cancel() { this.cancelled = true; },
@@ -328,8 +331,13 @@ function getSimultaneousTriggerOrder(triggerRecords) {
 function processRegisteredTriggers(event) {
   const eligibleTriggers = [];
 
-  for (const trigger of [...GameTriggerRegistry.values()]) {
-    if (trigger.eventType !== event.type) continue;
+  const triggerCandidates =
+    event.triggerSnapshot ??
+    [...GameTriggerRegistry.values()].filter(
+      (trigger) => trigger.eventType === event.type
+    );
+
+  for (const trigger of triggerCandidates) {
 
     const context = buildTriggerContext(trigger, event);
 

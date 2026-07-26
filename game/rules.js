@@ -120,50 +120,88 @@ function canUnitRetaliate(attacker, defender) {
 }
 
 function applyUnitCombatDamage(attacker, defender, canRetaliate) {
-  emitGameEvent("combatStarted", { attacker, defender, canRetaliate }, { source: attacker });
-  emitGameEvent("beforeUnitDamage", { source: attacker, target: defender, amount: attacker.currentAttack }, { source: attacker });
   defender.currentHP -= attacker.currentAttack;
-  emitGameEvent("unitDamaged", { source: attacker, target: defender, amount: attacker.currentAttack, remainingHP: defender.currentHP }, { source: attacker });
 
   if (canRetaliate) {
-    emitGameEvent("beforeUnitDamage", { source: defender, target: attacker, amount: defender.currentAttack, retaliation: true }, { source: defender });
     attacker.currentHP -= defender.currentAttack;
-    emitGameEvent("unitDamaged", { source: defender, target: attacker, amount: defender.currentAttack, remainingHP: attacker.currentHP, retaliation: true }, { source: defender });
   }
 
   attacker.hasAttacked = true;
 
-  const result = {
+  return {
     attackerDestroyed: attacker.currentHP <= 0,
     defenderDestroyed: defender.currentHP <= 0,
   };
-  emitGameEvent("combatResolved", { attacker, defender, ...result }, { source: attacker });
-  return result;
 }
 
-function destroyUnit(unit) {
+function destroyUnit(unit, options = {}) {
   if (!unit || !GameState.units.some((candidate) => candidate.id === unit.id)) {
     return false;
   }
 
-  emitGameEvent("beforeUnitDestroyed", { unit, owner: unit.owner }, { source: unit });
-  GameState.players[unit.owner].discardCount += 1;
-  GameState.units = GameState.units.filter((candidate) => candidate.id !== unit.id);
+  const source = options.source ?? unit;
+  const cause = options.cause ?? "destroyed";
+  const owner = GameState.players[unit.owner] ?? null;
+
+  emitGameEvent(
+    "unitLeavingPlay",
+    {
+      unit,
+      ownerId: unit.owner,
+      cause,
+      source,
+    },
+    { source }
+  );
+
+  if (owner) {
+    owner.discardCount = (owner.discardCount ?? 0) + 1;
+  }
+
+  GameState.units = GameState.units.filter(
+    (candidate) => candidate.id !== unit.id
+  );
 
   if (GameState.selectedUnitId === unit.id) {
     GameState.selectedUnitId = null;
   }
 
-  emitGameEvent("unitDestroyed", { unit, owner: unit.owner }, { source: unit });
+  /*
+   * emitGameEvent() snapshots matching triggers when the event is created.
+   * This allows the destroyed unit's own death trigger to enter the stack
+   * even though its live trigger registrations are removed immediately after.
+   */
+  emitGameEvent(
+    "unitDestroyed",
+    {
+      unit,
+      ownerId: unit.owner,
+      cause,
+      source,
+    },
+    { source }
+  );
+
+  unregisterTriggersForSource(unit);
+
+  emitGameEvent(
+    "unitLeftPlay",
+    {
+      unit,
+      ownerId: unit.owner,
+      cause,
+      source,
+    },
+    { source }
+  );
+
   return true;
 }
 
 function applyStrongholdDamage(targetPlayerId, amount) {
   const targetPlayer = GameState.players[targetPlayerId];
   const damage = Math.max(0, Number(amount) || 0);
-  emitGameEvent("beforeStrongholdDamage", { targetPlayerId, amount: damage }, { source: targetPlayerId });
   targetPlayer.strongholdHP = Math.max(0, targetPlayer.strongholdHP - damage);
-  emitGameEvent("strongholdDamaged", { targetPlayerId, amount: damage, remainingHP: targetPlayer.strongholdHP }, { source: targetPlayerId });
 
   return {
     damage,

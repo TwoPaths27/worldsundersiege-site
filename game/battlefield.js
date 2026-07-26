@@ -305,7 +305,6 @@ function setSelectedUnitAction(action) {
     !unit ||
     GameState.gameOver ||
     GameState.isAnimating ||
-    !canInteractWithBattlefield() ||
     (action !== "move" && action !== "attack")
   ) {
     return;
@@ -352,9 +351,8 @@ function createSelectedUnitControls(unit) {
     `${unit.name} statistics and actions`
   );
 
-  const battlefieldEnabled = canInteractWithBattlefield();
-  const canMove = battlefieldEnabled && unit.remainingSpeed > 0;
-  const canAttack = battlefieldEnabled && !unit.hasAttacked;
+  const canMove = unit.remainingSpeed > 0;
+  const canAttack = !unit.hasAttacked;
 
   const topRow = document.createElement("div");
   topRow.className =
@@ -915,12 +913,6 @@ function handleBattlefieldClick(x, y) {
     }
   }
 
-  if (GameState.priority.active) {
-    addLog("Play an Action or pass priority before using the battlefield.");
-    renderGame();
-    return;
-  }
-
   if (selectedCard) {
     recruitSelectedCard(x, y);
     return;
@@ -1006,11 +998,7 @@ function clearSelection() {
 }
 
 function selectUnit(unitId) {
-  if (
-    GameState.gameOver ||
-    GameState.isAnimating ||
-    !canInteractWithBattlefield()
-  ) {
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -1044,11 +1032,7 @@ addLog(
 
 
 async function recruitSelectedCard(x, y) {
-  if (GameState.isAnimating || !canInteractWithBattlefield()) {
-    if (GameState.priority.active) {
-      addLog("Units cannot be recruited while priority is open.");
-      renderGame();
-    }
+  if (GameState.isAnimating) {
     return;
   }
 
@@ -1144,7 +1128,30 @@ async function recruitSelectedCard(x, y) {
     GameState.nextUnitId += 1;
     GameState.units.push(unit);
     registerTriggersForSource(unit);
-    emitGameEvent("unitSummoned", { unit, card, playerId: GameState.activePlayer, x, y }, { source: unit });
+
+    emitGameEvent(
+      "unitEnteredPlay",
+      {
+        unit,
+        card,
+        playerId: GameState.activePlayer,
+        x,
+        y,
+      },
+      { source: unit }
+    );
+
+    emitGameEvent(
+      "unitSummoned",
+      {
+        unit,
+        card,
+        playerId: GameState.activePlayer,
+        x,
+        y,
+      },
+      { source: unit }
+    );
     GameState.selectedCardId = null;
     GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
@@ -1197,14 +1204,6 @@ function getRecruitingSpacesForPlayer(playerId) {
 
 
 function moveSelectedUnit(destinationX, destinationY) {
-  if (!canInteractWithBattlefield()) {
-    if (GameState.priority.active) {
-      addLog("Units cannot move while priority is open.");
-      renderGame();
-    }
-    return;
-  }
-
   const unit = getSelectedUnit();
 
   if (!unit) {
@@ -1259,15 +1258,7 @@ function moveSelectedUnit(destinationX, destinationY) {
 function handleStrongholdClick(targetPlayerId) {
   clearAttackHoverState();
 
-  if (
-    GameState.gameOver ||
-    GameState.isAnimating ||
-    !canInteractWithBattlefield()
-  ) {
-    if (GameState.priority.active) {
-      addLog("Strongholds cannot be attacked while priority is open.");
-      renderGame();
-    }
+  if (GameState.gameOver || GameState.isAnimating) {
     return;
   }
 
@@ -1300,10 +1291,6 @@ function handleStrongholdClick(targetPlayerId) {
 }
 
 async function attackStronghold(attacker, targetPlayerId) {
-  if (!canInteractWithBattlefield()) {
-    return;
-  }
-
   const targetStronghold = targetPlayerId === 1
     ? elements.playerStronghold
     : elements.enemyStronghold;
@@ -1413,14 +1400,6 @@ async function endGame(winnerPlayerId, losingPlayerId) {
 
 
 async function attackUnit(attacker, defender) {
-  if (!canInteractWithBattlefield()) {
-    if (GameState.priority.active) {
-      addLog("Units cannot attack while priority is open.");
-      renderGame();
-    }
-    return;
-  }
-
   if (GameState.isAnimating || !attacker || !defender) {
     return;
   }
