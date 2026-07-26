@@ -812,7 +812,7 @@ function createUnitToken(unit) {
   );
   token.classList.toggle(
     "is-action-target-choice",
-    isChoosingActionTarget()
+    isChoosingActionTarget() && isEligibleActionTarget(unit)
   );
   token.classList.toggle(
     "is-attack-target",
@@ -895,7 +895,7 @@ function handleBattlefieldClick(x, y) {
     }
 
     if (getActionTargetMode(selectedCard) === "unit") {
-      if (clickedUnit) {
+      if (clickedUnit && isEligibleActionTarget(clickedUnit)) {
         commitSelectedAction(clickedUnit.id);
       } else {
         addLog("Choose a highlighted Unit as the Action target.");
@@ -1120,6 +1120,8 @@ async function recruitSelectedCard(x, y) {
 
     GameState.nextUnitId += 1;
     GameState.units.push(unit);
+    registerTriggersForSource(unit);
+    emitGameEvent("unitSummoned", { unit, card, playerId: GameState.activePlayer, x, y }, { source: unit });
     GameState.selectedCardId = null;
     GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
@@ -1199,6 +1201,7 @@ function moveSelectedUnit(destinationX, destinationY) {
   unit.x = destinationX;
   unit.y = destinationY;
   unit.remainingSpeed -= movementCost;
+  emitGameEvent("unitMoved", { unit, from: { x: previousX, y: previousY }, to: { x: destinationX, y: destinationY }, movementCost }, { source: unit });
 
   addLog(
     `${unit.name} moved from ` +

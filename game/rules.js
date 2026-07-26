@@ -120,18 +120,25 @@ function canUnitRetaliate(attacker, defender) {
 }
 
 function applyUnitCombatDamage(attacker, defender, canRetaliate) {
+  emitGameEvent("combatStarted", { attacker, defender, canRetaliate }, { source: attacker });
+  emitGameEvent("beforeUnitDamage", { source: attacker, target: defender, amount: attacker.currentAttack }, { source: attacker });
   defender.currentHP -= attacker.currentAttack;
+  emitGameEvent("unitDamaged", { source: attacker, target: defender, amount: attacker.currentAttack, remainingHP: defender.currentHP }, { source: attacker });
 
   if (canRetaliate) {
+    emitGameEvent("beforeUnitDamage", { source: defender, target: attacker, amount: defender.currentAttack, retaliation: true }, { source: defender });
     attacker.currentHP -= defender.currentAttack;
+    emitGameEvent("unitDamaged", { source: defender, target: attacker, amount: defender.currentAttack, remainingHP: attacker.currentHP, retaliation: true }, { source: defender });
   }
 
   attacker.hasAttacked = true;
 
-  return {
+  const result = {
     attackerDestroyed: attacker.currentHP <= 0,
     defenderDestroyed: defender.currentHP <= 0,
   };
+  emitGameEvent("combatResolved", { attacker, defender, ...result }, { source: attacker });
+  return result;
 }
 
 function destroyUnit(unit) {
@@ -139,6 +146,7 @@ function destroyUnit(unit) {
     return false;
   }
 
+  emitGameEvent("beforeUnitDestroyed", { unit, owner: unit.owner }, { source: unit });
   GameState.players[unit.owner].discardCount += 1;
   GameState.units = GameState.units.filter((candidate) => candidate.id !== unit.id);
 
@@ -146,13 +154,16 @@ function destroyUnit(unit) {
     GameState.selectedUnitId = null;
   }
 
+  emitGameEvent("unitDestroyed", { unit, owner: unit.owner }, { source: unit });
   return true;
 }
 
 function applyStrongholdDamage(targetPlayerId, amount) {
   const targetPlayer = GameState.players[targetPlayerId];
   const damage = Math.max(0, Number(amount) || 0);
+  emitGameEvent("beforeStrongholdDamage", { targetPlayerId, amount: damage }, { source: targetPlayerId });
   targetPlayer.strongholdHP = Math.max(0, targetPlayer.strongholdHP - damage);
+  emitGameEvent("strongholdDamaged", { targetPlayerId, amount: damage, remainingHP: targetPlayer.strongholdHP }, { source: targetPlayerId });
 
   return {
     damage,

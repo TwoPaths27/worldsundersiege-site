@@ -69,6 +69,7 @@ function passPriority() {
   }
 
   GameState.priority.passes += 1;
+  emitGameEvent("priorityPassed", { playerId: passingPlayer, passes: GameState.priority.passes }, { source: passingPlayer });
 
   addLog(`${GameState.players[passingPlayer].name} passes priority.`);
 
@@ -123,8 +124,10 @@ async function beginResolveTopAction() {
     );
   }
 
-  resolveActionEffect(entry);
+  emitGameEvent("beforeAbilityResolved", { entry }, { source: entry.card });
+  const resolution = resolveActionEffect(entry);
   entry.status = "resolved";
+  emitGameEvent("abilityResolved", { entry, resolution }, { source: entry.card });
 
   renderGame();
 
@@ -132,6 +135,7 @@ async function beginResolveTopAction() {
 
   GameState.players[entry.owner].discardCount += 1;
   GameState.actionStack.pop();
+  emitGameEvent("actionRemovedFromStack", { entry }, { source: entry.card });
   GameState.priority.resolving = false;
 
   if (GameState.actionStack.length) {
@@ -141,6 +145,7 @@ async function beginResolveTopAction() {
     );
   } else {
     closePriorityWindow();
+    emitGameEvent("stackResolved", { lastEntry: entry }, { source: entry.card });
     resumePendingEvent();
   }
 
@@ -224,33 +229,27 @@ function isResolvingActionStack() {
 }
 
 function resolveActionEffect(entry) {
-  const actionId = entry.card.databaseId ?? entry.card.id;
   const user = getUnitById(entry.userId);
+  const target = entry.targetId ? getUnitById(entry.targetId) : null;
+  const player = GameState.players[entry.owner];
+  const opponent = GameState.players[entry.owner === 1 ? 2 : 1];
+  const abilitySource = entry.abilityId || entry.card;
 
-  switch (actionId) {
-    case "BOA-146":
-      resolveTakingAim(entry, user);
-      break;
+  const result = executeAbility(abilitySource, {
+    game: GameState,
+    stackEntry: entry,
+    card: entry.card,
+    playerId: entry.owner,
+    player,
+    opponent,
+    user,
+    target,
+  });
 
-    default:
-      addLog(`${entry.card.name} resolves.`);
-      break;
+  if (!result?.resolved && result?.reason === "unknown-ability") {
+    addLog(`${entry.card.name} resolves without an implemented effect.`);
   }
-}
-
-function resolveTakingAim(entry, user) {
-  if (!user) {
-    addLog(`${entry.card.name} resolves without a User.`);
-    return;
-  }
-
-  applyTemporaryRangeBonus(user, 2);
-
-  addLog(
-    `${entry.card.name} resolves. ${user.name} gains +2 Range until the end of the turn.`
-  );
-
-  showUnitActionFeedback(user, "+2 RNG");
+  return result;
 }
 
 function showUnitActionFeedback(unit, message) {

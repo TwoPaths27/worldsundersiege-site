@@ -22,6 +22,8 @@ function createCard({
   tileImage = null,
   effectText = "",
   databaseId = null,
+  abilityId = null,
+  targetMode = null,
 }) {
   return {
     id,
@@ -36,6 +38,8 @@ function createCard({
     tileImage,
     effectText,
     databaseId,
+    abilityId,
+    targetMode,
   };
 }
 
@@ -141,6 +145,8 @@ function createCardFromDatabase(cardId, overrides = {}) {
     tileImage: getDatabaseTilePath(entry),
     effectText: entry.effectText ?? "",
     databaseId: entry.id,
+    abilityId: entry.abilityId ?? entry.ability ?? null,
+    targetMode: entry.targetMode ?? null,
     ...overrides,
   });
 }
@@ -217,7 +223,7 @@ function createPlayerOneStartingHand() {
       speed: 2,
     }),
     getCardDatabaseEntry("BOA-146")
-      ? createCardFromDatabase("BOA-146")
+      ? createCardFromDatabase("BOA-146", { abilityId: "takingAim" })
       : createCard({
           id: "BOA-146",
           name: "Taking Aim",
@@ -230,6 +236,8 @@ function createPlayerOneStartingHand() {
           cardImage: "../cards/BOA-146 Taking Aim.jpg",
           effectText: "The User gains +2 Range until the end of the turn.",
           databaseId: "BOA-146",
+          abilityId: "takingAim",
+          targetMode: "user",
         }),
     getCardDatabaseEntry("BOA-001")
       ? createCardFromDatabase("BOA-001")

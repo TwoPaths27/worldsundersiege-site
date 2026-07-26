@@ -11,6 +11,9 @@
 function initializeGame() {
   validateRequiredElements();
   bindEvents();
+  for (const unit of GameState.units) registerTriggersForSource(unit);
+  emitGameEvent("matchStarted", { game: GameState, activePlayer: GameState.activePlayer });
+  emitGameEvent("turnStarted", { playerId: GameState.activePlayer, turn: GameState.turn });
   renderGame();
 }
 
@@ -48,6 +51,7 @@ function endTurn() {
   const previousPlayer = GameState.activePlayer;
   const nextPlayer = previousPlayer === 1 ? 2 : 1;
 
+  emitGameEvent("turnEnding", { playerId: previousPlayer, turn: GameState.turn });
   clearEndOfTurnEffects(previousPlayer);
   resetMatchSelection();
 
@@ -58,6 +62,8 @@ function endTurn() {
   }
 
   refreshPlayerForTurn(nextPlayer);
+  emitGameEvent("turnEnded", { playerId: previousPlayer, nextPlayerId: nextPlayer, turn: GameState.turn });
+  emitGameEvent("turnStarted", { playerId: nextPlayer, previousPlayerId: previousPlayer, turn: GameState.turn });
 
   addLog(
     `Player ${previousPlayer} ended their turn. ` +
@@ -68,6 +74,9 @@ function endTurn() {
 }
 
 function clearEndOfTurnEffects(playerId) {
+  if (typeof triggerAbilities === "function") {
+    triggerAbilities("endOfTurn", { game: GameState, playerId });
+  }
   for (const unit of GameState.units) {
     if (unit.owner === playerId && unit.temporaryRangeBonus) {
       unit.temporaryRangeBonus = 0;

@@ -115,14 +115,30 @@ function createHandCard(card, player) {
 
 /* Action-card selection state */
 
-function isChoosingActionUser() {
+function getSelectedActionContext(extra = {}) {
   const card = getSelectedCard();
+  const playerId = getInteractionPlayerId();
+  const player = GameState.players[playerId];
+
+  return {
+    game: GameState,
+    card,
+    playerId,
+    player,
+    opponent: GameState.players[playerId === 1 ? 2 : 1],
+    ...extra,
+  };
+}
+
+function isChoosingActionUser() {
+  const { card, player } = getSelectedActionContext();
 
   return Boolean(
     card &&
     card.type === "Action" &&
     !GameState.pendingActionUserId &&
-    getActivePlayer().energy >= card.cost
+    player.energy >= card.cost &&
+    getAbility(card)
   );
 }
 
@@ -133,16 +149,13 @@ function isChoosingActionTarget() {
     card &&
     card.type === "Action" &&
     GameState.pendingActionUserId &&
-    getActionTargetMode(card) !== "user"
+    getAbilityTargetMode(card) !== "user"
   );
 }
 
 function isEligibleActionUser(unit) {
-  return Boolean(
-    unit &&
-    unit.owner === getInteractionPlayerId() &&
-    unit.cardType === "Character"
-  );
+  const context = getSelectedActionContext({ user: unit });
+  return isEligibleAbilityUser(context.card, unit, context);
 }
 
 function getEligibleActionUsers() {
@@ -150,36 +163,32 @@ function getEligibleActionUsers() {
 }
 
 function getActionTargetMode(card) {
-  switch (card?.databaseId ?? card?.id) {
-    case "BOA-146":
-      return "user";
+  return getAbilityTargetMode(card);
+}
 
-    default:
-      return card?.targetMode ?? "user";
-  }
+function isEligibleActionTarget(target) {
+  const card = getSelectedCard();
+  const user = getUnitById(GameState.pendingActionUserId);
+  const context = getSelectedActionContext({ user, target });
+  return isEligibleAbilityTarget(card, target, context);
 }
 
 function chooseActionUser(user) {
   const card = getSelectedCard();
 
-  if (!card || !isEligibleActionUser(user)) {
-    return;
-  }
+  if (!card || !isEligibleActionUser(user)) return;
 
   GameState.pendingActionUserId = user.id;
 
-  if (getActionTargetMode(card) === "user") {
+  if (getAbilityTargetMode(card) === "user") {
     commitSelectedAction(user.id);
     return;
   }
 
-  GameState.actionSelectionMessage =
-    `Choose a target for ${card.name}.`;
-
-  addLog(
-    `${user.name} will use ${card.name}. Choose its target.`
-  );
-
+  const ability = getAbility(card);
+  const context = getSelectedActionContext({ user });
+  GameState.actionSelectionMessage = ability.getTargetPrompt(context);
+  addLog(`${user.name} will use ${card.name}. Choose its target.`);
   renderGame();
 }
 
@@ -188,13 +197,26 @@ function commitSelectedAction(targetId = null) {
   const playerId = getInteractionPlayerId();
   const player = GameState.players[playerId];
   const user = getUnitById(GameState.pendingActionUserId);
+  const target = targetId ? getUnitById(targetId) : null;
+  const context = getSelectedActionContext({ user, target });
 
-  if (
-    !card ||
-    card.type !== "Action" ||
-    !user ||
-    !isEligibleActionUser(user)
-  ) {
+  if (!card || card.type !== "Action" || !user || !isEligibleActionUser(user)) return;
+
+  if (!getAbility(card)) {
+    addLog(`${card.name} has no registered ability and cannot be played.`);
+    renderGame();
+    return;
+  }
+
+  if (!canPlayAbility(card, context)) {
+    addLog(`${card.name} cannot be played right now.`);
+    renderGame();
+    return;
+  }
+
+  if (getAbilityTargetMode(card) !== "user" && !isEligibleActionTarget(target)) {
+    addLog(`Choose a valid target for ${card.name}.`);
+    renderGame();
     return;
   }
 
@@ -204,13 +226,8 @@ function commitSelectedAction(targetId = null) {
     return;
   }
 
-  const cardIndex = player.hand.findIndex(
-    (handCard) => handCard.id === card.id
-  );
-
-  if (cardIndex < 0) {
-    return;
-  }
+  const cardIndex = player.hand.findIndex((handCard) => handCard.id === card.id);
+  if (cardIndex < 0) return;
 
   player.energy -= card.cost;
   player.hand.splice(cardIndex, 1);
@@ -218,6 +235,7 @@ function commitSelectedAction(targetId = null) {
   const stackEntry = {
     stackId: `action-${GameState.nextActionStackId}`,
     card,
+    abilityId: getAbilityId(card),
     userId: user.id,
     targetId,
     owner: playerId,
@@ -226,6 +244,8 @@ function commitSelectedAction(targetId = null) {
 
   GameState.nextActionStackId += 1;
   GameState.actionStack.push(stackEntry);
+  emitGameEvent("cardPlayed", { card, playerId, user, target, stackEntry }, { source: card });
+  emitGameEvent("actionAddedToStack", { stackEntry, card, playerId }, { source: card });
   GameState.selectedCardId = null;
   GameState.pendingActionUserId = null;
   GameState.pendingActionTargetId = null;
@@ -233,7 +253,6 @@ function commitSelectedAction(targetId = null) {
 
   addLog(`${user.name} uses ${card.name}.`);
   playOneShot(gameplayAudio.energy);
-
   openPriorityWindow(playerId === 1 ? 2 : 1);
   renderGame();
 }
@@ -287,13 +306,21 @@ function selectCard(cardId) {
   ) {
     addLog("That player does not currently have priority.");
     GameState.selectedCardId = null;
+  } else if (!getAbility(card)) {
+    addLog(`${card.name} has no registered ability.`);
+    GameState.selectedCardId = null;
+  } else if (!canPlayAbility(card, getSelectedActionContext())) {
+    addLog(`${card.name} cannot be played right now.`);
+    GameState.selectedCardId = null;
   } else if (!getEligibleActionUsers().length) {
     addLog(`${player.name} must control a Character to play ${card.name}.`);
   } else {
     GameState.pendingActionUserId = null;
     GameState.pendingActionTargetId = null;
-    GameState.actionSelectionMessage =
-      `Choose who you wish to use ${card.name}.`;
+    const ability = getAbility(card);
+    GameState.actionSelectionMessage = ability.getUserPrompt(
+      getSelectedActionContext()
+    );
 
     addLog(
       `${card.name} selected. Choose who you wish to use the Action.`
