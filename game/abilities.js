@@ -20,10 +20,53 @@ function defaultCharacterUserValidator(unit, context = {}) {
     context.player?.id ??
     context.owner;
 
-  return Boolean(
-    unit &&
-    canUseActions(unit) &&
-    (playerId == null || unit.owner === playerId)
+  if (!unit || (playerId != null && unit.owner !== playerId)) {
+    return false;
+  }
+
+  /*
+   * Prefer the capability system, but retain compatibility with battlefield
+   * Units created from older Character cards whose capability metadata was
+   * not copied onto the runtime Unit object.
+   */
+  if (
+    typeof canUseActions === "function" &&
+    canUseActions(unit)
+  ) {
+    return true;
+  }
+
+  const characterType =
+    typeof CardTypes !== "undefined"
+      ? CardTypes.CHARACTER
+      : "Character";
+
+  const runtimeTypes =
+    typeof getCardTypes === "function"
+      ? getCardTypes(unit)
+      : Array.isArray(unit.types)
+        ? unit.types
+        : [unit.type, unit.cardType].filter(Boolean);
+
+  const sourceTypes =
+    unit.sourceCard && typeof getCardTypes === "function"
+      ? getCardTypes(unit.sourceCard)
+      : Array.isArray(unit.sourceCard?.types)
+        ? unit.sourceCard.types
+        : [
+            unit.sourceCard?.type,
+            unit.sourceCard?.cardType,
+          ].filter(Boolean);
+
+  return (
+    runtimeTypes.includes(characterType) ||
+    runtimeTypes.includes("Character") ||
+    sourceTypes.includes(characterType) ||
+    sourceTypes.includes("Character") ||
+    unit.type === "Character" ||
+    unit.cardType === "Character" ||
+    unit.sourceCard?.type === "Character" ||
+    unit.sourceCard?.cardType === "Character"
   );
 }
 
@@ -103,17 +146,10 @@ function createFallbackActionAbility(source) {
     .map(normalizeAbilityId)
     .filter((value) => value && value !== primaryId);
 
-  /*
-   * v17 compatibility fallback:
-   * Card-database Actions currently do not all declare an explicit abilityId.
-   * Register them lazily so they can still enter and resolve through the
-   * Action Stack while their individual effects are implemented.
-   */
   return registerAbility(
     primaryId,
     {
       targetMode: "user",
-
       resolve({ card, user }) {
         addLog(
           `${card?.name ?? source.name ?? "Action"} resolves` +
@@ -142,12 +178,7 @@ function createFallbackActionAbility(source) {
 function getAbility(source) {
   const abilityId = getAbilityId(source);
   const registered = AbilityRegistry[abilityId] ?? null;
-
-  if (registered) {
-    return registered;
-  }
-
-  return createFallbackActionAbility(source);
+  return registered || createFallbackActionAbility(source);
 }
 
 function getAbilityTargetMode(source) {
