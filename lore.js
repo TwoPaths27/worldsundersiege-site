@@ -327,7 +327,8 @@ The legend reaches its climax when schoolmaster Ichabod Crane encounters the Hor
 Witnesses typically describe Bigfoot as standing between seven and ten feet tall, covered in dark hair, and possessing immense strength. Thousands of sightings have been reported across the United States and Canada, accompanied by footprint casts, photographs, recordings, and other alleged evidence. The most famous claim remains the 1967 Patterson–Gimlin film, which supposedly captured a Bigfoot walking through the forests of Northern California.
 
 Despite decades of investigations, no conclusive scientific evidence has confirmed Bigfoot's existence. Most researchers attribute sightings to misidentified animals, hoaxes, or natural phenomena, while cryptozoologists continue searching for proof. Bigfoot remains one of the world's most famous cryptids, representing humanity's fascination with the possibility that unknown creatures still exist within Earth's remote wilderness.`
-  }
+  },
+
 "BOA-026": {
   status: "Fictional Vampire",
   origin: "Germany",
@@ -446,6 +447,81 @@ After drinking the formula, Jekyll transforms into Edward Hyde, a physically sma
 As Hyde's crimes escalate, including the murder of Sir Danvers Carew, Jekyll desperately attempts to suppress his alter ego. His remaining supply of chemicals eventually runs out, leaving him trapped as Hyde with no means of restoring his original identity. Faced with inevitable capture and unable to escape the monster he created within himself, Jekyll chooses death rather than surrender.
 
 Stevenson's novella became one of the defining works of Gothic literature, exploring the conflict between civilization and humanity's darker instincts. Rather than depicting two separate people, Jekyll and Hyde represent opposing aspects of a single individual, making the phrase "Jekyll and Hyde" a lasting expression for someone with a divided personality or hidden darker nature.`
+},
+
+"BOA-034": {
+  status: "Fictional Scientist",
+  origin: "Switzerland",
+  first: "Frankenstein; or, The Modern Prometheus by Mary Shelley (1818)",
+  period: "Late 18th Century",
+  aliases: "Victor Frankenstein; Dr. Frankenstein",
+  history: `Victor Frankenstein is the ambitious scientist at the center of Mary Shelley's 1818 novel Frankenstein; or, The Modern Prometheus. Born into a wealthy Genevan family, Victor develops an early fascination with natural philosophy, chemistry, and the possibility of overcoming death itself. His obsession with unlocking the secrets of life ultimately drives him beyond the limits of both science and morality.
+
+While studying at the University of Ingolstadt, Victor discovers a method of creating life from lifeless matter. Working in complete secrecy, he assembles a human form from body parts collected from graves and dissecting rooms before successfully bringing the Creature to life. Horrified by the appearance of his own creation, Victor immediately abandons it, setting in motion the tragic events that define the novel.
+
+As the Creature suffers rejection from every person it encounters, it gradually turns against its creator. Victor's refusal to accept responsibility for his experiment leads to the deaths of his younger brother William, his friend Henry Clerval, and his bride Elizabeth Lavenza. Pursued by guilt and revenge, creator and creation hunt one another across Europe and into the Arctic.
+
+Rather than portraying a mad scientist driven by evil, Shelley presents Victor as a brilliant but deeply flawed man whose unchecked ambition blinds him to the consequences of his actions. His story remains one of literature's greatest warnings about scientific responsibility, pride, and humanity's desire to control powers beyond its understanding.`
+},
+
+"BOA-035": {
+  status: "Fictional Musical Genius",
+  origin: "France",
+  first: "The Phantom of the Opera by Gaston Leroux (1910)",
+  period: "Late 19th Century",
+  aliases: "Erik; The Opera Ghost; The Phantom",
+  history: `The Phantom, whose true name is Erik, is the mysterious central figure of Gaston Leroux's 1910 novel The Phantom of the Opera. A musical prodigy born with a severely deformed face, Erik spends much of his life isolated from society, where cruelty and rejection shape him into one of Gothic literature's most tragic characters.
+
+Living in secret beneath the Paris Opera House, Erik constructs an elaborate network of hidden passages, trapdoors, and underground chambers from which he observes the performers above. Feared by workers as the mysterious "Opera Ghost," he manipulates productions, demands payment from management, and punishes those who ignore his wishes through seemingly supernatural acts.
+
+Erik becomes obsessed with the young soprano Christine Daaé, secretly training her voice while convincing her that he is the Angel of Music promised by her late father. His love for Christine eventually brings him into conflict with her childhood friend Raoul, leading to kidnapping, deception, and a desperate struggle beneath the opera house.
+
+Although capable of terrifying violence, Leroux portrays Erik as a lonely and deeply wounded man yearning to be loved despite his appearance. His combination of extraordinary genius, isolation, and tragedy has made the Phantom one of literature's most enduring Gothic antiheroes.`
+},
+
+"BOA-036": {
+  status: "Folkloric Vampire",
+  origin: "Romania",
+  first: "Romanian Folklore",
+  period: "Medieval Folklore",
+  aliases: "Strigoi; Strigoi; Living Vampire",
+  history: `The Strigoi are among the oldest vampire-like beings in Romanian folklore, with traditions stretching back centuries before the publication of Dracula. Unlike later fictional vampires, the Strigoi existed as part of genuine folk belief and were feared throughout rural communities in Romania and neighboring regions.
+
+According to legend, a Strigoi could be either a living person possessing supernatural powers or a deceased individual who returned from the grave to prey upon the living. Certain births, unusual physical traits, curses, or improper burial rituals were believed to increase the likelihood that someone might become a Strigoi after death. Once risen, they were said to drain the life force or blood of family members while spreading sickness, nightmares, and misfortune.
+
+Villagers developed numerous methods to prevent the dead from returning. Protective rituals included placing garlic around homes, driving stakes through suspected corpses, removing the heart, or performing religious ceremonies intended to lay the restless dead to rest. These traditions became deeply woven into Romanian village life for generations.
+
+The Strigoi directly influenced many later vampire legends, including Bram Stoker's Dracula. While Dracula transformed the vampire into a Gothic literary figure, the Strigoi remain rooted in authentic Eastern European folklore, representing one of history's oldest and most influential undead traditions.`
+},
+
+"BOA-037": {
+  status: "Folkloric Witch",
+  origin: "Slavic Folklore",
+  first: "Eastern European Oral Tradition",
+  period: "Medieval Folklore",
+  aliases: "Baba Yaga; Baba Jaga; Grandmother Witch",
+  history: `Baba Yaga is one of the most famous supernatural beings in Slavic folklore, appearing in countless Russian, Ukrainian, Polish, and Belarusian folktales. Unlike many witches of Western tradition, Baba Yaga is neither wholly evil nor wholly good. Instead, she acts according to her own mysterious rules, helping or destroying those who enter her domain depending on their character and actions.
+
+She is traditionally depicted as an ancient woman living deep within the forest inside a magical hut that stands upon enormous chicken legs. The hut can turn, move through the woods, and obey spoken commands. Baba Yaga herself travels through the air inside a giant mortar, using a pestle to propel herself while sweeping away her tracks with a birch broom.
+
+Those seeking Baba Yaga often hope to gain magical knowledge, powerful artifacts, or impossible tasks completed. Brave, respectful, and clever visitors may receive wisdom or aid, while the arrogant, greedy, or dishonest frequently become her victims. Her stories often serve as lessons about courage, humility, and respect for nature and the supernatural.
+
+For centuries Baba Yaga has remained one of the defining figures of Slavic mythology. Neither simple villain nor benevolent guardian, she embodies the unpredictable and untamed forces of the wilderness, making her one of folklore's most complex magical beings.`
+},
+
+"BOA-038": {
+  status: "Folkloric Forest Spirit",
+  origin: "Slavic Folklore",
+  first: "Eastern European Oral Tradition",
+  period: "Ancient Slavic Beliefs",
+  aliases: "Leshy; Leshii; Lesovik; Forest Lord",
+  history: `The Leshy is the guardian spirit of the forest in Slavic mythology and one of the oldest supernatural beings found throughout Eastern European folklore. Revered and feared in equal measure, the Leshy serves as the protector of wild animals, ancient trees, and the natural balance of the woodland.
+
+Descriptions of the Leshy vary from tale to tale. He is often portrayed as a towering man covered in bark, moss, leaves, or fur, though he possesses the ability to change both his appearance and his size at will. He can imitate the voices of animals and humans, create illusions, and lead travelers hopelessly astray within the forest until they become lost.
+
+Despite his frightening reputation, the Leshy is not inherently malicious. Hunters, shepherds, and woodcutters who respected the forest and observed traditional customs were sometimes rewarded with safe passage or successful hunts. Those who damaged the woods through greed, disrespect, or needless destruction often found themselves punished by the spirit's tricks or wrath.
+
+The Leshy represents the ancient Slavic belief that the wilderness possesses its own living guardian deserving of respect. Long before modern ideas of conservation, stories of the Leshy reminded people that the forest was not merely a resource to exploit, but a sacred place governed by powerful supernatural forces.`
 },
 
 };
