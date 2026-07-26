@@ -60,9 +60,21 @@ function openPriorityWindow(
   });
 }
 
+
+function canPassPriority(playerId = GameState.priority.playerId) {
+  return Boolean(
+    GameState.priority.active &&
+    !GameState.priority.resolving &&
+    !GameState.gameOver &&
+    playerId &&
+    playerId === GameState.priority.playerId &&
+    GameState.players[playerId]
+  );
+}
+
 function passPriority() {
-  if (!GameState.priority.active || GameState.priority.resolving) {
-    return;
+  if (!canPassPriority()) {
+    return false;
   }
 
   const passingPlayer = GameState.priority.playerId;
@@ -72,7 +84,7 @@ function passPriority() {
     console.warn(`Cannot pass priority for unknown player ${passingPlayer}.`);
     closePriorityWindow();
     renderGame();
-    return;
+    return false;
   }
 
   GameState.priority.passes += 1;
@@ -110,13 +122,16 @@ function passPriority() {
     `${GameState.players[nextPlayer].name} has priority. Play an Action or pass.`;
 
   renderGame();
+  return true;
 }
 
 async function beginResolveTopAction() {
-  // Resolution is asynchronous. Ignore repeated clicks while one entry is
-  // already resolving instead of accidentally closing the priority window.
+  /*
+   * Resolution is asynchronous. The global resolving flag and the entry
+   * status form a two-part lock against double clicks and re-entrant calls.
+   */
   if (GameState.priority.resolving) {
-    return;
+    return false;
   }
 
   const entry = GameState.actionStack.at(-1);
@@ -125,84 +140,138 @@ async function beginResolveTopAction() {
     closePriorityWindow();
     resumePendingEvent();
     renderGame();
-    return;
+    return false;
   }
 
   if (entry.status === "resolving") {
-    return;
+    return false;
   }
+
+  const cardName = entry.card?.name ?? "Unknown Action";
+  const eventSource = entry.card ?? entry;
+  let resolution = {
+    resolved: false,
+    reason: "resolution-interrupted",
+  };
 
   GameState.priority.resolving = true;
   GameState.priority.active = false;
   clearPendingActionSelection();
 
-  const cardName = entry.card?.name ?? "Unknown Action";
   entry.status = "resolving";
+  entry.resolutionStartedAt = Date.now();
   GameState.actionSelectionMessage = `${cardName} is resolving...`;
   addLog(`${cardName} begins resolving.`);
-
   renderGame();
 
-  // Keep the Action and User connection visible long enough to read.
-  const elapsed = Date.now() - GameState.priority.openedAt;
-  const remainingPresentationTime = Math.max(0, 3000 - elapsed);
+  try {
+    // Keep the Action and User connection visible long enough to read.
+    const elapsed = Date.now() - GameState.priority.openedAt;
+    const remainingPresentationTime = Math.max(0, 3000 - elapsed);
 
-  if (remainingPresentationTime > 0) {
-    await delayPriorityPresentation(remainingPresentationTime);
-  }
+    if (remainingPresentationTime > 0) {
+      await delayPriorityPresentation(remainingPresentationTime);
+    }
 
-  const eventSource = entry.card ?? entry;
-  emitGameEvent("beforeAbilityResolved", { entry }, { source: eventSource });
-
-  const resolution = resolveActionEffect(entry);
-  entry.status = resolution?.resolved ? "resolved" : "fizzled";
-
-  emitGameEvent(
-    "abilityResolved",
-    { entry, resolution },
-    { source: eventSource }
-  );
-
-  if (resolution?.resolved) {
-    addLog(`${cardName} finished resolving.`);
-  }
-
-  renderGame();
-  await delayPriorityPresentation(1000);
-
-  const owner = GameState.players[entry.owner];
-
-  if (owner) {
-    owner.discardCount = (owner.discardCount ?? 0) + 1;
-    addLog(`${cardName} moves to the discard pile.`);
-  } else {
-    console.warn(
-      `${cardName} left the stack without a valid owner; discard count was not updated.`
-    );
-  }
-
-  removeActionStackEntry(entry);
-  emitGameEvent(
-    "actionRemovedFromStack",
-    { entry, resolution },
-    { source: eventSource }
-  );
-
-  GameState.priority.resolving = false;
-
-  if (GameState.actionStack.length) {
-    reopenPriorityWindowAfterResolution();
-  } else {
-    closePriorityWindow();
     emitGameEvent(
-      "stackResolved",
-      { lastEntry: entry, resolution },
+      "beforeAbilityResolved",
+      { entry },
       { source: eventSource }
     );
-    resumePendingEvent();
+
+    resolution =
+      resolveActionEffect(entry) ?? {
+        resolved: false,
+        reason: "missing-resolution-result",
+      };
+
+    entry.resolution = resolution;
+    entry.status =
+      resolution.resolved
+        ? "resolved"
+        : "fizzled";
+    entry.resolutionFinishedAt = Date.now();
+
+    emitGameEvent(
+      "abilityResolved",
+      { entry, resolution },
+      { source: eventSource }
+    );
+
+    if (resolution.resolved) {
+      addLog(`${cardName} finished resolving.`);
+    }
+
+    renderGame();
+    await delayPriorityPresentation(1000);
+  } catch (error) {
+    console.error(`Unexpected failure while resolving ${cardName}.`, error);
+
+    resolution = {
+      resolved: false,
+      reason: "resolution-error",
+      error,
+    };
+
+    entry.resolution = resolution;
+    entry.status = "fizzled";
+    entry.resolutionFinishedAt = Date.now();
+
+    addLog(
+      `${cardName} fizzles because stack resolution encountered an error.`
+    );
+  } finally {
+    const owner = GameState.players[entry.owner];
+
+    if (owner) {
+      owner.discardCount = (owner.discardCount ?? 0) + 1;
+      addLog(`${cardName} moves to the discard pile.`);
+    } else {
+      console.warn(
+        `${cardName} left the stack without a valid owner; ` +
+        "discard count was not updated."
+      );
+    }
+
+    removeActionStackEntry(entry);
+
+    try {
+      emitGameEvent(
+        "actionRemovedFromStack",
+        { entry, resolution },
+        { source: eventSource }
+      );
+    } catch (error) {
+      console.error(
+        `Failed to emit actionRemovedFromStack for ${cardName}.`,
+        error
+      );
+    }
+
+    GameState.priority.resolving = false;
+
+    if (GameState.actionStack.length) {
+      reopenPriorityWindowAfterResolution();
+    } else {
+      closePriorityWindow();
+
+      try {
+        emitGameEvent(
+          "stackResolved",
+          { lastEntry: entry, resolution },
+          { source: eventSource }
+        );
+      } catch (error) {
+        console.error("Failed to emit stackResolved.", error);
+      }
+
+      resumePendingEvent();
+    }
+
+    renderGame();
   }
 
-  renderGame();
+  return resolution.resolved;
 }
 
 function delayPriorityPresentation(milliseconds) {
@@ -501,9 +570,7 @@ function renderActionStacks() {
    */
   elements.passPriorityButton.hidden = false;
   elements.passPriorityButton.disabled =
-    !GameState.priority.active ||
-    GameState.priority.resolving ||
-    GameState.gameOver;
+    !canPassPriority();
 
   elements.passPriorityButton.textContent =
     GameState.priority.resolving

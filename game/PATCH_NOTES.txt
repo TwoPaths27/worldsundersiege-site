@@ -1,11 +1,14 @@
-Worlds Under Siege — Action Patch v3
+Worlds Under Siege — Action Patch v4
+
+Focus: stable stack-entry creation and fail-safe resolution.
 
 Changes:
-- Blocks opening a new priority window while stack resolution is active.
-- Prevents an already-resolving stack entry from resolving twice.
-- Keeps Pass Priority visible but disables it whenever passing is illegal.
-- Shows the current priority player's name on the Pass button.
-- Correctly distinguishes User-targeted, targetless, and separately targeted Actions.
-- Adds clearer stack status labels and fizzled-state classes.
-- Improves stack-card accessibility labels.
+- Added createActionStackEntry() as the single place that defines Action stack entries.
+- Added resolution timestamps and stored resolution results on stack entries.
+- Added canPassPriority() and used it for both engine checks and the Pass button.
+- passPriority() now reports success/failure with a boolean return value.
+- Reworked beginResolveTopAction() as a guarded transaction using try/catch/finally.
+- Ensures the resolving lock is released even if an event listener or effect throws.
+- Ensures a failed Action still leaves the stack and priority resumes correctly.
+- Protects actionRemovedFromStack and stackResolved event emissions from breaking cleanup.
 - All included JavaScript files passed `node --check`.

@@ -290,6 +290,45 @@ function chooseActionUser(user) {
   renderGame();
 }
 
+
+function createActionStackEntry({
+  card,
+  ability,
+  owner,
+  user,
+  target = null,
+  targetMode = "user",
+}) {
+  if (!card || !ability || !user || !GameState.players[owner]) {
+    throw new TypeError(
+      "An Action stack entry requires a card, ability, owner, and User."
+    );
+  }
+
+  const requiresSeparateTarget =
+    targetMode !== "user" &&
+    targetMode !== "none";
+
+  return {
+    stackId: `action-${GameState.nextActionStackId}`,
+    type: "action",
+    card,
+    abilityId: ability.id ?? getAbilityId(card),
+    targetMode,
+    userId: user.id,
+    targetId:
+      requiresSeparateTarget && target
+        ? target.id
+        : null,
+    owner,
+    status: "waiting",
+    createdAt: Date.now(),
+    resolutionStartedAt: null,
+    resolutionFinishedAt: null,
+    resolution: null,
+  };
+}
+
 function commitSelectedAction(targetId = null) {
   if (
     GameState.gameOver ||
@@ -422,30 +461,14 @@ function commitSelectedAction(targetId = null) {
   player.energy -= card.cost;
   player.hand.splice(cardIndex, 1);
 
-  const stackEntry = {
-    stackId:
-      `action-${GameState.nextActionStackId}`,
-
-    type: "action",
+  const stackEntry = createActionStackEntry({
     card,
-    abilityId: getAbilityId(card),
-    targetMode,
-
-    userId: user.id,
-
-    /*
-     * User-targeted and targetless Actions do not need a
-     * separate target ID.
-     */
-    targetId:
-      requiresSeparateTarget
-        ? target.id
-        : null,
-
+    ability,
     owner: playerId,
-    status: "waiting",
-    createdAt: Date.now(),
-  };
+    user,
+    target,
+    targetMode,
+  });
 
   GameState.nextActionStackId += 1;
   GameState.actionStack.push(stackEntry);
