@@ -103,38 +103,113 @@ function createAbilityContext(overrides = {}) {
 }
 
 function executeAbility(source, context = {}) {
-  context = createAbilityContext(context);
   const ability = getAbility(source);
 
   if (!ability) {
     console.warn("Unknown ability.", source);
-    return { resolved: false, reason: "unknown-ability" };
+
+    return {
+      resolved: false,
+      reason: "unknown-ability",
+    };
   }
 
-  if (ability.targetMode !== 'none' && context.target && ability.isEligibleTarget && !ability.isEligibleTarget(context.target, context)) {
-    return {resolved:false, reason:'illegal-target'};
-  }
-
-  const result = ability.resolve({
+  const normalizedContext = createAbilityContext({
     ...context,
+    source,
     ability,
   });
 
-  return result === undefined
-    ? { resolved: true }
-    : result;
+  const {
+    user,
+    target,
+  } = normalizedContext;
+
+  /*
+   * The User must still be legal when the Action resolves.
+   *
+   * This catches cases where:
+   * - the Character left the battlefield,
+   * - control of the Character changed,
+   * - a future ability adds another User restriction.
+   */
+  if (
+    typeof ability.isEligibleUser === "function" &&
+    !ability.isEligibleUser(user, normalizedContext)
+  ) {
+    return {
+      resolved: false,
+      reason: "illegal-user",
+    };
+  }
+
+  /*
+   * Target validation depends on the targeting mode.
+   *
+   * user:
+   *   The User is also the affected object. No separate target is required.
+   *
+   * none:
+   *   The Action does not require a selected target.
+   *
+   * anything else:
+   *   A separate legal target must still exist.
+   */
+  if (
+    ability.targetMode !== "user" &&
+    ability.targetMode !== "none"
+  ) {
+    if (!target) {
+      return {
+        resolved: false,
+        reason: "missing-target",
+      };
+    }
+
+    if (
+      typeof ability.isEligibleTarget === "function" &&
+      !ability.isEligibleTarget(target, normalizedContext)
+    ) {
+      return {
+        resolved: false,
+        reason: "illegal-target",
+      };
+    }
+  }
+
+  try {
+    const result = ability.resolve(normalizedContext);
+
+    if (result === undefined) {
+      return {
+        resolved: true,
+      };
+    }
+
+    if (!result || typeof result !== "object") {
+      return {
+        resolved: Boolean(result),
+        reason: result ? undefined : "ability-returned-false",
+      };
+    }
+
+    return {
+      resolved: result.resolved !== false,
+      ...result,
+    };
+  } catch (error) {
+    console.error(
+      `Ability "${ability.id}" failed during resolution.`,
+      error
+    );
+
+    return {
+      resolved: false,
+      reason: "resolution-error",
+      error,
+    };
+  }
 }
-
-function defaultCharacterUserValidator(unit, context = {}) {
-  const playerId = context.playerId ?? context.player?.id ?? context.owner;
-
-  return Boolean(
-    unit &&
-    unit.cardType === "Character" &&
-    (playerId == null || unit.owner === playerId)
-  );
-}
-
 registerAbility(
   "takingAim",
   {
