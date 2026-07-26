@@ -308,18 +308,3 @@ function selectCard(cardId) {
 
   renderGame();
 }
-
-function clearSelection() {
-  if (GameState.gameOver || GameState.isAnimating) {
-    return;
-  }
-
-  GameState.selectedUnitId = null;
-  GameState.selectedCardId = null;
-  GameState.selectedUnitAction = "move";
-  GameState.reachableSpaces = new Map();
-  GameState.attackableUnitIds = new Set();
-  GameState.attackableStrongholdPlayerId = null;
-
-  renderGame();
-}

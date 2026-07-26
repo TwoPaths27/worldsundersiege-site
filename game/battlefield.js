@@ -588,7 +588,8 @@ function createBattlefieldCell(x, y) {
   );
   const canRecruitSelectedCard =
     selectedCard &&
-    selectedCard.type === "Unit" &&
+    (selectedCard.type === "Unit" ||
+      selectedCard.type === "Character") &&
     getActivePlayer().energy >= selectedCard.cost;
 
   const isAttackTarget =
@@ -967,6 +968,27 @@ if (isValidMove) {
 
 addLog("Selection cleared.");
 clearSelection();
+}
+
+function clearSelection() {
+  if (GameState.gameOver || GameState.isAnimating) {
+    return;
+  }
+
+  GameState.selectedUnitId = null;
+  GameState.selectedCardId = null;
+  GameState.selectedUnitAction = "move";
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+  GameState.actionSelectionMessage = GameState.priority.active
+    ? `${GameState.players[GameState.priority.playerId].name} has priority. Play an Action or pass.`
+    : "";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+
+  clearAttackHoverState();
+  renderGame();
 }
 
 function selectUnit(unitId) {
