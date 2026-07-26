@@ -6179,3 +6179,83 @@ body::after {
     0 1px 2px #000,
     0 0 7px rgba(255, 67, 67, 0.68);
 }
+
+/* =========================================================
+   Commit 1 — Battlefield Inspection States
+   Distinguishes inspection from active gameplay selection.
+   Keep this section at the absolute bottom of game.css.
+========================================================= */
+
+/* Inspected cells use a cool cyan outline so they remain visually
+   distinct from the gold active-selection treatment. */
+.battlefield-cell.cell-inspected:not(.cell-selected) {
+  position: relative;
+  z-index: 60;
+  overflow: visible;
+
+  border-color: #66d9ff !important;
+  filter: brightness(1.06) saturate(1.04);
+  box-shadow:
+    0 0 0 2px rgba(102, 217, 255, 0.26),
+    0 0 15px rgba(70, 190, 255, 0.78),
+    inset 0 0 10px rgba(115, 224, 255, 0.12) !important;
+}
+
+/* Preserve the stone artwork while applying a subtle inspection tint. */
+.battlefield-cell.cell-inspected:not(.cell-selected):not(.cell-move):not(.cell-range):not(.cell-attack):not(.cell-attack-target) {
+  background-image:
+    linear-gradient(rgba(54, 173, 220, 0.12), rgba(54, 173, 220, 0.12)),
+    url("battlefield-stone.png") !important;
+
+  background-position: center center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+
+/* The inspected portrait receives a restrained outline rather than the
+   floating gold animation reserved for the active selected unit. */
+.unit-token.is-inspected-unit:not(.is-selected-unit) {
+  position: relative;
+  z-index: 62;
+
+  filter: brightness(1.08) saturate(1.04);
+  box-shadow:
+    0 7px 15px rgba(0, 0, 0, 0.52),
+    0 0 0 2px rgba(102, 217, 255, 0.38),
+    0 0 14px rgba(70, 190, 255, 0.66);
+
+  transform: scale(1.015);
+}
+
+/* When a friendly unit is both selected and inspected, active selection
+   remains authoritative and the inspection styling does not compete. */
+.battlefield-cell.cell-selected.cell-inspected {
+  border-color: #f4d35e !important;
+}
+
+.unit-token.is-selected-unit.is-inspected-unit {
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.58),
+    0 0 16px rgba(255, 222, 92, 0.72);
+}
+
+/* Inspection should not override legal movement, range, or attack cues. */
+.battlefield-cell.cell-inspected.cell-move,
+.battlefield-cell.cell-inspected.cell-range,
+.battlefield-cell.cell-inspected.cell-attack,
+.battlefield-cell.cell-inspected.cell-attack-target {
+  z-index: 61;
+}
+
+/* Keyboard focus remains visible when the inspected cell is interactive. */
+.battlefield-cell.cell-inspected:focus-visible {
+  outline: 3px solid #b8efff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battlefield-cell.cell-inspected,
+  .unit-token.is-inspected-unit {
+    transition: none;
+  }
+}
