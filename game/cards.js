@@ -136,3 +136,26 @@ function isChoosingActionTarget() {
     getActionTargetMode(card) !== "user"
   );
 }
+
+function isEligibleActionUser(unit) {
+  return Boolean(
+    unit &&
+    unit.owner === getInteractionPlayerId() &&
+    unit.cardType === "Character"
+  );
+}
+
+function getEligibleActionUsers() {
+  return GameState.units.filter(isEligibleActionUser);
+}
+
+function getActionTargetMode(card) {
+  switch (card?.databaseId ?? card?.id) {
+    case "BOA-146":
+      return "user";
+
+    default:
+      return card?.targetMode ?? "user";
+  }
+}
+
