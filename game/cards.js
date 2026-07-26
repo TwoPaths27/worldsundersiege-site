@@ -45,7 +45,8 @@ function renderHandCardPreview(card) {
 }
 
 function renderHand() {
-  const player = getActivePlayer();
+  const playerId = getInteractionPlayerId();
+  const player = GameState.players[playerId];
   const cardCount = player.hand.length;
 
   const handHeading = elements.handPanel.querySelector(".hand-panel__header h2");
@@ -86,7 +87,18 @@ function createHandCard(card, player) {
   cardButton.className = "hand-card";
   cardButton.dataset.cardId = card.id;
   const isSelected = GameState.selectedCardId === card.id;
-  const isPlayable = card.cost <= player.energy;
+  const hasPriority =
+    !GameState.priority.active ||
+    GameState.priority.playerId === getInteractionPlayerId();
+  const legalDuringPriority =
+    !GameState.priority.active || card.type === "Action";
+  const isPlayable =
+    card.cost <= player.energy &&
+    hasPriority &&
+    legalDuringPriority &&
+    !GameState.priority.resolving;
+
+  cardButton.disabled = !isPlayable;
   cardButton.classList.toggle("is-selected", isSelected);
   cardButton.classList.toggle("is-playable", isPlayable);
   cardButton.classList.toggle("is-unplayable", !isPlayable);
@@ -176,6 +188,14 @@ function isEligibleActionTarget(target) {
 function chooseActionUser(user) {
   const card = getSelectedCard();
 
+  if (
+    GameState.priority.resolving ||
+    (GameState.priority.active &&
+      GameState.priority.playerId !== getInteractionPlayerId())
+  ) {
+    return;
+  }
+
   if (!card || !isEligibleActionUser(user)) return;
 
   GameState.pendingActionUserId = user.id;
@@ -193,6 +213,14 @@ function chooseActionUser(user) {
 }
 
 function commitSelectedAction(targetId = null) {
+  if (
+    GameState.priority.resolving ||
+    (GameState.priority.active &&
+      GameState.priority.playerId !== getInteractionPlayerId())
+  ) {
+    return;
+  }
+
   const card = getSelectedCard();
   const playerId = getInteractionPlayerId();
   const player = GameState.players[playerId];
@@ -251,7 +279,8 @@ function commitSelectedAction(targetId = null) {
   GameState.pendingActionTargetId = null;
   GameState.actionSelectionMessage = "";
 
-  addLog(`${user.name} uses ${card.name}.`);
+  addLog(`${user.name} plays ${card.name}.`);
+  addLog(`${card.name} enters the Action Stack.`);
   playOneShot(gameplayAudio.energy);
   openPriorityWindow(playerId === 1 ? 2 : 1);
   renderGame();
@@ -262,17 +291,36 @@ function commitSelectedAction(targetId = null) {
 /* Card selection */
 
 function selectCard(cardId) {
-  if (GameState.gameOver || GameState.isAnimating) {
+  if (
+    GameState.gameOver ||
+    GameState.isAnimating ||
+    GameState.priority.resolving
+  ) {
     return;
   }
 
-  const player = getActivePlayer();
+  const playerId = getInteractionPlayerId();
+
+  if (
+    GameState.priority.active &&
+    GameState.priority.playerId !== playerId
+  ) {
+    addLog("That player does not currently have priority.");
+    return;
+  }
+
+  const player = GameState.players[playerId];
 
   const card = player.hand.find(
     (handCard) => handCard.id === cardId
   );
 
   if (!card) {
+    return;
+  }
+
+  if (GameState.priority.active && card.type !== "Action") {
+    addLog("Only Action cards may be played while priority is open.");
     return;
   }
 
