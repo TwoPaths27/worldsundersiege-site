@@ -125,6 +125,136 @@ function passPriority() {
   return true;
 }
 
+
+function createTriggeredAbilityStackEntry({
+  trigger,
+  context = {},
+  originalEvent = null,
+}) {
+  if (!trigger?.abilityId) {
+    throw new TypeError(
+      "A triggered stack entry requires a trigger with an abilityId."
+    );
+  }
+
+  const source = trigger.source ?? context.source ?? null;
+  const owner =
+    trigger.owner ??
+    context.owner ??
+    source?.owner ??
+    null;
+
+  return {
+    stackId: `trigger-${trigger.id}-${Date.now()}`,
+    type: "trigger",
+    card: null,
+    name:
+      source?.name
+        ? `${source.name} — Triggered Ability`
+        : "Triggered Ability",
+    abilityId: trigger.abilityId,
+    triggerId: trigger.id,
+    source,
+    owner,
+    userId: context.user?.id ?? null,
+    targetId: context.target?.id ?? null,
+    targetMode: getAbilityTargetMode(trigger.abilityId),
+    triggerContext: {
+      ...context,
+      originalEvent,
+    },
+    status: "waiting",
+    createdAt: Date.now(),
+    resolutionStartedAt: null,
+    resolutionFinishedAt: null,
+    resolution: null,
+  };
+}
+
+function queueTriggeredAbility({
+  trigger,
+  context = {},
+  originalEvent = null,
+}) {
+  const entry = createTriggeredAbilityStackEntry({
+    trigger,
+    context,
+    originalEvent,
+  });
+
+  GameState.actionStack.push(entry);
+
+  addLog(`${entry.name} is added to the stack.`);
+
+  /*
+   * A trigger generated while another object is resolving waits on the stack.
+   * The current resolver will reopen priority after it finishes.
+   */
+  if (!GameState.priority.resolving) {
+    beginPriorityWindow({
+      playerId: GameState.activePlayer,
+      reason: PRIORITY.ACTION,
+    });
+
+    renderGame();
+  }
+
+  return entry;
+}
+
+function getStackEntryName(entry) {
+  return (
+    entry?.card?.name ??
+    entry?.name ??
+    entry?.source?.name ??
+    "Unknown Ability"
+  );
+}
+
+function resolveTriggeredAbility(entry) {
+  const source = entry.abilityId;
+  const storedContext = entry.triggerContext ?? {};
+
+  const owner =
+    entry.owner ??
+    storedContext.owner ??
+    entry.source?.owner ??
+    null;
+
+  const user =
+    entry.userId
+      ? getUnitById(entry.userId)
+      : storedContext.user ?? null;
+
+  const target =
+    entry.targetId
+      ? getUnitById(entry.targetId)
+      : storedContext.target ?? null;
+
+  const context = createAbilityContext({
+    ...storedContext,
+    source: entry.source ?? source,
+    stackEntry: entry,
+    card: entry.source?.cardType === "Action"
+      ? entry.source
+      : null,
+    owner,
+    user,
+    target,
+    trigger: storedContext.trigger ?? null,
+  });
+
+  return executeAbility(source, context);
+}
+
+function resolveStackEntry(entry) {
+  if (entry?.type === "trigger") {
+    return resolveTriggeredAbility(entry);
+  }
+
+  return resolveActionEffect(entry);
+}
+
 async function beginResolveTopAction() {
   /*
    * Resolution is asynchronous. The global resolving flag and the entry
@@ -147,8 +277,8 @@ async function beginResolveTopAction() {
     return false;
   }
 
-  const cardName = entry.card?.name ?? "Unknown Action";
-  const eventSource = entry.card ?? entry;
+  const cardName = getStackEntryName(entry);
+  const eventSource = entry.card ?? entry.source ?? entry;
   let resolution = {
     resolved: false,
     reason: "resolution-interrupted",
@@ -180,7 +310,7 @@ async function beginResolveTopAction() {
     );
 
     resolution =
-      resolveActionEffect(entry) ?? {
+      resolveStackEntry(entry) ?? {
         resolved: false,
         reason: "missing-resolution-result",
       };
@@ -197,6 +327,21 @@ async function beginResolveTopAction() {
       { entry, resolution },
       { source: eventSource }
     );
+
+    if (entry.type === "trigger") {
+      emitGameEvent(
+        "triggerResolved",
+        {
+          triggerId: entry.triggerId,
+          abilityId: entry.abilityId,
+          source: entry.source,
+          originalEvent: entry.triggerContext?.originalEvent ?? null,
+          entry,
+          resolution,
+        },
+        { source: eventSource }
+      );
+    }
 
     if (resolution.resolved) {
       addLog(`${cardName} finished resolving.`);
@@ -221,16 +366,20 @@ async function beginResolveTopAction() {
       `${cardName} fizzles because stack resolution encountered an error.`
     );
   } finally {
-    const owner = GameState.players[entry.owner];
+    if (entry.type === "action") {
+      const owner = GameState.players[entry.owner];
 
-    if (owner) {
-      owner.discardCount = (owner.discardCount ?? 0) + 1;
-      addLog(`${cardName} moves to the discard pile.`);
+      if (owner) {
+        owner.discardCount = (owner.discardCount ?? 0) + 1;
+        addLog(`${cardName} moves to the discard pile.`);
+      } else {
+        console.warn(
+          `${cardName} left the stack without a valid owner; ` +
+          "discard count was not updated."
+        );
+      }
     } else {
-      console.warn(
-        `${cardName} left the stack without a valid owner; ` +
-        "discard count was not updated."
-      );
+      addLog(`${cardName} leaves the stack.`);
     }
 
     removeActionStackEntry(entry);
@@ -632,7 +781,7 @@ function renderActionStackForPlayer(playerId, container) {
 
     actionCard.setAttribute(
       "aria-label",
-      `${entry.card.name}, used by ${user?.name ?? "unknown Character"}, ` +
+      `${getStackEntryName(entry)}, used by ${user?.name ?? "no Character"}, ` +
       `${targetDescription}, ${statusLabel}`
     );
 const showStackCardPreview = () => {

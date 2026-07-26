@@ -41,6 +41,7 @@ function registerAbility(id, definition, aliases = []) {
   AbilityRegistry[abilityId] = Object.freeze({
     id: abilityId,
     targetMode: "user",
+    requiresUser: true,
     canPlay: () => true,
     isEligibleUser: defaultCharacterUserValidator,
     isEligibleTarget: () => true,
@@ -147,6 +148,7 @@ function executeAbility(source, context = {}) {
   const { user, target } = normalizedContext;
 
   if (
+    ability.requiresUser !== false &&
     typeof ability.isEligibleUser === "function" &&
     !ability.isEligibleUser(user, normalizedContext)
   ) {
@@ -225,6 +227,19 @@ registerAbility(
   },
   ["BOA-146", "Taking Aim"]
 );
+
+
+function getAbilityTriggerDefinitions(source) {
+  const ability = getAbility(source);
+
+  if (!ability || !ability.triggers) {
+    return [];
+  }
+
+  return Array.isArray(ability.triggers)
+    ? [...ability.triggers]
+    : [ability.triggers];
+}
 
 /* Backward-compatible facade retained for older module code. */
 const Abilities = {

@@ -15,6 +15,7 @@ let isProcessingGameEvents = false;
 let nextGameEventId = 1;
 let nextGameListenerId = 1;
 let nextGameTriggerId = 1;
+const RegisteredTriggerIdsBySource = new Map();
 
 function onGameEvent(eventType, handler, options = {}) {
   if (typeof eventType !== "string" || !eventType.trim()) {
@@ -138,6 +139,49 @@ function getPendingGameEvents() {
   }));
 }
 
+
+function getTriggerSourceKey(source) {
+  if (!source) return null;
+
+  if (typeof source === "string" || typeof source === "number") {
+    return String(source);
+  }
+
+  return source.id ??
+    source.instanceId ??
+    source.cardId ??
+    source.databaseId ??
+    null;
+}
+
+function normalizeTriggerDefinitions(definitions) {
+  if (!definitions) return [];
+
+  return (Array.isArray(definitions) ? definitions : [definitions])
+    .filter((definition) => definition && typeof definition === "object");
+}
+
+function getTriggerDefinitionsForSource(source, suppliedDefinitions = null) {
+  if (suppliedDefinitions) {
+    return normalizeTriggerDefinitions(suppliedDefinitions);
+  }
+
+  const sourceDefinitions =
+    source?.triggers ??
+    source?.trigger ??
+    [];
+
+  const abilityDefinitions =
+    typeof getAbilityTriggerDefinitions === "function"
+      ? getAbilityTriggerDefinitions(source)
+      : [];
+
+  return [
+    ...normalizeTriggerDefinitions(sourceDefinitions),
+    ...normalizeTriggerDefinitions(abilityDefinitions),
+  ];
+}
+
 function registerGameTrigger(definition) {
   if (!definition || typeof definition !== "object") {
     throw new TypeError("Trigger definition must be an object.");
@@ -162,6 +206,10 @@ function registerGameTrigger(definition) {
     context: definition.context ?? {},
   };
 
+  if (GameTriggerRegistry.has(trigger.id)) {
+    throw new Error(`A trigger with id "${trigger.id}" is already registered.`);
+  }
+
   GameTriggerRegistry.set(trigger.id, trigger);
   return trigger.id;
 }
@@ -171,13 +219,40 @@ function unregisterGameTrigger(triggerId) {
 }
 
 function unregisterTriggersForSource(source) {
+  const sourceKey = getTriggerSourceKey(source);
+  const trackedIds = sourceKey
+    ? RegisteredTriggerIdsBySource.get(sourceKey) ?? []
+    : [];
+
   let removed = 0;
-  for (const [id, trigger] of GameTriggerRegistry) {
-    if (trigger.source === source || trigger.source?.id === source?.id) {
+
+  for (const id of trackedIds) {
+    if (GameTriggerRegistry.delete(id)) {
+      removed += 1;
+    }
+  }
+
+  /*
+   * Keep the fallback scan for sources registered before tracking was added,
+   * or for source objects without a stable ID.
+   */
+  for (const [id, trigger] of [...GameTriggerRegistry]) {
+    if (
+      trigger.source === source ||
+      (
+        sourceKey &&
+        getTriggerSourceKey(trigger.source) === sourceKey
+      )
+    ) {
       GameTriggerRegistry.delete(id);
       removed += 1;
     }
   }
+
+  if (sourceKey) {
+    RegisteredTriggerIdsBySource.delete(sourceKey);
+  }
+
   return removed;
 }
 
@@ -185,13 +260,29 @@ function processRegisteredTriggers(event) {
   for (const trigger of [...GameTriggerRegistry.values()]) {
     if (trigger.eventType !== event.type) continue;
 
+    const owner = trigger.owner ?? trigger.source?.owner ?? null;
     const context = {
       game: typeof GameState !== "undefined" ? GameState : null,
       event,
       eventType: event.type,
       eventPayload: event.payload,
       source: trigger.source,
-      owner: trigger.owner,
+      card: trigger.source?.cardType === "Action"
+        ? trigger.source
+        : null,
+      owner,
+      playerId: owner,
+      player:
+        owner && typeof GameState !== "undefined"
+          ? GameState.players?.[owner] ?? null
+          : null,
+      opponent:
+        owner && typeof GameState !== "undefined"
+          ? GameState.players?.[owner === 1 ? 2 : 1] ?? null
+          : null,
+      user: trigger.context?.user ?? trigger.source?.unit ?? null,
+      target: trigger.context?.target ?? null,
+      trigger,
       ...trigger.context,
     };
 
@@ -203,43 +294,96 @@ function processRegisteredTriggers(event) {
     }
     if (!eligible) continue;
 
-    let resolution = null;
+    let stackEntry = null;
 
-    if (typeof executeAbility === "function") {
-      resolution = executeAbility(trigger.abilityId, context);
+    if (typeof queueTriggeredAbility === "function") {
+      stackEntry = queueTriggeredAbility({
+        trigger,
+        context,
+        originalEvent: event,
+      });
     } else {
       console.warn(
-        `Trigger "${trigger.id}" could not execute because executeAbility() is unavailable.`
+        `Trigger "${trigger.id}" could not enter the stack because ` +
+        "queueTriggeredAbility() is unavailable."
       );
     }
 
     emitGameEvent(
-      "triggerResolved",
+      "triggerQueued",
       {
         triggerId: trigger.id,
         abilityId: trigger.abilityId,
         source: trigger.source,
         originalEvent: event,
-        resolution,
+        stackEntry,
       },
       { source: trigger.source }
     );
 
-    if (trigger.once) GameTriggerRegistry.delete(trigger.id);
+    if (trigger.once && stackEntry) {
+      unregisterGameTrigger(trigger.id);
+    }
   }
 }
 
-function registerTriggersForSource(source, triggerDefinitions = source?.triggers ?? source?.trigger) {
-  if (!triggerDefinitions) return [];
-  const definitions = Array.isArray(triggerDefinitions)
-    ? triggerDefinitions
-    : [triggerDefinitions];
-
-  return definitions.map((definition) => registerGameTrigger({
-    ...definition,
+function registerTriggersForSource(
+  source,
+  triggerDefinitions = null
+) {
+  const definitions = getTriggerDefinitionsForSource(
     source,
-    owner: definition.owner ?? source?.owner ?? null,
-  }));
+    triggerDefinitions
+  );
+
+  if (!definitions.length) {
+    return [];
+  }
+
+  const sourceKey = getTriggerSourceKey(source);
+
+  /*
+   * Re-registering a source should replace its old trigger records instead of
+   * causing the same trigger to fire multiple times.
+   */
+  if (sourceKey && RegisteredTriggerIdsBySource.has(sourceKey)) {
+    unregisterTriggersForSource(source);
+  }
+
+  const registeredIds = definitions.map((definition, index) => {
+    const explicitId = definition.id;
+    const generatedId =
+      sourceKey
+        ? `${sourceKey}:trigger:${index + 1}`
+        : undefined;
+
+    return registerGameTrigger({
+      ...definition,
+      id: explicitId ?? generatedId,
+      source,
+      owner: definition.owner ?? source?.owner ?? null,
+    });
+  });
+
+  if (sourceKey) {
+    RegisteredTriggerIdsBySource.set(sourceKey, registeredIds);
+  }
+
+  return registeredIds;
+}
+
+function getRegisteredTriggersForSource(source) {
+  const sourceKey = getTriggerSourceKey(source);
+
+  if (!sourceKey) {
+    return [];
+  }
+
+  const ids = RegisteredTriggerIdsBySource.get(sourceKey) ?? [];
+
+  return ids
+    .map((id) => GameTriggerRegistry.get(id))
+    .filter(Boolean);
 }
 
 /* Compatibility names used by earlier planning and prototype code. */
