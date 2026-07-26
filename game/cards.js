@@ -27,6 +27,8 @@ function renderHandCardPreview(card) {
       ? `Action · Cost ${card.cost}`
       : isItem(card)
         ? `Item · Cost ${card.cost}`
+        : isEvent(card)
+          ? "Event · Free"
         : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
         `RNG ${card.range} · SPD ${card.speed}`;
 
@@ -95,7 +97,7 @@ function createHandCard(card, player) {
   const legalDuringPriority =
     !GameState.priority.active || isAction(card);
   const isPlayable =
-    card.cost <= player.energy &&
+    (isEvent(card) || card.cost <= player.energy) &&
     hasPriority &&
     legalDuringPriority &&
     !GameState.priority.resolving;
@@ -118,6 +120,8 @@ function createHandCard(card, player) {
   const name=document.createElement("strong"); name.className="hand-card__name"; name.textContent=card.name;
   const stats=document.createElement("span"); stats.className="hand-card__stats";
   if(isAction(card)){cardButton.classList.add("hand-card--action"); stats.textContent="ACTION";}
+  else if(isEvent(card)){cardButton.classList.add("hand-card--event"); stats.textContent="EVENT · FREE";}
+  else if(isItem(card)){stats.textContent="ITEM";}
   else{stats.textContent=`ATK ${card.attack} · HP ${card.hp} · RNG ${card.range} · SPD ${card.speed}`;}
   cardButton.append(cost,stats,name);
   cardButton.addEventListener("click",()=>selectCard(card.id));
@@ -433,7 +437,7 @@ function commitSelectedAction(targetId = null) {
     return false;
   }
 
-  if (player.energy < card.cost) {
+  if (!isEvent(card) && player.energy < card.cost) {
     addLog(
       `${card.name} costs ${card.cost} Energy.`
     );
@@ -600,6 +604,9 @@ function selectCard(cardId) {
     addLog(
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
+  } else if (isEvent(card)) {
+    playEventCard(card, playerId);
+    return;
   } else if (isAction(card)) {
   if (
     GameState.priority.active &&

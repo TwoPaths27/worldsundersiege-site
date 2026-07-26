@@ -84,6 +84,8 @@ pendingConstructOperatorId: null,
   units: normalizeCards(createStartingUnits()),
   items: [],
   nextItemId: 1,
+  playerEvents: { 1: null, 2: null },
+  nextEventId: 1,
 
   log: ["Battlefield initialized."],
 };
