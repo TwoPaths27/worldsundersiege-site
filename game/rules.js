@@ -142,76 +142,22 @@ function applyUnitCombatDamage(attacker, defender, canRetaliate) {
 }
 
 function destroyUnit(unit, options = {}) {
-  if (!unit || !GameState.units.some((candidate) => candidate.id === unit.id)) {
-    return false;
-  }
-
+  if (!unit || !GameState.units.some((candidate) => candidate.id === unit.id)) return false;
   const source = options.source ?? unit;
   const cause = options.cause ?? "destroyed";
   const owner = GameState.players[unit.owner] ?? null;
 
-  emitGameEvent(
-    "unitLeavingPlay",
-    {
-      unit,
-      ownerId: unit.owner,
-      cause,
-      source,
-    },
-    { source }
-  );
+  emitGameEvent("unitLeavingPlay", { unit, ownerId: unit.owner, cause, source }, { source });
+  if (owner) owner.discardCount = (owner.discardCount ?? 0) + 1;
 
-  if (owner) {
-    owner.discardCount = (owner.discardCount ?? 0) + 1;
-  }
+  GameState.units = GameState.units.filter((candidate) => candidate.id !== unit.id);
+  if (GameState.selectedUnitId === unit.id) GameState.selectedUnitId = null;
 
-  destroyItemsAttachedTo(unit, { cause: "host-left-play", source });
+  emitGameEvent("unitDestroyed", { unit, ownerId: unit.owner, cause, source }, { source });
+  leavePermanent(unit, { cause, source, destroyed: true });
 
-  GameState.units = GameState.units.filter(
-    (candidate) => candidate.id !== unit.id
-  );
-
-  if (GameState.selectedUnitId === unit.id) {
-    GameState.selectedUnitId = null;
-  }
-
-  /*
-   * emitGameEvent() snapshots matching triggers when the event is created.
-   * This allows the destroyed unit's own death trigger to enter the stack
-   * even though its live trigger registrations are removed immediately after.
-   */
-  emitGameEvent(
-    "unitDestroyed",
-    {
-      unit,
-      ownerId: unit.owner,
-      cause,
-      source,
-    },
-    { source }
-  );
-
-  unregisterTriggersForSource(unit);
-
-  if (typeof unregisterReplacementEffectsForSource === "function") {
-    unregisterReplacementEffectsForSource(unit);
-  }
-
-  if (typeof updateContinuousEffects === "function") {
-    updateContinuousEffects({ phase: "stateCheck" });
-  }
-
-  emitGameEvent(
-    "unitLeftPlay",
-    {
-      unit,
-      ownerId: unit.owner,
-      cause,
-      source,
-    },
-    { source }
-  );
-
+  if (typeof updateContinuousEffects === "function") updateContinuousEffects({ phase: "stateCheck" });
+  emitGameEvent("unitLeftPlay", { unit, ownerId: unit.owner, cause, source }, { source });
   return true;
 }
 
@@ -314,11 +260,11 @@ function attachItem(item, host, options = {}) {
   item.owner ??= host.owner;
   item.controller = host.owner;
   item.attachedToId = host.id;
-  item.zone = ZoneTypes.BATTLEFIELD;
-  normalizeCard(item);
+  item.attachedTo = host.id;
+  normalizePermanent(item, { owner: item.owner, controller: item.controller });
   GameState.items.push(item);
+  enterPermanent(item, { owner: item.owner, controller: item.controller, cause: "attached" });
   registerItemModifier(item, host);
-  registerTriggersForSource(item);
   emitGameEvent("itemAttached", { item, host, playerId: item.owner }, { source: item });
   if (typeof updateContinuousEffects === "function") updateContinuousEffects({ phase: "stateCheck" });
   return true;
@@ -333,12 +279,9 @@ function destroyItem(item, options = {}) {
   if (event.cancelled) return false;
 
   GameState.items = GameState.items.filter((candidate) => candidate.id !== item.id);
-  if (item.continuousEffectId && typeof removeContinuousEffect === "function") {
-    removeContinuousEffect(item.continuousEffectId, options.cause ?? "item-destroyed");
-  }
-  unregisterTriggersForSource(item);
-  if (typeof unregisterReplacementEffectsForSource === "function") unregisterReplacementEffectsForSource(item);
-  item.zone = ZoneTypes.DISCARD;
+  leavePermanent(item, { cause: options.cause ?? "item-destroyed", source: options.source ?? item, destroyed: true });
+  item.attachedToId = null;
+  item.attachedTo = null;
   const owner = GameState.players[item.owner];
   if (owner) owner.discardCount = (owner.discardCount ?? 0) + 1;
   if (host && typeof getCurrentMaxHP === "function") host.currentHP = Math.min(host.currentHP, getCurrentMaxHP(host));

@@ -600,13 +600,13 @@ function selectCard(cardId) {
   GameState.selectedCardId = card.id;
   GameState.actionSelectionMessage = "";
 
-  if (player.energy < card.cost) {
+  if (isEvent(card)) {
+    playEventCard(card, playerId);
+    return;
+  } else if (player.energy < card.cost) {
     addLog(
       `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
     );
-  } else if (isEvent(card)) {
-    playEventCard(card, playerId);
-    return;
   } else if (isAction(card)) {
   if (
     GameState.priority.active &&

@@ -47,6 +47,7 @@ priority: {
 },
 
 pendingEvent: null,
+pendingEventChoice: null,
 
 pendingActionUserId: null,
 pendingActionTargetId: null,

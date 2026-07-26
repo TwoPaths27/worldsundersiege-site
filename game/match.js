@@ -8,6 +8,24 @@
  * renderers and gameplay operations.
  */
 
+function initializeStrongholdPermanents() {
+  GameState.strongholds ??= {};
+  for (const playerId of [1, 2]) {
+    if (GameState.strongholds[playerId]) continue;
+    const base = playerId === 1 ? getPlayerStrongholdCard() : {
+      id: "enemy-stronghold",
+      name: "Enemy Stronghold",
+      effectText: "",
+    };
+    const stronghold = normalizeCard({ ...base, type: CardTypes.STRONGHOLD, types: [CardTypes.STRONGHOLD] });
+    stronghold.id = `${base.id}-player-${playerId}`;
+    stronghold.owner = playerId;
+    stronghold.controller = playerId;
+    GameState.strongholds[playerId] = stronghold;
+    enterPermanent(stronghold, { owner: playerId, controller: playerId, cause: "match-start" });
+  }
+}
+
 function initializeGame() {
   validateRequiredElements();
   bindEvents();
@@ -16,8 +34,10 @@ function initializeGame() {
     if (typeof normalizeUnitBaseStats === "function") {
       normalizeUnitBaseStats(unit);
     }
-    registerTriggersForSource(unit);
+    enterPermanent(unit, { owner: unit.owner, controller: unit.owner, cause: "initial-battlefield" });
   }
+
+  initializeStrongholdPermanents();
 
   emitGameEvent(
     "initialBattlefieldReady",
@@ -52,6 +72,8 @@ function renderGame() {
 
   renderStrongholds();
   renderActionStacks();
+  renderEventZones();
+  renderEventReplacementChoice();
   renderHand();
   renderGameLog();
 }

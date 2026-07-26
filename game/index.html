@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=32">
+  <link rel="stylesheet" href="./game.css?v=17.1">
 </head>
 <body>
   <main class="game-layout">
@@ -496,6 +496,21 @@
     </section>
   </div>
 
+
+  <div id="eventChoiceModal" class="exit-modal event-choice-modal" hidden>
+    <div class="exit-modal__backdrop"></div>
+    <section class="exit-modal__dialog event-choice-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="eventChoiceTitle" aria-describedby="eventChoiceMessage">
+      <p class="event-choice-modal__eyebrow">Event Limit</p>
+      <h2 id="eventChoiceTitle">Choose the Event to Keep</h2>
+      <p id="eventChoiceMessage">You may control only one Event.</p>
+      <div class="event-choice-modal__cards">
+        <button id="keepCurrentEventButton" class="event-choice-card" type="button"></button>
+        <button id="keepIncomingEventButton" class="event-choice-card" type="button"></button>
+      </div>
+      <button id="cancelEventChoiceButton" class="modal-button modal-button--cancel" type="button">Cancel</button>
+    </section>
+  </div>
+
   <noscript>
     <div class="noscript-message">
       JavaScript must be enabled to play Worlds Under Siege.
@@ -508,22 +523,22 @@
 <script src="./game-state.js?v=15"></script>
 <script src="./replacement.js?v=13"></script>
 <script src="./events.js?v=13"></script>
-<script src="./permanent.js?v=17"></script>
-<script src="./validator.js?v=17"></script>
-<script src="./event-controller.js?v=17"></script>
 <script src="./effects.js?v=13"></script>
 <script src="./zones.js?v=13"></script>
 <script src="./costs.js?v=13"></script>
 <script src="./targeting.js?v=13"></script>
 <script src="./abilities.js?v=14"></script>
-<script src="./rules.js?v=15"></script>
+<script src="./permanent.js?v=17.1"></script>
+<script src="./validator.js?v=17.1"></script>
+<script src="./event-controller.js?v=17.1"></script>
+<script src="./rules.js?v=17.1"></script>
 <script src="./audio.js?v=1"></script>
-<script src="./ui.js?v=2"></script>
+<script src="./ui.js?v=17.1"></script>
 <script src="./animation.js?v=1"></script>
 <script src="./priority.js?v=13"></script>
-<script src="./battlefield.js?v=15"></script>
-<script src="./cards.js?v=14"></script>
-<script src="./match.js?v=13"></script>
+<script src="./battlefield.js?v=17.1"></script>
+<script src="./cards.js?v=17.1"></script>
+<script src="./match.js?v=17.1"></script>
 <script src="./game.js?v=37"></script>
 </body>
 </html>

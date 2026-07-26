@@ -20,6 +20,8 @@ const elements = {
   enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
   playerActionStack: document.querySelector("#playerActionStack"),
   enemyActionStack: document.querySelector("#enemyActionStack"),
+  playerEventZone: document.querySelector("#playerEventZone"),
+  enemyEventZone: document.querySelector("#enemyEventZone"),
   actionPrompt: document.querySelector("#actionPrompt"),
   actionPromptText: document.querySelector("#actionPromptText"),
   triggerChoiceControls: document.querySelector("#triggerChoiceControls"),
@@ -58,6 +60,12 @@ playerStrongholdEffect: document.querySelector(
   cancelExitButton: document.querySelector("#cancelExitButton"),
   confirmExitButton: document.querySelector("#confirmExitButton"),
 
+  eventChoiceModal: document.querySelector("#eventChoiceModal"),
+  eventChoiceMessage: document.querySelector("#eventChoiceMessage"),
+  keepCurrentEventButton: document.querySelector("#keepCurrentEventButton"),
+  keepIncomingEventButton: document.querySelector("#keepIncomingEventButton"),
+  cancelEventChoiceButton: document.querySelector("#cancelEventChoiceButton"),
+
   victoryModal: document.querySelector("#victoryModal"),
   victoryEyebrow: document.querySelector("#victoryEyebrow"),
   victoryTitle: document.querySelector("#victoryTitle"),
@@ -91,6 +99,12 @@ function bindEvents() {
 
   elements.endTurnButton.addEventListener("click", endTurn);
   elements.passPriorityButton.addEventListener("click", passPriority);
+
+  elements.playerEventZone.addEventListener("click", () => inspectControlledEvent(1));
+  elements.enemyEventZone.addEventListener("click", () => inspectControlledEvent(2));
+  elements.keepCurrentEventButton.addEventListener("click", () => resolveEventReplacementChoice("existing"));
+  elements.keepIncomingEventButton.addEventListener("click", () => resolveEventReplacementChoice("incoming"));
+  elements.cancelEventChoiceButton.addEventListener("click", cancelEventReplacementChoice);
 
   elements.acceptTriggerButton?.addEventListener(
     "click",

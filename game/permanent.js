@@ -97,6 +97,9 @@ function leavePermanent(permanent, options = {}) {
   if (typeof emitGameEvent === "function") {
     emitGameEvent("permanentLeaving", { permanent, cause: options.cause ?? "left-play", destination: options.destination ?? PermanentZones.DISCARD }, { source: options.source ?? permanent });
   }
+  if (typeof destroyItemsAttachedTo === "function" && !isItem(permanent)) {
+    destroyItemsAttachedTo(permanent, { cause: "host-left-play", source: options.source ?? permanent });
+  }
   unregisterPermanent(permanent, options.cause);
   permanent.zone = options.destination ?? PermanentZones.DISCARD;
   permanent.permanentState.destroyed = options.destroyed === true;
