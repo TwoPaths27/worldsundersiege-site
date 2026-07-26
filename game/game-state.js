@@ -129,3 +129,7 @@ function getUnitAt(x, y) {
 function getCoordinateKey(x, y) {
   return `${x},${y}`;
 }
+
+
+// Module 14
+GameState.selectedInspectionUnitId = null;

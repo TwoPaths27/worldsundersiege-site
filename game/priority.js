@@ -479,3 +479,7 @@ function renderActionArrows() {
     svg.appendChild(line);
   }
 }
+
+
+// Module 14 compatibility alias
+const renderEffectStack = renderActionStacks;

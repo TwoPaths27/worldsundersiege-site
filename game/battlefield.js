@@ -299,7 +299,9 @@ function renderBattlefield() {
   }
 }
 function setSelectedUnitAction(action) {
-  const unit = getSelectedUnit();
+  const unit =
+  getSelectedUnit() ??
+  getInspectedUnit();
 
   if (
     !unit ||
@@ -631,6 +633,9 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
+if (GameState.inspectedUnitId === occupant.id) {
+    cell.classList.add("cell-inspected");
+}
   cell.classList.add("cell-selected");
 
   if (GameState.selectedUnitAction === "selected") {
@@ -792,6 +797,10 @@ function createUnitToken(unit) {
     "is-selected-unit",
     GameState.selectedUnitId === unit.id
   );
+token.classList.toggle(
+    "is-inspected-unit",
+    GameState.inspectedUnitId === unit.id
+);
   token.classList.toggle("has-attacked", unit.hasAttacked);
 
   const {
@@ -925,26 +934,29 @@ function handleBattlefieldClick(x, y) {
   return;
 }
 
-  if (clickedUnit.owner !== GameState.activePlayer) {
-  const isValidAttack =
-    selectedUnit &&
-    GameState.selectedUnitAction === "attack" &&
-    GameState.attackableUnitIds.has(clickedUnit.id);
+ if (clickedUnit.owner !== GameState.activePlayer) {
 
-  if (isValidAttack) {
-    attackUnit(selectedUnit, clickedUnit);
+    const isValidAttack =
+        selectedUnit &&
+        GameState.selectedUnitAction === "attack" &&
+        GameState.attackableUnitIds.has(clickedUnit.id);
+
+    if (isValidAttack) {
+        attackUnit(selectedUnit, clickedUnit);
+        return;
+    }
+
+    toggleInspection(clickedUnit);
+
+    renderGame();
     return;
-  }
-
-  if (selectedUnit) {
-    addLog("Invalid attack target. Selection cleared.");
-    clearSelection();
-  }
-
-  return;
 }
 
-    selectUnit(clickedUnit.id);
+   selectUnit(clickedUnit.id);
+
+inspectUnit(clickedUnit);
+
+renderGame();
     return;
   }
 
@@ -966,7 +978,7 @@ if (isValidMove) {
   return;
 }
 
-addLog("Selection cleared.");
+clearInspection();
 clearSelection();
 }
 
@@ -976,6 +988,7 @@ function clearSelection() {
   }
 
   GameState.selectedUnitId = null;
+GameState.inspectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.selectedUnitAction = "move";
   GameState.pendingActionUserId = null;
@@ -1620,7 +1633,10 @@ function createCardArtPreview(imageSource, altText) {
 }
 
 function renderCardPreview(unit = null) {
-  const previewUnit = unit ?? getSelectedUnit();
+  const previewUnit =
+  unit ??
+  getSelectedUnit() ??
+  getInspectedUnit();
 
   elements.cardPreview.replaceChildren();
 
@@ -1696,4 +1712,39 @@ elements.playerStrongholdEffect.textContent =
     "stronghold--critical-damage",
     enemyStrongholdDamaged && !GameState.gameOver
   );
+}
+
+
+function getInspectedUnit() {
+  if (!GameState.inspectedUnitId) {
+    return null;
+  }
+
+  return getUnitById(GameState.inspectedUnitId);
+}
+
+function inspectUnit(unit) {
+  if (!unit) {
+    return;
+  }
+
+  GameState.inspectedUnitId = unit.id;
+}
+
+function clearInspection() {
+  GameState.inspectedUnitId = null;
+}
+
+function toggleInspection(unit) {
+  if (!unit) {
+    clearInspection();
+    return;
+  }
+
+  if (GameState.inspectedUnitId === unit.id) {
+    clearInspection();
+    return;
+  }
+
+  inspectUnit(unit);
 }
