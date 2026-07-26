@@ -131,5 +131,5 @@ function getCoordinateKey(x, y) {
 }
 
 
-// Module 14
-GameState.selectedInspectionUnitId = null;
+// Battlefield inspection is independent from gameplay selection.
+GameState.inspectedUnitId = null;

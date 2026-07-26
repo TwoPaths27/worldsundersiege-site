@@ -299,9 +299,7 @@ function renderBattlefield() {
   }
 }
 function setSelectedUnitAction(action) {
-  const unit =
-  getSelectedUnit() ??
-  getInspectedUnit();
+  const unit = getSelectedUnit();
 
   if (
     !unit ||
@@ -633,15 +631,16 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (selectedUnit?.id === occupant.id) {
-if (GameState.inspectedUnitId === occupant.id) {
-    cell.classList.add("cell-inspected");
-}
-  cell.classList.add("cell-selected");
+      cell.classList.add("cell-selected");
 
-  if (GameState.selectedUnitAction === "selected") {
-    cell.appendChild(createSelectedUnitControls(occupant));
-  }
-}
+      if (GameState.selectedUnitAction === "selected") {
+        cell.appendChild(createSelectedUnitControls(occupant));
+      }
+    }
+
+    if (GameState.inspectedUnitId === occupant.id) {
+      cell.classList.add("cell-inspected");
+    }
 
     if (isAttackTarget) {
       const isLethal = occupant.currentHP <= selectedUnit.currentAttack;
@@ -797,10 +796,10 @@ function createUnitToken(unit) {
     "is-selected-unit",
     GameState.selectedUnitId === unit.id
   );
-token.classList.toggle(
+  token.classList.toggle(
     "is-inspected-unit",
     GameState.inspectedUnitId === unit.id
-);
+  );
   token.classList.toggle("has-attacked", unit.hasAttacked);
 
   const {
@@ -934,29 +933,23 @@ function handleBattlefieldClick(x, y) {
   return;
 }
 
- if (clickedUnit.owner !== GameState.activePlayer) {
-
+  if (clickedUnit.owner !== GameState.activePlayer) {
     const isValidAttack =
-        selectedUnit &&
-        GameState.selectedUnitAction === "attack" &&
-        GameState.attackableUnitIds.has(clickedUnit.id);
+      selectedUnit &&
+      GameState.selectedUnitAction === "attack" &&
+      GameState.attackableUnitIds.has(clickedUnit.id);
 
     if (isValidAttack) {
-        attackUnit(selectedUnit, clickedUnit);
-        return;
+      attackUnit(selectedUnit, clickedUnit);
+      return;
     }
 
     toggleInspection(clickedUnit);
-
     renderGame();
     return;
-}
+  }
 
-   selectUnit(clickedUnit.id);
-
-inspectUnit(clickedUnit);
-
-renderGame();
+    selectUnit(clickedUnit.id);
     return;
   }
 
@@ -978,6 +971,7 @@ if (isValidMove) {
   return;
 }
 
+addLog("Selection cleared.");
 clearInspection();
 clearSelection();
 }
@@ -988,7 +982,6 @@ function clearSelection() {
   }
 
   GameState.selectedUnitId = null;
-GameState.inspectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.selectedUnitAction = "move";
   GameState.pendingActionUserId = null;
@@ -1021,6 +1014,7 @@ function selectUnit(unitId) {
 
 GameState.selectedCardId = null;
 GameState.selectedUnitId = unit.id;
+GameState.inspectedUnitId = unit.id;
 GameState.selectedUnitAction = "selected";
 
 GameState.reachableSpaces = new Map();
@@ -1329,6 +1323,7 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.gameOver = true;
   GameState.winnerPlayerId = winnerPlayerId;
   GameState.selectedUnitId = null;
+  GameState.inspectedUnitId = null;
   GameState.selectedCardId = null;
   GameState.actionSelectionMessage = "";
   GameState.pendingActionUserId = null;
@@ -1484,7 +1479,11 @@ if (attackerStillExists && attacker.remainingSpeed > 0) {
   GameState.attackableUnitIds = new Set();
   GameState.attackableStrongholdPlayerId = null;
 }
-    renderGame();
+
+// Keep a surviving defender visible in the inspection UI after combat.
+GameState.inspectedUnitId = defenderDestroyed ? null : defender.id;
+
+renderGame();
   } finally {
     GameState.isAnimating = false;
     setInteractionLock(false);
@@ -1564,7 +1563,7 @@ function getOrthogonalNeighbors(x, y) {
 }
 
 function renderSelectedUnitPanel() {
-  const unit = getSelectedUnit();
+  const unit = getSelectedUnit() ?? getInspectedUnit();
 
   elements.selectedUnitPanel.replaceChildren();
 
@@ -1633,10 +1632,7 @@ function createCardArtPreview(imageSource, altText) {
 }
 
 function renderCardPreview(unit = null) {
-  const previewUnit =
-  unit ??
-  getSelectedUnit() ??
-  getInspectedUnit();
+  const previewUnit = unit ?? getSelectedUnit() ?? getInspectedUnit();
 
   elements.cardPreview.replaceChildren();
 
@@ -1715,20 +1711,24 @@ elements.playerStrongholdEffect.textContent =
 }
 
 
+// Battlefield inspection helpers
 function getInspectedUnit() {
   if (!GameState.inspectedUnitId) {
     return null;
   }
 
-  return getUnitById(GameState.inspectedUnitId);
+  const unit = getUnitById(GameState.inspectedUnitId);
+
+  if (!unit) {
+    GameState.inspectedUnitId = null;
+    return null;
+  }
+
+  return unit;
 }
 
 function inspectUnit(unit) {
-  if (!unit) {
-    return;
-  }
-
-  GameState.inspectedUnitId = unit.id;
+  GameState.inspectedUnitId = unit?.id ?? null;
 }
 
 function clearInspection() {
@@ -1736,12 +1736,7 @@ function clearInspection() {
 }
 
 function toggleInspection(unit) {
-  if (!unit) {
-    clearInspection();
-    return;
-  }
-
-  if (GameState.inspectedUnitId === unit.id) {
+  if (!unit || GameState.inspectedUnitId === unit.id) {
     clearInspection();
     return;
   }
