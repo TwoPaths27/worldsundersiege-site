@@ -29,6 +29,12 @@ function removeEventFromPlay(eventCard, options = {}) {
   return true;
 }
 
+
+function clearEventInteractionState() {
+  clearEventInteractionState();
+}
+
+
 function beginEventReplacementChoice(playerId, existingEvent, incomingEvent) {
   ensureEventState();
   GameState.pendingEventChoice = {
@@ -44,9 +50,7 @@ function beginEventReplacementChoice(playerId, existingEvent, incomingEvent) {
 
 function cancelEventReplacementChoice() {
   if (!GameState.pendingEventChoice) return false;
-  GameState.pendingEventChoice = null;
-  GameState.selectedCardId = null;
-  GameState.actionSelectionMessage = "";
+  clearEventInteractionState();
   if (typeof renderGame === "function") renderGame();
   return true;
 }
@@ -78,9 +82,7 @@ function commitEventPlay(card, playerId, existing = null, keepIncoming = true) {
     addLog(`🌐 ${player.name} plays Event ${card.name} for free.`);
   }
 
-  GameState.pendingEventChoice = null;
-  GameState.selectedCardId = null;
-  GameState.actionSelectionMessage = "";
+  clearEventInteractionState();
   reportValidation(validateEventState(), "Event state");
   if (typeof renderGame === "function") renderGame();
   return true;

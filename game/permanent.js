@@ -34,6 +34,14 @@ function normalizePermanent(permanent, options = {}) {
   return permanent;
 }
 
+
+function resetPermanentState(permanent) {
+  permanent.permanentState.entering = false;
+  permanent.permanentState.leaving = false;
+  permanent.permanentState.destroyed = false;
+  return permanent;
+}
+
 function normalizeDefinitions(value) {
   if (!value) return [];
   return (Array.isArray(value) ? value : [value]).filter(Boolean);
@@ -83,7 +91,7 @@ function enterPermanent(permanent, options = {}) {
   permanent.permanentState.entering = true;
   permanent.zone = options.zone ?? PermanentZones.BATTLEFIELD;
   registerPermanent(permanent);
-  permanent.permanentState.entering = false;
+  resetPermanentState(permanent);
   if (typeof emitGameEvent === "function") {
     emitGameEvent("permanentEntered", { permanent, playerId: permanent.controller, cause: options.cause ?? "played" }, { source: permanent });
   }

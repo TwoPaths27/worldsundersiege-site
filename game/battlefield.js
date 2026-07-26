@@ -938,8 +938,7 @@ function handleBattlefieldClick(x, y) {
     if (clickedUnit && canAttachItemToHost(selectedCard, clickedUnit, { playerId: getInteractionPlayerId() })) {
       equipSelectedItem(clickedUnit);
     } else {
-      addLog("Choose a highlighted eligible host for the Item.");
-      renderGame();
+      cancelInteraction("Item cancelled.");
     }
     return;
   }
@@ -949,8 +948,7 @@ function handleBattlefieldClick(x, y) {
       if (clickedUnit && isEligibleActionUser(clickedUnit)) {
         chooseActionUser(clickedUnit);
       } else {
-        addLog("Choose one of your highlighted Characters to use the Action.");
-        renderGame();
+        cancelInteraction("Action cancelled.");
       }
       return;
     }
@@ -959,8 +957,7 @@ function handleBattlefieldClick(x, y) {
       if (clickedUnit && isEligibleActionTarget(clickedUnit)) {
         commitSelectedAction(clickedUnit.id);
       } else {
-        addLog("Choose a highlighted Unit as the Action target.");
-        renderGame();
+        cancelInteraction("Action cancelled.");
       }
       return;
     }
@@ -1064,6 +1061,25 @@ function chooseConstructOperator(operator) {
   renderGame();
 }
 
+
+function cancelInteraction(reason = "") {
+  if (reason) {
+    addLog(reason);
+  }
+
+  GameState.selectedCardId = null;
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+  GameState.reachableSpaces = new Map();
+
+  clearAttackHoverState();
+  renderGame();
+}
+
 function clearSelection() {
   if (GameState.gameOver || GameState.isAnimating) {
     return;
@@ -1102,7 +1118,7 @@ function selectUnit(unitId) {
     return;
   }
 
-GameState.selectedCardId = null;
+cancelInteraction();
 GameState.selectedUnitId = unit.id;
 GameState.inspectedUnitId = unit.id;
 GameState.selectedUnitAction = "selected";
@@ -1154,7 +1170,7 @@ async function equipSelectedItem(host) {
     return false;
   }
 
-  GameState.selectedCardId = null;
+  cancelInteraction();
   emitGameEvent("cardPlayed", { card: item, playerId, target: host }, { source: item });
   addLog(`🛡 ${player.name} equipped ${item.name} to ${host.name}.`);
   addLog(`🔋 −${item.cost} Energy.`);
@@ -1170,7 +1186,7 @@ async function recruitSelectedCard(x, y) {
   const card = getSelectedCard();
 
   if (!card) {
-    return;
+    return false;
   }
 
   const player = getActivePlayer();
@@ -1182,7 +1198,7 @@ async function recruitSelectedCard(x, y) {
   if (!isBattlefieldCard(card)) {
     addLog(`${card.name} cannot be deployed to the battlefield.`);
     renderGame();
-    return;
+    return false;
   }
 
   if (player.energy < card.cost) {
@@ -1190,7 +1206,7 @@ async function recruitSelectedCard(x, y) {
       `${card.name} costs ${card.cost} Energy, but ${player.name} only has ${player.energy}.`
     );
     renderGame();
-    return;
+    return false;
   }
 
   if (!recruitingSpaces.has(destinationKey)) {
@@ -1198,7 +1214,7 @@ async function recruitSelectedCard(x, y) {
       `Choose one of ${player.name}'s highlighted recruiting spaces.`
     );
     renderGame();
-    return;
+    return false;
   }
 
   if (getUnitAt(x, y)) {
@@ -1297,7 +1313,7 @@ async function recruitSelectedCard(x, y) {
       },
       { source: unit }
     );
-    GameState.selectedCardId = null;
+    cancelInteraction();
     GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
 
@@ -1313,6 +1329,7 @@ async function recruitSelectedCard(x, y) {
         GameState.lastSpawnedUnitId = null;
       }
     }, 650);
+    return true;
   } finally {
     GameState.isAnimating = false;
     setInteractionLock(false);
@@ -1360,7 +1377,7 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   if (movementCost === undefined || movementCost <= 0) {
     addLog("That space cannot be reached.");
-    return;
+    return false;
   }
 
   if (getUnitAt(destinationX, destinationY)) {

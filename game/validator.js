@@ -9,8 +9,30 @@ function validatePermanent(permanent) {
   if (!isPermanent(permanent)) errors.push("Card does not have a permanent type.");
   if (!getCardTypes(permanent).length) errors.push("Missing types.");
   if (permanent.controller == null && permanent.owner == null) errors.push("Missing owner/controller.");
+  errors.push(...validatePermanentState(permanent));
   return { valid: errors.length === 0, errors };
 }
+
+
+function validatePermanentState(permanent) {
+  const state = permanent?.permanentState;
+  if (!state) {
+    return ["Missing permanentState."];
+  }
+
+  const errors = [];
+  if (typeof state.registered !== "boolean") {
+    errors.push("permanentState.registered must be boolean.");
+  }
+  if (typeof state.entering !== "boolean") {
+    errors.push("permanentState.entering must be boolean.");
+  }
+  if (typeof state.leaving !== "boolean") {
+    errors.push("permanentState.leaving must be boolean.");
+  }
+  return errors;
+}
+
 
 function validateEventState() {
   const errors = [];

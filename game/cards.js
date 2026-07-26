@@ -545,7 +545,59 @@ function commitSelectedAction(targetId = null) {
 }
 
 
+
 /* Card selection */
+
+function getDefaultActionSelectionMessage() {
+  return GameState.priority.active
+    ? `${GameState.players[GameState.priority.playerId].name} has priority. Play an Action or pass.`
+    : "";
+}
+
+function clearSelectedCardInteraction({
+  preserveSelection = false,
+  preserveMessage = false,
+} = {}) {
+  if (!preserveSelection) {
+    GameState.selectedCardId = null;
+  }
+
+  GameState.pendingActionUserId = null;
+  GameState.pendingActionTargetId = null;
+
+  if (!preserveMessage) {
+    GameState.actionSelectionMessage =
+      getDefaultActionSelectionMessage();
+  }
+}
+
+function prepareForCardSelection(cardId) {
+  /*
+   * Selecting a hand card replaces every previous battlefield/card
+   * interaction cleanly. This prevents stale movement, attack, Action,
+   * Item, and Construct highlights from surviving a card switch.
+   */
+  GameState.selectedUnitId = null;
+  GameState.selectedUnitAction = "move";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
+
+  clearSelectedCardInteraction();
+  GameState.selectedCardId = cardId;
+  GameState.actionSelectionMessage = "";
+}
+
+function rejectSelectedCard(message) {
+  if (message) {
+    addLog(message);
+  }
+
+  clearSelectedCardInteraction();
+  renderGame();
+}
 
 function selectCard(cardId) {
   if (
@@ -563,11 +615,11 @@ function selectCard(cardId) {
     GameState.priority.playerId !== playerId
   ) {
     addLog("That player does not currently have priority.");
+    renderGame();
     return;
   }
 
   const player = GameState.players[playerId];
-
   const card = player.hand.find(
     (handCard) => handCard.id === cardId
   );
@@ -578,78 +630,88 @@ function selectCard(cardId) {
 
   if (GameState.priority.active && !isAction(card)) {
     addLog("Only Action cards may be played while priority is open.");
-    return;
-  }
-
-  if (GameState.selectedCardId === card.id) {
-    GameState.selectedCardId = null;
-    GameState.pendingActionUserId = null;
-    GameState.pendingActionTargetId = null;
-    GameState.actionSelectionMessage =
-  GameState.priority.active
-    ? `${GameState.players[GameState.priority.playerId].name} has priority. Play an Action or pass.`
-    : "";
     renderGame();
     return;
   }
 
-  GameState.selectedUnitId = null;
-  GameState.reachableSpaces = new Map();
-  GameState.attackableUnitIds = new Set();
-  GameState.attackableStrongholdPlayerId = null;
-  GameState.selectedCardId = card.id;
-  GameState.actionSelectionMessage = "";
+  /*
+   * Clicking the currently selected card toggles it off.
+   */
+  if (GameState.selectedCardId === card.id) {
+    clearSelectedCardInteraction();
+    renderGame();
+    return;
+  }
+
+  /*
+   * Clicking a different card immediately switches selection and clears
+   * every stale interaction/highlight from the previous selection.
+   */
+  prepareForCardSelection(card.id);
 
   if (isEvent(card)) {
     playEventCard(card, playerId);
     return;
-  } else if (player.energy < card.cost) {
-    addLog(
-      `${card.name} selected, but it requires ${card.cost} Energy and ${player.name} has ${player.energy}.`
+  }
+
+  if (player.energy < card.cost) {
+    rejectSelectedCard(
+      `${card.name} requires ${card.cost} Energy, but ${player.name} has ${player.energy}.`
     );
-  } else if (isAction(card)) {
-  if (
-    GameState.priority.active &&
-    GameState.priority.playerId !== getInteractionPlayerId()
-  ) {
-    addLog("That player does not currently have priority.");
-    GameState.selectedCardId = null;
-  } else if (!getAbility(card)) {
-    addLog(`${card.name} has no registered ability.`);
-    GameState.selectedCardId = null;
-  } else if (!canPlayAbility(card, getSelectedActionContext())) {
-    addLog(`${card.name} cannot be played right now.`);
-    GameState.selectedCardId = null;
-  } else if (!getEligibleActionUsers().length) {
-    addLog(`${player.name} must control a Character to play ${card.name}.`);
-  } else {
-    GameState.pendingActionUserId = null;
-    GameState.pendingActionTargetId = null;
+    return;
+  }
+
+  if (isAction(card)) {
+    if (!getAbility(card)) {
+      rejectSelectedCard(`${card.name} has no registered ability.`);
+      return;
+    }
+
+    if (!canPlayAbility(card, getSelectedActionContext())) {
+      rejectSelectedCard(`${card.name} cannot be played right now.`);
+      return;
+    }
+
+    if (!getEligibleActionUsers().length) {
+      rejectSelectedCard(
+        `${player.name} must control a Character to play ${card.name}.`
+      );
+      return;
+    }
+
     const ability = getAbility(card);
-    GameState.actionSelectionMessage = ability.getUserPrompt(
-      getSelectedActionContext()
-    );
+
+    GameState.actionSelectionMessage =
+      ability.getUserPrompt(getSelectedActionContext());
 
     addLog(
       `${card.name} selected. Choose who you wish to use the Action.`
     );
+
+    renderGame();
+    return;
   }
 
-  } else if (isItem(card)) {
+  if (isItem(card)) {
     const eligibleHosts = GameState.units.filter((unit) =>
       canAttachItemToHost(card, unit, { playerId })
     );
+
     if (!eligibleHosts.length) {
-      addLog(`${card.name} has no eligible host.`);
-    } else {
-      addLog(`${card.name} selected. Choose a highlighted Character to equip it.`);
+      rejectSelectedCard(`${card.name} has no eligible host.`);
+      return;
     }
-  } else {
+
     addLog(
-      `${card.name} selected. Choose a highlighted recruiting space.`
+      `${card.name} selected. Choose a highlighted Character to equip it.`
     );
+    renderGame();
+    return;
   }
 
+  addLog(
+    `${card.name} selected. Choose a highlighted recruiting space.`
+  );
   renderGame();
 }
 
