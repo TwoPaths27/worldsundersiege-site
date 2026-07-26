@@ -165,6 +165,8 @@ function destroyUnit(unit, options = {}) {
     owner.discardCount = (owner.discardCount ?? 0) + 1;
   }
 
+  destroyItemsAttachedTo(unit, { cause: "host-left-play", source });
+
   GameState.units = GameState.units.filter(
     (candidate) => candidate.id !== unit.id
   );
@@ -251,6 +253,103 @@ function applyTemporaryRangeBonus(unit, amount) {
   unit.temporaryRangeBonus = (unit.temporaryRangeBonus ?? 0) + amount;
   unit.currentRange = unit.printedRange + unit.temporaryRangeBonus;
   return unit.currentRange;
+}
+
+
+/* v16 — Item attachment and equipment rules */
+function getAttachedItems(hostOrId) {
+  const hostId = typeof hostOrId === "object" ? hostOrId?.id : hostOrId;
+  if (!hostId) return [];
+  return (GameState.items ?? []).filter((item) => item.attachedToId === hostId);
+}
+
+function getItemStatModifier(item) {
+  const modifiers = item?.modifiers && typeof item.modifiers === "object"
+    ? item.modifiers
+    : {};
+  return {
+    attack: Number(modifiers.attack ?? item?.attackBonus ?? 0) || 0,
+    hp: Number(modifiers.hp ?? item?.hpBonus ?? 0) || 0,
+    range: Number(modifiers.range ?? item?.rangeBonus ?? 0) || 0,
+    speed: Number(modifiers.speed ?? item?.speedBonus ?? 0) || 0,
+  };
+}
+
+function canAttachItemToHost(item, host, context = {}) {
+  if (!itemCanAttachTo(item, host, { game: GameState, ...context })) return false;
+  const rule = getItemAttachmentRule(item);
+  return getAttachedItems(host).length < rule.maxPerHost;
+}
+
+function registerItemModifier(item, host) {
+  if (typeof addContinuousEffect !== "function") return null;
+  const bonus = getItemStatModifier(item);
+  if (!bonus.attack && !bonus.hp && !bonus.range && !bonus.speed) return null;
+
+  const effect = addContinuousEffect({
+    id: `item-effect-${item.id}`,
+    source: item,
+    controller: item.owner,
+    target: host.id,
+    layer: ModifierLayers.EQUIPMENT,
+    duration: "permanent",
+    expiresWithSource: true,
+    modifier(stats) {
+      stats.attack += bonus.attack;
+      stats.maxHP += bonus.hp;
+      stats.range += bonus.range;
+      stats.speed += bonus.speed;
+    },
+    metadata: { kind: "equipment", itemId: item.id, hostId: host.id },
+  });
+
+  item.continuousEffectId = effect.id;
+  if (bonus.hp > 0) host.currentHP += bonus.hp;
+  return effect;
+}
+
+function attachItem(item, host, options = {}) {
+  if (!canAttachItemToHost(item, host, options)) return false;
+  GameState.items ??= [];
+  item.owner ??= host.owner;
+  item.controller = host.owner;
+  item.attachedToId = host.id;
+  item.zone = ZoneTypes.BATTLEFIELD;
+  normalizeCard(item);
+  GameState.items.push(item);
+  registerItemModifier(item, host);
+  registerTriggersForSource(item);
+  emitGameEvent("itemAttached", { item, host, playerId: item.owner }, { source: item });
+  if (typeof updateContinuousEffects === "function") updateContinuousEffects({ phase: "stateCheck" });
+  return true;
+}
+
+function destroyItem(item, options = {}) {
+  if (!item || !(GameState.items ?? []).some((candidate) => candidate.id === item.id)) return false;
+  const host = getUnitById(item.attachedToId);
+  const event = emitGameEvent("itemWouldBeDestroyed", {
+    item, host, cause: options.cause ?? "destroyed", source: options.source ?? item,
+  }, { source: options.source ?? item });
+  if (event.cancelled) return false;
+
+  GameState.items = GameState.items.filter((candidate) => candidate.id !== item.id);
+  if (item.continuousEffectId && typeof removeContinuousEffect === "function") {
+    removeContinuousEffect(item.continuousEffectId, options.cause ?? "item-destroyed");
+  }
+  unregisterTriggersForSource(item);
+  if (typeof unregisterReplacementEffectsForSource === "function") unregisterReplacementEffectsForSource(item);
+  item.zone = ZoneTypes.DISCARD;
+  const owner = GameState.players[item.owner];
+  if (owner) owner.discardCount = (owner.discardCount ?? 0) + 1;
+  if (host && typeof getCurrentMaxHP === "function") host.currentHP = Math.min(host.currentHP, getCurrentMaxHP(host));
+  emitGameEvent("itemDestroyed", { item, host, cause: options.cause ?? "destroyed" }, { source: options.source ?? item });
+  return true;
+}
+
+function destroyItemsAttachedTo(host, options = {}) {
+  const items = [...getAttachedItems(host)];
+  for (const item of items) destroyItem(item, { cause: options.cause ?? "host-left-play", source: options.source ?? host });
+  return items.length;
 }
 
 /* v15 — Construct operation rules */

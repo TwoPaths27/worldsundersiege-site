@@ -25,7 +25,9 @@ function renderHandCardPreview(card) {
   stats.textContent =
     isAction(card)
       ? `Action · Cost ${card.cost}`
-      : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
+      : isItem(card)
+        ? `Item · Cost ${card.cost}`
+        : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
         `RNG ${card.range} · SPD ${card.speed}`;
 
   details.append(name, stats);
@@ -626,6 +628,15 @@ function selectCard(cardId) {
     );
   }
 
+  } else if (isItem(card)) {
+    const eligibleHosts = GameState.units.filter((unit) =>
+      canAttachItemToHost(card, unit, { playerId })
+    );
+    if (!eligibleHosts.length) {
+      addLog(`${card.name} has no eligible host.`);
+    } else {
+      addLog(`${card.name} selected. Choose a highlighted Character to equip it.`);
+    }
   } else {
     addLog(
       `${card.name} selected. Choose a highlighted recruiting space.`

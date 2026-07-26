@@ -6267,3 +6267,11 @@ body::after {
   box-shadow: 0 0 18px rgba(255, 210, 80, 0.8);
   cursor: pointer;
 }
+
+/* v16 Item attachment target */
+.unit-token.is-item-host-choice {
+  outline: 3px solid rgba(255, 215, 92, .95);
+  outline-offset: -4px;
+  box-shadow: 0 0 18px rgba(255, 196, 48, .72);
+  cursor: pointer;
+}

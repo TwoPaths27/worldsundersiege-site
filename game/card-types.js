@@ -192,6 +192,33 @@ function isBattlefieldCard(card) {
   return isUnit(card) || isConstruct(card);
 }
 
+function getItemAttachmentRule(item) {
+  if (!item || !isItem(item)) return null;
+  const rule = item.attachmentRule && typeof item.attachmentRule === "object"
+    ? item.attachmentRule
+    : {};
+  return {
+    controllerOnly: rule.controllerOnly !== false,
+    maxPerHost: Math.max(1, Number(rule.maxPerHost ?? 1)),
+    requiresTypes: normalizeStringCollection(rule.requiresTypes),
+    requiresTraits: normalizeStringCollection(rule.requiresTraits),
+    excludesTypes: normalizeStringCollection(rule.excludesTypes),
+    canAttach: typeof rule.canAttach === "function" ? rule.canAttach : null,
+  };
+}
+
+function itemCanAttachTo(item, host, context = {}) {
+  if (!isItem(item) || !host || !isBattlefieldCard(host)) return false;
+  const rule = getItemAttachmentRule(item);
+  if (!rule) return false;
+  if (rule.controllerOnly && item.owner != null && host.owner !== item.owner) return false;
+  if (!canEquipItems(host) && !rule.requiresTypes.length && !rule.requiresTraits.length) return false;
+  if (rule.requiresTypes.length && !rule.requiresTypes.some((type) => hasType(host, type))) return false;
+  if (rule.requiresTraits.length && !rule.requiresTraits.every((trait) => hasTrait(host, trait))) return false;
+  if (rule.excludesTypes.some((type) => hasType(host, type))) return false;
+  return rule.canAttach ? rule.canAttach(item, host, context) !== false : true;
+}
+
 function canBeConstructOperator(card) {
   return isCharacter(card) && canOperateConstructs(card);
 }

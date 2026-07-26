@@ -851,6 +851,10 @@ function createUnitToken(unit) {
     "is-construct-operator-choice",
     GameState.constructOperatorIds.has(unit.id)
   );
+  token.classList.toggle(
+    "is-item-host-choice",
+    isItem(getSelectedCard()) && canAttachItemToHost(getSelectedCard(), unit, { playerId: getInteractionPlayerId() })
+  );
 
   token.title = "";
   token.setAttribute("aria-disabled", String(exhausted));
@@ -924,6 +928,16 @@ function handleBattlefieldClick(x, y) {
       chooseTriggeredTarget(clickedUnit);
     } else {
       addLog("Choose a highlighted Unit as the triggered ability target.");
+      renderGame();
+    }
+    return;
+  }
+
+  if (isItem(selectedCard)) {
+    if (clickedUnit && canAttachItemToHost(selectedCard, clickedUnit, { playerId: getInteractionPlayerId() })) {
+      equipSelectedItem(clickedUnit);
+    } else {
+      addLog("Choose a highlighted eligible host for the Item.");
       renderGame();
     }
     return;
@@ -1109,6 +1123,43 @@ addLog(
   renderGame();
 }
 
+
+
+async function equipSelectedItem(host) {
+  if (GameState.isAnimating) return false;
+  const item = getSelectedCard();
+  const playerId = getInteractionPlayerId();
+  const player = GameState.players[playerId];
+  if (!item || !isItem(item) || !player || !canAttachItemToHost(item, host, { playerId })) return false;
+  if (player.energy < item.cost) {
+    addLog(`${item.name} costs ${item.cost} Energy.`);
+    renderGame();
+    return false;
+  }
+  const cardIndex = player.hand.findIndex((card) => card.id === item.id);
+  if (cardIndex < 0) return false;
+
+  player.energy -= item.cost;
+  player.hand.splice(cardIndex, 1);
+  item.id = item.id || `player-${playerId}-item-${GameState.nextItemId}`;
+  item.owner = playerId;
+  GameState.nextItemId += 1;
+
+  if (!attachItem(item, host, { playerId })) {
+    player.energy += item.cost;
+    player.hand.splice(cardIndex, 0, item);
+    addLog(`${item.name} could not be attached to ${host.name}.`);
+    renderGame();
+    return false;
+  }
+
+  GameState.selectedCardId = null;
+  emitGameEvent("cardPlayed", { card: item, playerId, target: host }, { source: item });
+  addLog(`🛡 ${player.name} equipped ${item.name} to ${host.name}.`);
+  addLog(`🔋 −${item.cost} Energy.`);
+  renderGame();
+  return true;
+}
 
 async function recruitSelectedCard(x, y) {
   if (GameState.isAnimating) {

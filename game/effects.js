@@ -288,7 +288,8 @@ function sourceStillInPlay(source) {
   const sourceId = typeof source === "object" ? source?.id : source;
   if (!sourceId) return false;
 
-  return GameState.units.some((unit) => unit.id === sourceId);
+  return GameState.units.some((unit) => unit.id === sourceId) ||
+    (GameState.items ?? []).some((item) => item.id === sourceId);
 }
 
 function shouldExpireEffect(effect, timing = {}) {
