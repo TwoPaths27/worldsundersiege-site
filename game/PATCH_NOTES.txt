@@ -1,14 +1,11 @@
-Worlds Under Siege — Action Patch v4
+Worlds Under Siege — Action Patch v4.1
 
-Focus: stable stack-entry creation and fail-safe resolution.
-
-Changes:
-- Added createActionStackEntry() as the single place that defines Action stack entries.
-- Added resolution timestamps and stored resolution results on stack entries.
-- Added canPassPriority() and used it for both engine checks and the Pass button.
-- passPriority() now reports success/failure with a boolean return value.
-- Reworked beginResolveTopAction() as a guarded transaction using try/catch/finally.
-- Ensures the resolving lock is released even if an event listener or effect throws.
-- Ensures a failed Action still leaves the stack and priority resumes correctly.
-- Protects actionRemovedFromStack and stackResolved event emissions from breaking cleanup.
+Hotfix:
+- Restored defaultCharacterUserValidator() in abilities.js.
+- The missing function caused abilities.js to stop during registerAbility(),
+  preventing Taking Aim and later abilities from being registered.
+- The validator accepts Character units belonging to the acting player.
 - All included JavaScript files passed `node --check`.
+
+After replacing the files, hard-refresh the browser with Ctrl+Shift+R.
+The favicon.ico 404 messages are unrelated to the Ability Engine.

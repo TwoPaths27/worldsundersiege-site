@@ -14,6 +14,19 @@ function normalizeAbilityId(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function defaultCharacterUserValidator(unit, context = {}) {
+  const playerId =
+    context.playerId ??
+    context.player?.id ??
+    context.owner;
+
+  return Boolean(
+    unit &&
+    unit.cardType === "Character" &&
+    (playerId == null || unit.owner === playerId)
+  );
+}
+
 function registerAbility(id, definition, aliases = []) {
   const abilityId = normalizeAbilityId(id);
 
