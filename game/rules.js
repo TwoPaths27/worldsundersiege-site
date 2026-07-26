@@ -67,7 +67,13 @@ function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
 function findAttackableUnits(unit) {
   const targets = new Set();
 
-  if (!unit || unit.hasAttacked) {
+  if (
+    !unit ||
+    unit.hasAttacked ||
+    (typeof hasStatus === "function" &&
+      (hasStatus(unit, StatusTypes.STUNNED) ||
+       hasStatus(unit, StatusTypes.FROZEN)))
+  ) {
     return targets;
   }
 
@@ -77,7 +83,7 @@ function findAttackableUnits(unit) {
     }
 
     const distance = Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y);
-    const isWithinRange = distance > 0 && distance <= unit.currentRange;
+    const isWithinRange = distance > 0 && distance <= (typeof getCurrentRange === "function" ? getCurrentRange(unit) : unit.currentRange);
 
     if (isWithinRange && !isUnitProtected(unit, candidate)) {
       targets.add(candidate.id);
@@ -100,7 +106,7 @@ function findAttackableStronghold(unit) {
 
     if (
       distance > 0 &&
-      distance <= unit.currentRange &&
+      distance <= (typeof getCurrentRange === "function" ? getCurrentRange(unit) : unit.currentRange) &&
       !isStrongholdLaneProtected(unit, column, enemyPlayerId)
     ) {
       return enemyPlayerId;
@@ -116,14 +122,14 @@ function canUnitRetaliate(attacker, defender) {
   }
 
   const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
-  return distance > 0 && distance <= defender.currentRange;
+  return distance > 0 && distance <= (typeof getCurrentRange === "function" ? getCurrentRange(defender) : defender.currentRange);
 }
 
 function applyUnitCombatDamage(attacker, defender, canRetaliate) {
-  defender.currentHP -= attacker.currentAttack;
+  defender.currentHP -= (typeof getCurrentAttack === "function" ? getCurrentAttack(attacker) : attacker.currentAttack);
 
   if (canRetaliate) {
-    attacker.currentHP -= defender.currentAttack;
+    attacker.currentHP -= (typeof getCurrentAttack === "function" ? getCurrentAttack(defender) : defender.currentAttack);
   }
 
   attacker.hasAttacked = true;
@@ -184,6 +190,14 @@ function destroyUnit(unit, options = {}) {
 
   unregisterTriggersForSource(unit);
 
+  if (typeof unregisterReplacementEffectsForSource === "function") {
+    unregisterReplacementEffectsForSource(unit);
+  }
+
+  if (typeof updateContinuousEffects === "function") {
+    updateContinuousEffects({ phase: "stateCheck" });
+  }
+
   emitGameEvent(
     "unitLeftPlay",
     {
@@ -211,8 +225,26 @@ function applyStrongholdDamage(targetPlayerId, amount) {
 }
 
 function applyTemporaryRangeBonus(unit, amount) {
-  if (!unit) {
-    return 0;
+  if (!unit) return 0;
+
+  if (typeof addContinuousEffect === "function") {
+    addContinuousEffect({
+      source: unit,
+      controller: unit.owner,
+      target: unit.id,
+      layer: ModifierLayers.BUFF,
+      duration: "untilEndOfTurn",
+      expiresForPlayer: GameState.activePlayer,
+      modifier(stats) {
+        stats.range += Number(amount) || 0;
+      },
+      metadata: {
+        kind: "temporary-range-bonus",
+        amount: Number(amount) || 0,
+      },
+    });
+
+    return getCurrentRange(unit);
   }
 
   unit.temporaryRangeBonus = (unit.temporaryRangeBonus ?? 0) + amount;

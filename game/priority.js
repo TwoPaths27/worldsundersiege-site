@@ -813,7 +813,17 @@ async function beginResolveTopAction() {
       const owner = GameState.players[entry.owner];
 
       if (owner) {
-        owner.discardCount = (owner.discardCount ?? 0) + 1;
+        if (typeof discardCard === "function" && entry.card) {
+          discardCard(
+            entry.card,
+            ZoneTypes.STACK,
+            entry.owner,
+            "action-resolved"
+          );
+        } else {
+          owner.discardCount = (owner.discardCount ?? 0) + 1;
+        }
+
         addLog(`${cardName} moves to the discard pile.`);
       } else {
         console.warn(

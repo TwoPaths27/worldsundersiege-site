@@ -31,6 +31,10 @@ function getPlayerById(playerId) {
         return GameState.players.find(player => player?.id === playerId) || null;
     }
 
+    if (GameState.players && GameState.players[playerId]) {
+        return GameState.players[playerId];
+    }
+
     if (GameState.player?.id === playerId) return GameState.player;
     if (GameState.opponent?.id === playerId) return GameState.opponent;
 

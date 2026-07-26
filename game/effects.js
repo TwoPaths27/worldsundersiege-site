@@ -1,195 +1,402 @@
-/* effects.js
- * Worlds Under Siege
- * Continuous Effects / Modifier Engine
- */
-
 "use strict";
 
-/* ============================================================
- * Modifier Layers
- * ============================================================ */
+/*
+ * Worlds Under Siege — v13 Effects Engine
+ * Continuous modifiers, derived statistics, statuses, and duration cleanup.
+ */
 
 const ModifierLayers = Object.freeze({
-    BASE: 0,
-    SET: 10,
-    EQUIPMENT: 20,
-    AURA: 30,
-    BUFF: 40,
-    DEBUFF: 50,
-    STATUS: 60,
-    FINAL: 100
+  BASE: 0,
+  SET: 10,
+  EQUIPMENT: 20,
+  AURA: 30,
+  BUFF: 40,
+  DEBUFF: 50,
+  STATUS: 60,
+  FINAL: 100,
 });
-
-/* ============================================================
- * Status Types
- * ============================================================ */
 
 const StatusTypes = Object.freeze({
-    STUNNED: "stunned",
-    POISONED: "poisoned",
-    BURNING: "burning",
-    FROZEN: "frozen",
-    SILENCED: "silenced",
-    SHIELDED: "shielded",
-    ROOTED: "rooted",
-    INVISIBLE: "invisible"
+  STUNNED: "stunned",
+  POISONED: "poisoned",
+  BURNING: "burning",
+  FROZEN: "frozen",
+  SILENCED: "silenced",
+  SHIELDED: "shielded",
+  ROOTED: "rooted",
+  INVISIBLE: "invisible",
 });
 
-if (!window.GameState) {
-    throw new Error("GameState must be initialized before effects.js");
-}
-
-if (!GameState.continuousEffects) {
-    GameState.continuousEffects = [];
-}
-
 let nextEffectId = 1;
+let nextStatusId = 1;
 
-function generateEffectId() {
-    return nextEffectId++;
+function ensureEffectState() {
+  GameState.continuousEffects ??= [];
+  GameState.effectHistory ??= [];
+}
+
+function normalizeUnitBaseStats(unit) {
+  if (!unit) return unit;
+
+  unit.baseAttack ??= unit.printedAttack ?? unit.currentAttack ?? unit.attack ?? 0;
+  unit.baseHP ??= unit.printedHP ?? unit.maxHP ?? unit.currentHP ?? unit.hp ?? 0;
+  unit.baseRange ??= unit.printedRange ?? unit.currentRange ?? unit.range ?? 0;
+  unit.baseSpeed ??= unit.printedSpeed ?? unit.currentSpeed ?? unit.speed ?? 0;
+  unit.statuses ??= [];
+
+  return unit;
 }
 
 function createContinuousEffect(options = {}) {
-    return {
-        id: generateEffectId(),
-        source: options.source ?? null,
-        controller: options.controller ?? null,
-        target: options.target ?? null,
-        layer: options.layer ?? ModifierLayers.BUFF,
-        duration: options.duration ?? "permanent",
-        expiresOnTurn: options.expiresOnTurn ?? null,
-        expiresOnPhase: options.expiresOnPhase ?? null,
-        expiresWithSource: options.expiresWithSource ?? false,
-        active: true,
-        modifier: options.modifier ?? (() => {}),
-        metadata: options.metadata ?? {}
-    };
+  ensureEffectState();
+
+  return {
+    id: options.id ?? `effect-${nextEffectId++}`,
+    source: options.source ?? null,
+    controller: options.controller ?? options.owner ?? null,
+    target: options.target ?? null,
+    targets: options.targets ? [...options.targets] : null,
+    layer: Number(options.layer ?? ModifierLayers.BUFF),
+    duration: options.duration ?? "permanent",
+    createdTurn: options.createdTurn ?? GameState.turn,
+    expiresOnTurn: options.expiresOnTurn ?? null,
+    expiresOnPhase: options.expiresOnPhase ?? null,
+    expiresForPlayer: options.expiresForPlayer ?? null,
+    expiresWithSource: Boolean(options.expiresWithSource),
+    active: options.active !== false,
+    appliesTo:
+      typeof options.appliesTo === "function"
+        ? options.appliesTo
+        : null,
+    modifier:
+      typeof options.modifier === "function"
+        ? options.modifier
+        : () => {},
+    metadata: options.metadata ?? {},
+  };
 }
 
-function addContinuousEffect(effect) {
-    GameState.continuousEffects.push(effect);
+function addContinuousEffect(effectOrOptions) {
+  ensureEffectState();
 
-    if (typeof emitGameEvent === "function") {
-        emitGameEvent({
-            type: "continuousEffectAdded",
-            effect
-        });
-    }
+  const effect =
+    effectOrOptions?.id && typeof effectOrOptions.modifier === "function"
+      ? effectOrOptions
+      : createContinuousEffect(effectOrOptions);
 
-    return effect;
+  GameState.continuousEffects.push(effect);
+
+  if (typeof emitGameEvent === "function") {
+    emitGameEvent("continuousEffectAdded", { effect }, { source: effect.source });
+  }
+
+  return effect;
 }
 
-function removeContinuousEffect(effectId) {
-    const index = GameState.continuousEffects.findIndex(e => e.id === effectId);
+function removeContinuousEffect(effectId, reason = "removed") {
+  ensureEffectState();
 
-    if (index < 0) return false;
+  const index = GameState.continuousEffects.findIndex(
+    (effect) => effect.id === effectId
+  );
 
-    const effect = GameState.continuousEffects[index];
-    GameState.continuousEffects.splice(index, 1);
+  if (index < 0) return false;
 
-    if (typeof emitGameEvent === "function") {
-        emitGameEvent({
-            type: "continuousEffectRemoved",
-            effect
-        });
-    }
+  const [effect] = GameState.continuousEffects.splice(index, 1);
+  GameState.effectHistory.push({
+    effectId: effect.id,
+    reason,
+    removedAt: Date.now(),
+    turn: GameState.turn,
+  });
 
-    return true;
+  if (typeof emitGameEvent === "function") {
+    emitGameEvent(
+      "continuousEffectRemoved",
+      { effect, reason },
+      { source: effect.source }
+    );
+  }
+
+  return true;
+}
+
+function effectTargetsUnit(effect, unit) {
+  if (!effect.active) return false;
+
+  if (effect.appliesTo) {
+    return effect.appliesTo(unit, {
+      game: GameState,
+      effect,
+    }) !== false;
+  }
+
+  const unitId = unit?.id;
+
+  if (effect.targets) {
+    return effect.targets.some((target) =>
+      (typeof target === "object" ? target?.id : target) === unitId
+    );
+  }
+
+  if (effect.target == null) return true;
+
+  return (typeof effect.target === "object"
+    ? effect.target?.id
+    : effect.target) === unitId;
 }
 
 function createModifierContext(unit) {
-    return {
-        attack: unit.baseAttack ?? unit.attack ?? 0,
-        health: unit.baseHealth ?? unit.health ?? 0,
-        movement: unit.baseMovement ?? unit.movement ?? 0,
-        keywords: new Set(unit.keywords || [])
-    };
-}
+  normalizeUnitBaseStats(unit);
 
-function applyContinuousEffect(effect, unit, context) {
-    if (!effect.active) return;
-    if (effect.target !== null && effect.target !== unit.id) return;
-
-    effect.modifier(context, unit);
+  return {
+    attack: Number(unit.baseAttack) || 0,
+    maxHP: Number(unit.baseHP) || 0,
+    range: Number(unit.baseRange) || 0,
+    speed: Number(unit.baseSpeed) || 0,
+    keywords: new Set(unit.keywords ?? []),
+    restrictions: new Set(),
+    metadata: {},
+  };
 }
 
 function getModifiedStats(unit) {
-    const context = createModifierContext(unit);
+  ensureEffectState();
+  const context = createModifierContext(unit);
 
-    const effects = [...GameState.continuousEffects]
-        .filter(e => e.active)
-        .sort((a, b) => a.layer - b.layer);
+  const applicableEffects = GameState.continuousEffects
+    .filter((effect) => effectTargetsUnit(effect, unit))
+    .sort((first, second) =>
+      first.layer - second.layer ||
+      String(first.id).localeCompare(String(second.id))
+    );
 
-    for (const effect of effects) {
-        applyContinuousEffect(effect, unit, context);
+  for (const effect of applicableEffects) {
+    try {
+      effect.modifier(context, unit, effect);
+    } catch (error) {
+      console.error(`Continuous effect "${effect.id}" failed.`, error);
+    }
+  }
+
+  for (const status of unit.statuses ?? []) {
+    if (status.active === false) continue;
+
+    if (
+      status.type === StatusTypes.STUNNED ||
+      status.type === StatusTypes.FROZEN
+    ) {
+      context.restrictions.add("cannotAct");
     }
 
-    return context;
+    if (status.type === StatusTypes.ROOTED) {
+      context.restrictions.add("cannotMove");
+    }
+
+    if (status.type === StatusTypes.SILENCED) {
+      context.restrictions.add("silenced");
+    }
+  }
+
+  context.attack = Math.max(0, Number(context.attack) || 0);
+  context.maxHP = Math.max(0, Number(context.maxHP) || 0);
+  context.range = Math.max(0, Number(context.range) || 0);
+  context.speed = Math.max(0, Number(context.speed) || 0);
+
+  return context;
 }
 
 function getCurrentAttack(unit) {
-    return getModifiedStats(unit).attack;
+  return getModifiedStats(unit).attack;
+}
+
+function getCurrentMaxHP(unit) {
+  return getModifiedStats(unit).maxHP;
+}
+
+function getCurrentRange(unit) {
+  return getModifiedStats(unit).range;
+}
+
+function getCurrentSpeed(unit) {
+  return getModifiedStats(unit).speed;
 }
 
 function getCurrentHealth(unit) {
-    return getModifiedStats(unit).health;
-}
-
-function getCurrentMovement(unit) {
-    return getModifiedStats(unit).movement;
+  return Number(unit?.currentHP ?? getCurrentMaxHP(unit)) || 0;
 }
 
 function hasKeyword(unit, keyword) {
-    return getModifiedStats(unit).keywords.has(keyword);
+  return getModifiedStats(unit).keywords.has(keyword);
 }
 
-function addStatus(unit, status) {
-    if (!unit.statuses) unit.statuses = [];
-    unit.statuses.push(status);
+function hasStatus(unit, type) {
+  return Boolean(
+    unit?.statuses?.some(
+      (status) => status.type === type && status.active !== false
+    )
+  );
 }
 
-function removeStatus(unit, statusId) {
-    if (!unit.statuses) return;
-    unit.statuses = unit.statuses.filter(s => s.id !== statusId);
+function addStatus(unit, options = {}) {
+  if (!unit) return null;
+  normalizeUnitBaseStats(unit);
+
+  const status = {
+    id: options.id ?? `status-${nextStatusId++}`,
+    type: options.type,
+    source: options.source ?? null,
+    controller: options.controller ?? null,
+    stacks: Math.max(1, Number(options.stacks ?? 1)),
+    duration: options.duration ?? "permanent",
+    createdTurn: options.createdTurn ?? GameState.turn,
+    expiresOnTurn: options.expiresOnTurn ?? null,
+    expiresForPlayer: options.expiresForPlayer ?? null,
+    active: options.active !== false,
+    metadata: options.metadata ?? {},
+  };
+
+  unit.statuses.push(status);
+
+  if (typeof emitGameEvent === "function") {
+    emitGameEvent("statusAdded", { unit, status }, { source: status.source });
+  }
+
+  return status;
 }
 
-function updateContinuousEffects() {
-    GameState.continuousEffects = GameState.continuousEffects.filter(effect => {
-        if (!effect.active) return false;
+function removeStatus(unit, statusId, reason = "removed") {
+  if (!unit?.statuses) return false;
 
-        if (
-            effect.expiresOnTurn !== null &&
-            GameState.turn > effect.expiresOnTurn
-        ) {
-            return false;
-        }
+  const index = unit.statuses.findIndex((status) => status.id === statusId);
+  if (index < 0) return false;
 
-        if (
-            effect.expiresWithSource &&
-            typeof findCardById === "function" &&
-            !findCardById(effect.source)
-        ) {
-            return false;
-        }
+  const [status] = unit.statuses.splice(index, 1);
 
-        return true;
-    });
+  if (typeof emitGameEvent === "function") {
+    emitGameEvent(
+      "statusRemoved",
+      { unit, status, reason },
+      { source: status.source }
+    );
+  }
+
+  return true;
 }
+
+function sourceStillInPlay(source) {
+  const sourceId = typeof source === "object" ? source?.id : source;
+  if (!sourceId) return false;
+
+  return GameState.units.some((unit) => unit.id === sourceId);
+}
+
+function shouldExpireEffect(effect, timing = {}) {
+  if (!effect.active) return true;
+
+  if (
+    effect.expiresWithSource &&
+    !sourceStillInPlay(effect.source)
+  ) {
+    return true;
+  }
+
+  if (
+    effect.expiresOnTurn != null &&
+    GameState.turn > effect.expiresOnTurn
+  ) {
+    return true;
+  }
+
+  if (
+    timing.phase &&
+    effect.expiresOnPhase === timing.phase &&
+    (
+      effect.expiresForPlayer == null ||
+      effect.expiresForPlayer === timing.playerId
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    effect.duration === "untilEndOfTurn" &&
+    timing.phase === "turnEnd" &&
+    (
+      effect.expiresForPlayer == null ||
+      effect.expiresForPlayer === timing.playerId
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function updateContinuousEffects(timing = {}) {
+  ensureEffectState();
+
+  const expired = GameState.continuousEffects.filter((effect) =>
+    shouldExpireEffect(effect, timing)
+  );
+
+  for (const effect of expired) {
+    removeContinuousEffect(effect.id, "expired");
+  }
+
+  for (const unit of GameState.units) {
+    normalizeUnitBaseStats(unit);
+
+    for (const status of [...unit.statuses]) {
+      const expires =
+        status.active === false ||
+        (
+          status.expiresOnTurn != null &&
+          GameState.turn > status.expiresOnTurn
+        ) ||
+        (
+          status.duration === "untilEndOfTurn" &&
+          timing.phase === "turnEnd" &&
+          (
+            status.expiresForPlayer == null ||
+            status.expiresForPlayer === timing.playerId
+          )
+        );
+
+      if (expires) removeStatus(unit, status.id, "expired");
+    }
+  }
+
+  return expired;
+}
+
+function resetEffectsEngine() {
+  GameState.continuousEffects = [];
+  GameState.effectHistory = [];
+
+  for (const unit of GameState.units ?? []) {
+    normalizeUnitBaseStats(unit);
+    unit.statuses = [];
+  }
+}
+
+ensureEffectState();
 
 window.ModifierLayers = ModifierLayers;
 window.StatusTypes = StatusTypes;
-
+window.normalizeUnitBaseStats = normalizeUnitBaseStats;
 window.createContinuousEffect = createContinuousEffect;
 window.addContinuousEffect = addContinuousEffect;
 window.removeContinuousEffect = removeContinuousEffect;
-
 window.getModifiedStats = getModifiedStats;
 window.getCurrentAttack = getCurrentAttack;
+window.getCurrentMaxHP = getCurrentMaxHP;
 window.getCurrentHealth = getCurrentHealth;
-window.getCurrentMovement = getCurrentMovement;
+window.getCurrentRange = getCurrentRange;
+window.getCurrentSpeed = getCurrentSpeed;
 window.hasKeyword = hasKeyword;
-
+window.hasStatus = hasStatus;
 window.addStatus = addStatus;
 window.removeStatus = removeStatus;
-
 window.updateContinuousEffects = updateContinuousEffects;
+window.resetEffectsEngine = resetEffectsEngine;

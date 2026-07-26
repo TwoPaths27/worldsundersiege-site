@@ -12,7 +12,7 @@ const TargetTypes = Object.freeze({
     ANY: "Any"
 });
 
-if (!window.GameState.targetRequests) {
+if (!GameState.targetRequests) {
     GameState.targetRequests = [];
 }
 

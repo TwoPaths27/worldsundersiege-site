@@ -86,6 +86,41 @@ function emitGameEvent(type, payload = {}, options = {}) {
     stop() { this.stopPropagation = true; },
   };
 
+  if (
+    !options.skipReplacement &&
+    typeof processReplacementEffects === "function"
+  ) {
+    const replacementResult = processReplacementEffects(event);
+
+    if (replacementResult.applied.length) {
+      for (const effect of replacementResult.applied) {
+        const noticeType = replacementResult.prevented
+          ? "eventPrevented"
+          : "eventReplaced";
+
+        emitGameEvent(
+          noticeType,
+          {
+            originalEvent: event,
+            resultingEvent: replacementResult.event,
+            effect,
+          },
+          {
+            source: effect.source,
+            skipReplacement: true,
+          }
+        );
+      }
+    }
+
+    if (replacementResult.prevented) {
+      event.cancelled = true;
+      return event;
+    }
+
+    Object.assign(event, replacementResult.event);
+  }
+
   GameEventQueue.push(event);
   processGameEventQueue();
   return event;

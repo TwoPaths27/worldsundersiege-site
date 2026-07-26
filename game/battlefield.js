@@ -1145,6 +1145,15 @@ async function recruitSelectedCard(x, y) {
     });
 
     GameState.nextUnitId += 1;
+
+    card.zone = ZoneTypes.BATTLEFIELD;
+    unit.zone = ZoneTypes.BATTLEFIELD;
+    unit.sourceCard = card;
+
+    if (typeof normalizeUnitBaseStats === "function") {
+      normalizeUnitBaseStats(unit);
+    }
+
     GameState.units.push(unit);
     registerTriggersForSource(unit);
 

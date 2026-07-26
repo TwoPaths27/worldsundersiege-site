@@ -460,6 +460,7 @@ function commitSelectedAction(targetId = null) {
    */
   player.energy -= card.cost;
   player.hand.splice(cardIndex, 1);
+  card.zone = ZoneTypes.STACK;
 
   const stackEntry = createActionStackEntry({
     card,
@@ -471,6 +472,12 @@ function commitSelectedAction(targetId = null) {
   });
 
   GameState.nextActionStackId += 1;
+  stackEntry.zone = ZoneTypes.STACK;
+  stackEntry.costsPaid = {
+    resource: "energy",
+    amount: card.cost,
+    paidAt: Date.now(),
+  };
   GameState.actionStack.push(stackEntry);
 
   emitGameEvent(

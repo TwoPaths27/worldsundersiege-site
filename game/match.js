@@ -13,6 +13,9 @@ function initializeGame() {
   bindEvents();
 
   for (const unit of GameState.units) {
+    if (typeof normalizeUnitBaseStats === "function") {
+      normalizeUnitBaseStats(unit);
+    }
     registerTriggersForSource(unit);
   }
 
@@ -70,6 +73,13 @@ function endTurn() {
 
   emitGameEvent("turnEnding", { playerId: previousPlayer, turn: GameState.turn });
   clearEndOfTurnEffects(previousPlayer);
+
+  if (typeof updateContinuousEffects === "function") {
+    updateContinuousEffects({
+      phase: "turnEnd",
+      playerId: previousPlayer,
+    });
+  }
   resetMatchSelection();
 
   GameState.activePlayer = nextPlayer;
@@ -109,6 +119,7 @@ function resetMatchSelection() {
   GameState.pendingActionUserId = null;
   GameState.pendingActionTargetId = null;
   GameState.pendingTriggeredChoice = null;
+  GameState.targetRequests = [];
   GameState.actionSelectionMessage = "";
   GameState.reachableSpaces = new Map();
   GameState.attackableUnitIds = new Set();
@@ -123,7 +134,10 @@ function refreshPlayerForTurn(playerId) {
 
   for (const unit of GameState.units) {
     if (unit.owner === playerId) {
-      unit.remainingSpeed = unit.currentSpeed;
+      unit.remainingSpeed =
+        typeof getCurrentSpeed === "function"
+          ? getCurrentSpeed(unit)
+          : unit.currentSpeed;
       unit.hasAttacked = false;
     }
   }
