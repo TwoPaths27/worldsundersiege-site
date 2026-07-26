@@ -111,3 +111,28 @@ function createHandCard(card, player) {
   cardButton.addEventListener("mouseleave",()=>{const s=getSelectedCard(); s?renderHandCardPreview(s):renderCardPreview();});
   return cardButton;
 }
+
+
+/* Action-card selection state */
+
+function isChoosingActionUser() {
+  const card = getSelectedCard();
+
+  return Boolean(
+    card &&
+    card.type === "Action" &&
+    !GameState.pendingActionUserId &&
+    getActivePlayer().energy >= card.cost
+  );
+}
+
+function isChoosingActionTarget() {
+  const card = getSelectedCard();
+
+  return Boolean(
+    card &&
+    card.type === "Action" &&
+    GameState.pendingActionUserId &&
+    getActionTargetMode(card) !== "user"
+  );
+}

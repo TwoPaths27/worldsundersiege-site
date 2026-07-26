@@ -382,27 +382,7 @@ function renderGame() {
 }
 
 
-function isChoosingActionUser() {
-  const card = getSelectedCard();
 
-  return Boolean(
-    card &&
-    card.type === "Action" &&
-    !GameState.pendingActionUserId &&
-    getActivePlayer().energy >= card.cost
-  );
-}
-
-function isChoosingActionTarget() {
-  const card = getSelectedCard();
-
-  return Boolean(
-    card &&
-    card.type === "Action" &&
-    GameState.pendingActionUserId &&
-    getActionTargetMode(card) !== "user"
-  );
-}
 
 function isEligibleActionUser(unit) {
   return Boolean(
