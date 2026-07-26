@@ -1726,7 +1726,7 @@ Black Shuck remains one of England's best-known legendary creatures, embodying t
   origin: "Arthurian Legend",
   first: "Historia Regum Britanniae",
   aliases: "Merlin's Prophecy",
-  history: `Merlin was renowned throughout Arthurian legend as both a prophet and magician. His visions foretold the rise of King Arthur, the coming of great wars, and ultimately the fall of Camelot. Medieval chronicles describe Merlin's prophecies as cryptic riddles whose true meaning often became clear only after the events had already come to pass, establishing him as one of Britain's greatest seers.`d
+  history: `Merlin was renowned throughout Arthurian legend as both a prophet and magician. His visions foretold the rise of King Arthur, the coming of great wars, and ultimately the fall of Camelot. Medieval chronicles describe Merlin's prophecies as cryptic riddles whose true meaning often became clear only after the events had already come to pass, establishing him as one of Britain's greatest seers.`
 },
 
 "BOA-122": {
