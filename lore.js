@@ -1714,12 +1714,11 @@ Black Shuck remains one of England's best-known legendary creatures, embodying t
 },
 
 "BOA-120": {
-  status: "Legendary Gift",
+  status: "Divine Blessing",
   origin: "Arthurian Legend",
   first: "Post-Vulgate Cycle",
   aliases: "Gift of the Lady of the Lake",
-  history: `The Lady of the Lake bestowed the sword Excalibur upon King Arthur after the loss of his first blade. Rising from the waters, she presented the enchanted weapon to the rightful king as a symbol of his divine authority to rule Britain. Forged with supernatural power and accompanied by a scabbard that protected its wearer from mortal wounds, Excalibur became the greatest treasure of Camelot and the enduring symbol of Arthur's kingship.'
-
+  history: `The Lady of the Lake bestowed the sword Excalibur upon King Arthur after the loss of his first blade. Rising from the waters, she presented the enchanted weapon to the rightful king as a symbol of his divine authority to rule Britain. Forged with supernatural power and accompanied by a scabbard that protected its wearer from mortal wounds, Excalibur became the greatest treasure of Camelot and the enduring symbol of Arthur's kingship.`
 },
 
 "BOA-121": {
@@ -1727,7 +1726,7 @@ Black Shuck remains one of England's best-known legendary creatures, embodying t
   origin: "Arthurian Legend",
   first: "Historia Regum Britanniae",
   aliases: "Merlin's Prophecy",
-  history: `Merlin was renowned throughout Arthurian legend as both a prophet and magician. His visions foretold the rise of King Arthur, the coming of great wars, and ultimately the fall of Camelot. Medieval chronicles describe Merlin's prophecies as cryptic riddles whose true meaning often became clear only after the events had already come to pass, establishing him as one of Britain's greatest seers.`
+  history: `Merlin was renowned throughout Arthurian legend as both a prophet and magician. His visions foretold the rise of King Arthur, the coming of great wars, and ultimately the fall of Camelot. Medieval chronicles describe Merlin's prophecies as cryptic riddles whose true meaning often became clear only after the events had already come to pass, establishing him as one of Britain's greatest seers.`d
 },
 
 "BOA-122": {
