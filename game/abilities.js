@@ -158,3 +158,18 @@ const Abilities = {
 function triggerAbilities(eventType, context = {}) {
   return emitGameEvent(eventType, context, { source: context.source ?? null });
 }
+
+
+function createAbilityContext(base = {}) {
+  return {
+    game: GameState,
+    stackEntry: null,
+    card: null,
+    owner: null,
+    player: null,
+    opponent: null,
+    user: null,
+    target: null,
+    ...base,
+  };
+}

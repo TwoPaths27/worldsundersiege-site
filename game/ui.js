@@ -244,3 +244,14 @@ function addLog(message) {
 function formatCoordinate(x, y) {
   return `(${x + 1}, ${y + 1})`;
 }
+
+
+function updatePriorityBanner() {
+  if (!elements.actionPromptText) return;
+  if (!GameState.priority?.active) return;
+  const active = GameState.priority.currentPlayer;
+  elements.actionPromptText.textContent =
+    GameState.priority.resolving
+      ? "Resolving Action..."
+      : `Priority: Player ${active} - Play an Action or Pass`;
+}
