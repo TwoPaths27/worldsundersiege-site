@@ -6862,3 +6862,56 @@ body::after {
     height: clamp(13rem, 30vh, 15.25rem);
   }
 }
+
+/* v18.8.1 — Counter-only priority UI. */
+.selected-unit-actions {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .45rem;
+  align-items: center;
+}
+
+.priority-icon-button--developer {
+  width: 2.25rem;
+  min-height: 2.25rem;
+  opacity: .72;
+}
+.priority-icon-button--developer:hover { opacity: 1; }
+
+.priority-popover--developer {
+  top: calc(100% + .35rem);
+  left: auto;
+  right: 0;
+  width: min(18rem, calc(100vw - 2rem));
+}
+
+.priority-developer-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .65rem;
+  color: rgba(229,237,246,.86);
+  font: 700 .72rem/1 system-ui, sans-serif;
+}
+
+.priority-dock--counter {
+  padding: .65rem;
+  border-color: rgba(118,185,255,.5);
+}
+.priority-dock--counter[hidden] { display: none !important; }
+.priority-counter-heading {
+  color: #8fc8ff;
+  font: 900 .68rem/1 system-ui, sans-serif;
+  letter-spacing: .13em;
+}
+.priority-action-row--counter {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: .48rem;
+}
+.priority-action-row--counter .priority-status {
+  text-align: left;
+  white-space: normal;
+  line-height: 1.25;
+}

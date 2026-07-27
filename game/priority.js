@@ -1905,16 +1905,23 @@ function renderArenaPriorityControls(playerId = 1) {
   }
 
   const priorityDock = document.querySelector("#priorityDock");
-  priorityDock?.classList.toggle(
-    "has-priority",
-    GameState.priority.active && GameState.priority.playerId === playerId
-  );
-  priorityDock?.setAttribute(
-    "aria-label",
-    GameState.priority.active
-      ? `${priorityPlayer?.name ?? "A player"} has priority`
-      : `${player?.name ?? "Player"} priority controls`
-  );
+  const hasPlayerDecision =
+    GameState.priority.active &&
+    GameState.priority.playerId === playerId &&
+    !GameState.priority.resolving;
+  const hasPrompt = Boolean(GameState.actionSelectionMessage);
+  const hasOptionalChoice = Boolean(getPendingTriggeredChoice());
+
+  if (priorityDock) {
+    priorityDock.hidden = !(hasPlayerDecision || hasPrompt || hasOptionalChoice);
+    priorityDock.classList.toggle("has-priority", hasPlayerDecision);
+    priorityDock.setAttribute(
+      "aria-label",
+      hasPlayerDecision
+        ? "Counter window: you may respond or pass"
+        : "Game decision"
+    );
+  }
 }
 
 function setStackEntryPreview(entry, active) {
@@ -1957,16 +1964,21 @@ function renderActionStacks() {
   elements.actionPromptText.textContent = promptText;
 
   if (elements.priorityStatusText) {
+    const reason = String(GameState.priority.reason ?? "").toLowerCase();
+    const reasonText =
+      reason.includes("attack") ? "Opponent declared an attack." :
+      reason.includes("target") ? "One of your cards was targeted." :
+      reason.includes("action") ? "An Action is waiting to resolve." :
+      reason.includes("recruit") || reason.includes("enter") ? "A card is entering play." :
+      GameState.actionStack.length ? "A response can be played." :
+      "You may respond.";
+
     elements.priorityStatusText.textContent =
       GameState.priority.resolving
-        ? "Resolving stack…"
-        : GameState.priority.active && priorityPlayer
-          ? GameState.priority.playerId === 1
-            ? "Your priority"
-            : `Waiting for ${priorityPlayer.name}`
-          : GameState.actionStack.length
-            ? "Responses pending"
-            : "Auto priority";
+        ? "Resolving response chain…"
+        : GameState.priority.active && GameState.priority.playerId === 1
+          ? reasonText
+          : "Waiting for the opponent.";
   }
 
   const pendingTriggerChoice =
@@ -1991,9 +2003,13 @@ function renderActionStacks() {
    * Passing is hidden while an optional decision or target selection is
    * pending. Stack order itself is never player-controlled.
    */
-  elements.passPriorityButton.hidden = false;
+  elements.passPriorityButton.hidden =
+    !GameState.priority.active ||
+    GameState.priority.playerId !== 1 ||
+    GameState.priority.resolving ||
+    Boolean(pendingTriggerChoice);
   elements.passPriorityButton.disabled =
-    Boolean(pendingTriggerChoice) ||
+    elements.passPriorityButton.hidden ||
     !canPassPriority();
 
   elements.passPriorityButton.textContent =

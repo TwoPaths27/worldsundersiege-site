@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=18.8">
+  <link rel="stylesheet" href="./game.css?v=18.8.1">
 </head>
 <body>
   <main class="game-layout">
@@ -26,34 +26,18 @@
           <button id="endTurnButton" class="primary-button" type="button">
             End Turn
           </button>
-        </div>
-      </section>
-
-      <section id="priorityDock" class="priority-dock" aria-label="Priority controls">
-        <div class="priority-toolbar" aria-label="Priority controls">
-          <span class="priority-toolbar__label">ACTION TIMING</span>
-          <button id="prioritySettingsButton" class="priority-icon-button" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel" title="Priority tools">⚙</button>
+          <button id="prioritySettingsButton" class="priority-icon-button priority-icon-button--developer" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel" title="Developer tools">⚙</button>
         </div>
 
-        <div class="priority-action-row">
-          <button id="fullControlButton" class="priority-mode-toggle" type="button" aria-pressed="false" title="Toggle Full Control (Ctrl/Cmd+F)">AUTO</button>
-          <div id="priorityStatusText" class="priority-status" role="status" aria-live="polite">Auto priority</div>
-          <button id="passPriorityButton" class="priority-pass-button" type="button" disabled>PASS</button>
-        </div>
-
-        <div id="actionPrompt" class="priority-choice-prompt" role="status" aria-live="polite" hidden>
-          <div id="actionPromptText" class="priority-choice-prompt__message"></div>
-          <div id="triggerChoiceControls" class="trigger-choice-controls" hidden>
-            <button id="acceptTriggerButton" class="trigger-choice-button trigger-choice-button--accept" type="button">Yes</button>
-            <button id="declineTriggerButton" class="trigger-choice-button trigger-choice-button--decline" type="button">No</button>
-          </div>
-        </div>
-
-        <div id="prioritySettingsPanel" class="priority-popover" hidden>
+        <div id="prioritySettingsPanel" class="priority-popover priority-popover--developer" hidden>
           <div class="priority-popover__header">
-            <strong>Priority Tools</strong>
+            <strong>Developer</strong>
             <button id="priorityDebugButton" class="priority-debug-toggle" type="button" aria-expanded="false" aria-controls="priorityDebugPanel">Debug</button>
           </div>
+          <label class="priority-developer-option">
+            <span>Full Control</span>
+            <button id="fullControlButton" class="priority-mode-toggle" type="button" aria-pressed="false" title="Toggle Full Control (Ctrl/Cmd+F)">AUTO</button>
+          </label>
           <dl id="priorityDebugPanel" class="arena-debug" hidden>
             <div><dt>State</dt><dd id="priorityDebugState">Idle</dd></div>
             <div><dt>Priority</dt><dd id="priorityDebugPlayer">None</dd></div>
@@ -62,6 +46,22 @@
             <div><dt>Pending</dt><dd id="priorityDebugPending">None</dd></div>
             <div><dt>Passes</dt><dd id="priorityDebugPasses">0</dd></div>
           </dl>
+        </div>
+      </section>
+
+      <section id="priorityDock" class="priority-dock priority-dock--counter" aria-label="Counter window" hidden>
+        <div class="priority-counter-heading">COUNTER WINDOW</div>
+        <div class="priority-action-row priority-action-row--counter">
+          <div id="priorityStatusText" class="priority-status" role="status" aria-live="polite">Response available</div>
+          <button id="passPriorityButton" class="priority-pass-button" type="button">PASS</button>
+        </div>
+
+        <div id="actionPrompt" class="priority-choice-prompt" role="status" aria-live="polite" hidden>
+          <div id="actionPromptText" class="priority-choice-prompt__message"></div>
+          <div id="triggerChoiceControls" class="trigger-choice-controls" hidden>
+            <button id="acceptTriggerButton" class="trigger-choice-button trigger-choice-button--accept" type="button">Yes</button>
+            <button id="declineTriggerButton" class="trigger-choice-button trigger-choice-button--decline" type="button">No</button>
+          </div>
         </div>
       </section>
 
@@ -511,8 +511,8 @@
     </div>
   </noscript>
 
-<script src="../card-database.js?v=18.8"></script>
-<script src="./card-data.js?v=18.8"></script>
+<script src="../card-database.js?v=18.8.1"></script>
+<script src="./card-data.js?v=18.8.1"></script>
 <script src="./card-types.js?v=15"></script>
 <script src="./game-state.js?v=15"></script>
 <script src="./replacement.js?v=13"></script>
@@ -527,12 +527,12 @@
 <script src="./event-controller.js?v=17.1"></script>
 <script src="./rules.js?v=17.1"></script>
 <script src="./audio.js?v=1"></script>
-<script src="./ui.js?v=18.8"></script>
+<script src="./ui.js?v=18.8.1"></script>
 <script src="./animation.js?v=1"></script>
-<script src="./priority.js?v=18.8"></script>
+<script src="./priority.js?v=18.8.1"></script>
 <script src="./battlefield.js?v=17.1"></script>
-<script src="./cards.js?v=18.8"></script>
-<script src="./match.js?v=18.8"></script>
+<script src="./cards.js?v=18.8.1"></script>
+<script src="./match.js?v=18.8.1"></script>
 <script src="./game.js?v=37"></script>
 </body>
 </html>
