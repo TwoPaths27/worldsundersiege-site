@@ -245,6 +245,65 @@ function queueActivatedAbility(options = {}) {
   });
 }
 
+/*
+ * Queues a non-card gameplay event on the same LIFO stack used by Actions,
+ * attacks, and abilities. The event may provide synchronous or asynchronous
+ * validation/resolution hooks.
+ */
+function queueGameEvent({
+  type = STACK_ENTRY_TYPES.EVENT,
+  controller = GameState.activePlayer,
+  source = null,
+  sourceName = null,
+  name = null,
+  payload = null,
+  validate = null,
+  resolve,
+  onCountered = null,
+  onFizzled = null,
+  priorityReason = PRIORITY.ACTION,
+  firstPlayerId = null,
+  announce = true,
+} = {}) {
+  if (!GameState.players[controller]) {
+    throw new TypeError("A queued game event requires a valid controller.");
+  }
+
+  if (typeof resolve !== "function") {
+    throw new TypeError("A queued game event requires a resolve function.");
+  }
+
+  return addStackEntry(
+    {
+      type,
+      owner: controller,
+      controller,
+      source,
+      sourceName:
+        sourceName ??
+        name ??
+        source?.name ??
+        "Game Event",
+      name:
+        name ??
+        sourceName ??
+        source?.name ??
+        "Game Event",
+      payload,
+      validate,
+      resolve,
+      onCountered,
+      onFizzled,
+    },
+    {
+      announce,
+      openPriority: true,
+      firstPlayerId: firstPlayerId ?? controller,
+      reason: priorityReason,
+    }
+  );
+}
+
 function runStackEntryValidation(entry) {
   if (typeof entry.validate !== "function") {
     return {
@@ -853,7 +912,7 @@ function resolveTriggeredAbility(entry) {
   return executeAbility(source, context);
 }
 
-function resolveStackEntry(entry) {
+async function resolveStackEntry(entry) {
   if (!entry || typeof entry !== "object") {
     return createResolutionResult(false, "invalid-entry");
   }
@@ -894,7 +953,7 @@ function resolveStackEntry(entry) {
     let result;
 
     try {
-      result = entry.resolve({
+      result = await entry.resolve({
         game: GameState,
         entry,
         payload: entry.payload,
@@ -1353,7 +1412,7 @@ async function beginResolveTopAction() {
     );
 
     resolution =
-      resolveStackEntry(entry) ?? {
+      (await resolveStackEntry(entry)) ?? {
         resolved: false,
         reason: "missing-resolution-result",
       };
@@ -1460,7 +1519,7 @@ async function beginResolveTopAction() {
 
     GameState.priority.resolving = false;
 
-    if (GameState.actionStack.length) {
+    if (!isStackEmpty()) {
       reopenPriorityWindowAfterResolution();
     } else {
       closePriorityWindow();
@@ -1509,7 +1568,7 @@ function getPriorityPlayerAfterResolution() {
 }
 
 function reopenPriorityWindowAfterResolution() {
-  if (!GameState.actionStack.length) {
+  if (isStackEmpty()) {
     closePriorityWindow();
     return false;
   }

@@ -1459,6 +1459,50 @@ function moveSelectedUnit(destinationX, destinationY) {
   GameState.attackableStrongholdPlayerId = null;
 }
 
+  const movementPayload = {
+    unitId: unit.id,
+    playerId: unit.owner,
+    from: { x: previousX, y: previousY },
+    to: { x: destinationX, y: destinationY },
+    movementCost,
+    remainingSpeed: unit.remainingSpeed,
+    movedAt: Date.now(),
+  };
+
+  const movementEntry = queueGameEvent({
+    type: STACK_ENTRY_TYPES.EVENT,
+    controller: unit.owner,
+    source: unit,
+    name: `${unit.name} — Movement`,
+    payload: movementPayload,
+    priorityReason: PRIORITY.MOVE,
+    validate: ({ payload }) => ({
+      valid: Boolean(getUnitById(payload.unitId)),
+      reason: "moved-unit-left-battlefield",
+    }),
+    resolve: ({ payload }) => {
+      const movedUnit = getUnitById(payload.unitId);
+
+      emitGameEvent(
+        "movementResponseWindowResolved",
+        { ...payload, unit: movedUnit },
+        { source: movedUnit ?? unit }
+      );
+
+      return {
+        resolved: true,
+        reason: null,
+      };
+    },
+    onFizzled: () => {
+      addLog(`${unit.name}'s movement response window closes without resolving.`);
+    },
+  });
+
+  if (!movementEntry) {
+    addLog("The movement response window could not open.");
+  }
+
   renderGame();
 }
 
@@ -1594,29 +1638,35 @@ function declareAttack({
     declaredAt: Date.now(),
   };
 
-  const event = {
-    type: isStrongholdAttack
-      ? "stronghold-attack-declared"
-      : "unit-attack-declared",
-    payload,
-    resume: resolveDeclaredAttack,
-  };
-
-  const opened = beginPriorityWindow({
-    playerId: attacker.owner,
-    reason: PRIORITY.ATTACK,
-    event,
-    sourcePlayerId: attacker.owner,
-  });
-
-  if (!opened) {
+  if (!commitDeclaredAttack(attacker, constructOperator)) {
+    addLog(`${attacker.name} could not commit its declared attack.`);
+    renderGame();
     return false;
   }
 
-  if (!commitDeclaredAttack(attacker, constructOperator)) {
-    closePriorityWindow();
-    clearPendingEvent();
-    addLog(`${attacker.name} could not commit its declared attack.`);
+  const attackEntry = queueGameEvent({
+    type: STACK_ENTRY_TYPES.ATTACK,
+    controller: attacker.owner,
+    source: attacker,
+    name: isStrongholdAttack
+      ? `${attacker.name} → Player ${targetPlayerId}'s Stronghold`
+      : `${attacker.name} → ${defender.name}`,
+    payload,
+    priorityReason: PRIORITY.ATTACK,
+    validate: ({ payload }) => validateDeclaredAttack(payload),
+    resolve: ({ payload }) => resolveDeclaredAttack(payload),
+    onCountered: () => {
+      addLog(`${attacker.name}'s declared attack is countered.`);
+    },
+    onFizzled: ({ resolution }) => {
+      if (resolution?.reason !== "countered") {
+        addLog(`${attacker.name}'s declared attack no longer has a legal target.`);
+      }
+    },
+  });
+
+  if (!attackEntry) {
+    addLog(`${attacker.name}'s attack could not be added to the stack.`);
     renderGame();
     return false;
   }
@@ -1645,7 +1695,47 @@ function declareAttack({
   return true;
 }
 
-function resolveDeclaredAttack(payload = {}) {
+function validateDeclaredAttack(payload = {}) {
+  const attacker = getDeclaredAttackUnit(payload.attackerId);
+  const defender = getDeclaredAttackUnit(payload.defenderId);
+  const constructOperator = getDeclaredAttackUnit(
+    payload.constructOperatorId
+  );
+
+  if (!isDeclaredAttackSourceStillValid(attacker, constructOperator)) {
+    return {
+      valid: false,
+      reason: "attacker-or-operator-invalid",
+    };
+  }
+
+  if (Number.isInteger(payload.targetPlayerId)) {
+    return {
+      valid:
+        findAttackableStrongholdForResolution(attacker) ===
+        payload.targetPlayerId,
+      reason: "stronghold-out-of-range",
+    };
+  }
+
+  if (!defender) {
+    return {
+      valid: false,
+      reason: "defender-left-battlefield",
+    };
+  }
+
+  const legalTargets = isConstruct(attacker)
+    ? findConstructAttackableUnits(attacker)
+    : findAttackableUnits(attacker);
+
+  return {
+    valid: legalTargets.has(defender.id),
+    reason: "defender-out-of-range",
+  };
+}
+
+async function resolveDeclaredAttack(payload = {}) {
   const attacker = getDeclaredAttackUnit(payload.attackerId);
   const defender = getDeclaredAttackUnit(payload.defenderId);
   const constructOperator = getDeclaredAttackUnit(
@@ -1655,7 +1745,10 @@ function resolveDeclaredAttack(payload = {}) {
   if (!attacker) {
     addLog("The attacking Unit left the battlefield. The attack does not resolve.");
     renderGame();
-    return false;
+    return {
+      resolved: false,
+      reason: "attacker-left-battlefield",
+    };
   }
 
   emitGameEvent(
@@ -1670,22 +1763,31 @@ function resolveDeclaredAttack(payload = {}) {
   );
 
   if (Number.isInteger(payload.targetPlayerId)) {
-    void resolveStrongholdAttack(
+    await resolveStrongholdAttack(
       attacker,
       payload.targetPlayerId,
       constructOperator
     );
-    return true;
+    return {
+      resolved: true,
+      reason: null,
+    };
   }
 
   if (!defender) {
     addLog("The defending Unit left the battlefield. The attack does not resolve.");
     renderGame();
-    return false;
+    return {
+      resolved: false,
+      reason: "defender-left-battlefield",
+    };
   }
 
-  void resolveUnitAttack(attacker, defender, constructOperator);
-  return true;
+  await resolveUnitAttack(attacker, defender, constructOperator);
+  return {
+    resolved: true,
+    reason: null,
+  };
 }
 
 function attackStronghold(attacker, targetPlayerId, constructOperator = null) {

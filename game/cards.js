@@ -581,18 +581,14 @@ function commitSelectedAction(targetId = null) {
     paidAt: Date.now(),
   };
 
-  const queuedStackEntry =
-    typeof addStackEntry === "function"
-      ? addStackEntry(stackEntry, {
-          announce: false,
-          openPriority: false,
-        })
-      : stackEntry;
-
   if (typeof addStackEntry !== "function") {
-    GameState.nextActionStackId += 1;
-    GameState.actionStack.push(queuedStackEntry);
+    throw new Error("The Stack Manager is unavailable; the Action cannot be cast.");
   }
+
+  const queuedStackEntry = addStackEntry(stackEntry, {
+    announce: false,
+    openPriority: false,
+  });
 
   emitGameEvent(
     "cardPlayed",
