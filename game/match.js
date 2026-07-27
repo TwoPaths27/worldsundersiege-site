@@ -93,8 +93,114 @@ function initializeGame() {
   if (typeof auditCurrentActionCards === "function") {
     auditCurrentActionCards();
   }
-  emitGameEvent("turnStarted", { playerId: GameState.activePlayer, turn: GameState.turn });
-  renderGame();
+  emitGameEvent("turnStarted", {
+    playerId: GameState.activePlayer,
+    turn: GameState.turn,
+  });
+
+  beginTurnStepSequence(GameState.activePlayer);
+}
+
+
+function beginTurnStepSequence(playerId = GameState.activePlayer) {
+  if (!GameState.players[playerId]) {
+    console.warn(`Cannot begin a turn for unknown player ${playerId}.`);
+    return false;
+  }
+
+  GameState.turnFlow ??= {
+    step: "setup",
+    transitioning: false,
+    endTurnRequestedBy: null,
+  };
+
+  GameState.turnFlow.transitioning = true;
+  GameState.turnFlow.endTurnRequestedBy = null;
+
+  return openTurnStepPriorityWindow("beginning", {
+    playerId,
+    resume: () => beginDrawStep(playerId),
+  });
+}
+
+function beginDrawStep(playerId = GameState.activePlayer) {
+  if (playerId !== GameState.activePlayer) {
+    return false;
+  }
+
+  /*
+   * The current project does not yet expose a deck-draw operation. The draw
+   * step still exists as a real priority window and emits drawStepStarted so
+   * deck support can be connected later without changing turn sequencing.
+   */
+  emitGameEvent(
+    "drawStepStarted",
+    {
+      playerId,
+      turn: GameState.turn,
+    },
+    { source: GameState.players[playerId] }
+  );
+
+  return openTurnStepPriorityWindow("draw", {
+    playerId,
+    resume: () => beginMainStep(playerId),
+  });
+}
+
+function beginMainStep(playerId = GameState.activePlayer) {
+  if (playerId !== GameState.activePlayer) {
+    return false;
+  }
+
+  return openTurnStepPriorityWindow("main", {
+    playerId,
+    resume: () => {
+      GameState.turnFlow.step = "main";
+      GameState.turnFlow.transitioning = false;
+
+      emitGameEvent(
+        "mainStepReady",
+        {
+          playerId,
+          turn: GameState.turn,
+        },
+        { source: GameState.players[playerId] }
+      );
+
+      addLog(`${GameState.players[playerId].name} may take main-step actions.`);
+      renderGame();
+    },
+  });
+}
+
+function requestEndStep() {
+  if (
+    GameState.isAnimating ||
+    GameState.priority.active ||
+    GameState.priority.resolving ||
+    GameState.actionStack.length
+  ) {
+    addLog("Resolve the current Action stack before ending the turn.");
+    renderGame();
+    return false;
+  }
+
+  if (GameState.turnFlow?.transitioning) {
+    addLog("Finish the current turn-step priority window first.");
+    renderGame();
+    return false;
+  }
+
+  const endingPlayer = GameState.activePlayer;
+
+  GameState.turnFlow.transitioning = true;
+  GameState.turnFlow.endTurnRequestedBy = endingPlayer;
+
+  return openTurnStepPriorityWindow("end", {
+    playerId: endingPlayer,
+    resume: () => finalizeEndTurn(endingPlayer),
+  });
 }
 
 function renderGame() {
@@ -119,21 +225,41 @@ function renderGame() {
 }
 
 function endTurn() {
+  return requestEndStep();
+}
+
+function finalizeEndTurn(expectedPlayerId = GameState.activePlayer) {
+  if (expectedPlayerId !== GameState.activePlayer) {
+    console.warn(
+      "Ignored stale end-step completion because the active player changed."
+    );
+    return false;
+  }
+
   if (
-    GameState.isAnimating ||
     GameState.priority.active ||
     GameState.priority.resolving ||
     GameState.actionStack.length
   ) {
-    addLog("Resolve the current Action stack before ending the turn.");
+    addLog("The turn cannot change while priority or the Action stack is active.");
     renderGame();
-    return;
+    return false;
   }
 
   const previousPlayer = GameState.activePlayer;
   const nextPlayer = previousPlayer === 1 ? 2 : 1;
 
-  emitGameEvent("turnEnding", { playerId: previousPlayer, turn: GameState.turn });
+  emitGameEvent("turnStepEnded", {
+    playerId: previousPlayer,
+    turn: GameState.turn,
+    step: "end",
+  });
+
+  emitGameEvent("turnEnding", {
+    playerId: previousPlayer,
+    turn: GameState.turn,
+  });
+
   clearEndOfTurnEffects(previousPlayer);
 
   if (typeof updateContinuousEffects === "function") {
@@ -142,6 +268,7 @@ function endTurn() {
       playerId: previousPlayer,
     });
   }
+
   resetMatchSelection();
 
   GameState.activePlayer = nextPlayer;
@@ -151,15 +278,25 @@ function endTurn() {
   }
 
   refreshPlayerForTurn(nextPlayer);
-  emitGameEvent("turnEnded", { playerId: previousPlayer, nextPlayerId: nextPlayer, turn: GameState.turn });
-  emitGameEvent("turnStarted", { playerId: nextPlayer, previousPlayerId: previousPlayer, turn: GameState.turn });
+
+  emitGameEvent("turnEnded", {
+    playerId: previousPlayer,
+    nextPlayerId: nextPlayer,
+    turn: GameState.turn,
+  });
+
+  emitGameEvent("turnStarted", {
+    playerId: nextPlayer,
+    previousPlayerId: previousPlayer,
+    turn: GameState.turn,
+  });
 
   addLog(
     `Player ${previousPlayer} ended their turn. ` +
       `Player ${nextPlayer} is now active.`
   );
 
-  renderGame();
+  return beginTurnStepSequence(nextPlayer);
 }
 
 function clearEndOfTurnEffects(playerId) {

@@ -21,6 +21,14 @@ const PLAYER_RECRUITING_SPACES = new Set([
 ]);
 const PRIORITY = Object.freeze({
   NONE: "none",
+
+  // Turn-step priority windows.
+  BEGINNING: "beginning",
+  DRAW: "draw",
+  MAIN: "main",
+  END: "end",
+
+  // Gameplay reaction windows.
   RECRUIT: "recruit",
   MOVE: "move",
   ATTACK: "attack",
@@ -42,10 +50,16 @@ function createDefaultPrioritySettings() {
   return {
     fullControl: false,
     phaseStops: {
-      beginning: false,
-      draw: false,
-      main: false,
-      end: false,
+      /*
+       * v18.2 defaults to Arena-style stops at each turn step. Smart priority
+       * still auto-passes when the player has no legal Action.
+       *
+       * The v18.6 controls will let each player toggle these individually.
+       */
+      beginning: true,
+      draw: true,
+      main: true,
+      end: true,
     },
     reactionStops: {
       recruit: false,
@@ -91,6 +105,12 @@ prioritySettings: {
 
 pendingEvent: null,
 pendingEventChoice: null,
+
+turnFlow: {
+  step: "setup",
+  transitioning: false,
+  endTurnRequestedBy: null,
+},
 
 pendingActionUserId: null,
 pendingActionTargetId: null,

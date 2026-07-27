@@ -75,6 +75,73 @@ function openPriorityWindow(
 }
 
 
+function openTurnStepPriorityWindow(
+  step,
+  {
+    playerId = GameState.activePlayer,
+    resume = null,
+    payload = null,
+  } = {}
+) {
+  const reasonByStep = {
+    beginning: PRIORITY.BEGINNING ?? "beginning",
+    draw: PRIORITY.DRAW ?? "draw",
+    main: PRIORITY.MAIN ?? "main",
+    end: PRIORITY.END ?? "end",
+  };
+
+  const reason = reasonByStep[step];
+
+  if (!reason) {
+    console.warn(`Unknown turn step "${step}".`);
+    return false;
+  }
+
+  const player = GameState.players[playerId];
+
+  if (!player) {
+    console.warn(`Cannot open ${step} priority for unknown player ${playerId}.`);
+    return false;
+  }
+
+  GameState.turnFlow ??= {
+    step: "setup",
+    transitioning: false,
+    endTurnRequestedBy: null,
+  };
+
+  GameState.turnFlow.step = step;
+
+  const event =
+    typeof resume === "function"
+      ? {
+          type: `${step}-step-complete`,
+          payload,
+          resume,
+        }
+      : null;
+
+  addLog(`${player.name} enters the ${step} step.`);
+
+  emitGameEvent(
+    "turnStepStarted",
+    {
+      playerId,
+      turn: GameState.turn,
+      step,
+    },
+    { source: player }
+  );
+
+  return beginPriorityWindow({
+    playerId,
+    reason,
+    event,
+    sourcePlayerId: playerId,
+  });
+}
+
+
 function getPrioritySettings(playerId) {
   GameState.prioritySettings ??= {};
   GameState.prioritySettings[playerId] ??=
