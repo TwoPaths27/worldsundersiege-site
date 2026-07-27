@@ -1461,6 +1461,249 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   renderGame();
 }
+
+function getDeclaredAttackUnit(unitId) {
+  return unitId ? getUnitById(unitId) : null;
+}
+
+function isDeclaredConstructOperatorStillValid(operator, construct) {
+  if (!operator || !construct || !isConstruct(construct)) return false;
+
+  const operatorStillExists = GameState.units.some(
+    (unit) => unit.id === operator.id
+  );
+
+  if (!operatorStillExists) return false;
+  if (operator.owner !== construct.owner) return false;
+  if (!canBeConstructOperator(operator)) return false;
+
+  return (
+    Math.abs(operator.x - construct.x) +
+      Math.abs(operator.y - construct.y) ===
+    1
+  );
+}
+
+function isDeclaredAttackSourceStillValid(attacker, constructOperator = null) {
+  if (!attacker || GameState.gameOver) return false;
+
+  const attackerStillExists = GameState.units.some(
+    (unit) => unit.id === attacker.id
+  );
+
+  if (!attackerStillExists) return false;
+
+  if (isConstruct(attacker)) {
+    return isDeclaredConstructOperatorStillValid(
+      constructOperator,
+      attacker
+    );
+  }
+
+  return true;
+}
+
+function findAttackableStrongholdForResolution(attacker) {
+  return isConstruct(attacker)
+    ? findConstructAttackableStronghold(attacker)
+    : findAttackableStronghold(attacker);
+}
+
+function commitDeclaredAttack(attacker, constructOperator = null) {
+  if (isConstruct(attacker)) {
+    if (!consumeConstructOperatorAttack(constructOperator, attacker)) {
+      return false;
+    }
+  } else {
+    attacker.hasAttacked = true;
+  }
+
+  return true;
+}
+
+function clearDeclaredAttackSelection() {
+  GameState.selectedUnitAction = "selected";
+  GameState.reachableSpaces = new Map();
+  GameState.attackableUnitIds = new Set();
+  GameState.attackableStrongholdPlayerId = null;
+  GameState.constructOperatorIds = new Set();
+  GameState.pendingConstructOperatorId = null;
+  clearAttackHoverState();
+}
+
+function declareAttack({
+  attacker,
+  defender = null,
+  targetPlayerId = null,
+  constructOperator = null,
+} = {}) {
+  if (
+    GameState.gameOver ||
+    GameState.isAnimating ||
+    GameState.priority.active ||
+    !attacker
+  ) {
+    return false;
+  }
+
+  const isStrongholdAttack = Number.isInteger(targetPlayerId);
+
+  if (!isStrongholdAttack && !defender) {
+    return false;
+  }
+
+  if (!isConstruct(attacker) && attacker.hasAttacked) {
+    addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return false;
+  }
+
+  if (
+    isConstruct(attacker) &&
+    !canOperateConstruct(constructOperator, attacker)
+  ) {
+    addLog(`${attacker.name} requires an adjacent Character with an unused attack.`);
+    renderGame();
+    return false;
+  }
+
+  if (isStrongholdAttack) {
+    if (findAttackableStrongholdForResolution(attacker) !== targetPlayerId) {
+      addLog(`The enemy Stronghold is outside ${attacker.name}'s attack range.`);
+      renderGame();
+      return false;
+    }
+  } else {
+    const legalTargets = isConstruct(attacker)
+      ? findConstructAttackableUnits(attacker)
+      : findAttackableUnits(attacker);
+
+    if (!legalTargets.has(defender.id)) {
+      addLog(`${defender.name} is outside ${attacker.name}'s attack range.`);
+      renderGame();
+      return false;
+    }
+  }
+
+  const payload = {
+    attackerId: attacker.id,
+    defenderId: defender?.id ?? null,
+    targetPlayerId: isStrongholdAttack ? targetPlayerId : null,
+    constructOperatorId: constructOperator?.id ?? null,
+    attackerPlayerId: attacker.owner,
+    declaredAt: Date.now(),
+  };
+
+  const event = {
+    type: isStrongholdAttack
+      ? "stronghold-attack-declared"
+      : "unit-attack-declared",
+    payload,
+    resume: resolveDeclaredAttack,
+  };
+
+  const opened = beginPriorityWindow({
+    playerId: attacker.owner,
+    reason: PRIORITY.ATTACK,
+    event,
+    sourcePlayerId: attacker.owner,
+  });
+
+  if (!opened) {
+    return false;
+  }
+
+  if (!commitDeclaredAttack(attacker, constructOperator)) {
+    closePriorityWindow();
+    clearPendingEvent();
+    addLog(`${attacker.name} could not commit its declared attack.`);
+    renderGame();
+    return false;
+  }
+
+  clearDeclaredAttackSelection();
+
+  emitGameEvent(
+    "attackDeclared",
+    {
+      ...payload,
+      attacker,
+      defender,
+      constructOperator,
+      targetType: isStrongholdAttack ? "stronghold" : "unit",
+    },
+    { source: attacker }
+  );
+
+  addLog(
+    isStrongholdAttack
+      ? `⚔ ${attacker.name} declared an attack against Player ${targetPlayerId}'s Stronghold.`
+      : `⚔ ${attacker.name} declared an attack against ${defender.name}.`
+  );
+
+  renderGame();
+  return true;
+}
+
+function resolveDeclaredAttack(payload = {}) {
+  const attacker = getDeclaredAttackUnit(payload.attackerId);
+  const defender = getDeclaredAttackUnit(payload.defenderId);
+  const constructOperator = getDeclaredAttackUnit(
+    payload.constructOperatorId
+  );
+
+  if (!attacker) {
+    addLog("The attacking Unit left the battlefield. The attack does not resolve.");
+    renderGame();
+    return false;
+  }
+
+  emitGameEvent(
+    "attackResolving",
+    {
+      ...payload,
+      attacker,
+      defender,
+      constructOperator,
+    },
+    { source: attacker }
+  );
+
+  if (Number.isInteger(payload.targetPlayerId)) {
+    void resolveStrongholdAttack(
+      attacker,
+      payload.targetPlayerId,
+      constructOperator
+    );
+    return true;
+  }
+
+  if (!defender) {
+    addLog("The defending Unit left the battlefield. The attack does not resolve.");
+    renderGame();
+    return false;
+  }
+
+  void resolveUnitAttack(attacker, defender, constructOperator);
+  return true;
+}
+
+function attackStronghold(attacker, targetPlayerId, constructOperator = null) {
+  return declareAttack({
+    attacker,
+    targetPlayerId,
+    constructOperator,
+  });
+}
+
+function attackUnit(attacker, defender, constructOperator = null) {
+  return declareAttack({
+    attacker,
+    defender,
+    constructOperator,
+  });
+}
+
 function handleStrongholdClick(targetPlayerId) {
   clearAttackHoverState();
 
@@ -1503,11 +1746,17 @@ function handleStrongholdClick(targetPlayerId) {
   attackStronghold(attacker, targetPlayerId, constructOperator);
 }
 
-async function attackStronghold(attacker, targetPlayerId, constructOperator = null) {
-  if (isConstruct(attacker) && !canOperateConstruct(constructOperator, attacker)) {
-    addLog(`${attacker.name} no longer has a legal operator.`);
+async function resolveStrongholdAttack(attacker, targetPlayerId, constructOperator = null) {
+  if (!isDeclaredAttackSourceStillValid(attacker, constructOperator)) {
+    addLog("The declared Stronghold attack no longer has a legal source and does not resolve.");
     renderGame();
-    return;
+    return false;
+  }
+
+  if (findAttackableStrongholdForResolution(attacker) !== targetPlayerId) {
+    addLog(`The declared attack from ${attacker.name} no longer has a legal Stronghold target.`);
+    renderGame();
+    return false;
   }
 
   const targetStronghold = targetPlayerId === 1
@@ -1530,14 +1779,6 @@ async function attackStronghold(attacker, targetPlayerId, constructOperator = nu
       targetPlayerId,
       attacker.currentAttack
     );
-    if (isConstruct(attacker)) {
-      if (!consumeConstructOperatorAttack(constructOperator, attacker)) {
-        addLog(`${attacker.name} no longer has a legal operator.`);
-        return;
-      }
-    } else {
-      attacker.hasAttacked = true;
-    }
 
     addLog(
       `🏰 Player ${attacker.owner}'s ${attacker.name}${constructOperator ? `, operated by ${constructOperator.name},` : ""} struck Player ${targetPlayerId}'s Stronghold for ${attacker.currentAttack} damage.`
@@ -1629,27 +1870,25 @@ async function endGame(winnerPlayerId, losingPlayerId) {
 }
 
 
-async function attackUnit(attacker, defender, constructOperator = null) {
+async function resolveUnitAttack(attacker, defender, constructOperator = null) {
   if (GameState.isAnimating || !attacker || !defender) {
-    return;
+    return false;
   }
 
-  if (!isConstruct(attacker) && attacker.hasAttacked) {
-    addLog(`${attacker.name} has already attacked this turn.`);
+  if (!isDeclaredAttackSourceStillValid(attacker, constructOperator)) {
+    addLog("The declared attack no longer has a legal source and does not resolve.");
     renderGame();
-    return;
+    return false;
   }
 
-  if (isConstruct(attacker) && !canOperateConstruct(constructOperator, attacker)) {
-    addLog(`${attacker.name} requires an adjacent Character with an unused attack.`);
-    renderGame();
-    return;
-  }
+  const legalTargets = isConstruct(attacker)
+    ? findConstructAttackableUnits(attacker)
+    : findAttackableUnits(attacker);
 
-  if (!GameState.attackableUnitIds.has(defender.id)) {
-    addLog(`${defender.name} is outside ${attacker.name}'s attack range.`);
+  if (!legalTargets.has(defender.id)) {
+    addLog(`${defender.name} is no longer a legal target for ${attacker.name}.`);
     renderGame();
-    return;
+    return false;
   }
 
   const attackerToken = elements.battlefield.querySelector(
@@ -1682,10 +1921,6 @@ const combatResult = applyUnitCombatDamage(
   canRetaliate
 );
 
-if (isConstruct(attacker)) {
-  attacker.hasAttacked = false;
-  consumeConstructOperatorAttack(constructOperator, attacker);
-}
 
 addLog(
   `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`

@@ -1173,6 +1173,12 @@ function setPendingEvent(event) {
   GameState.pendingEvent = {
     type: event.type ?? "unknown",
     payload: event.payload ?? null,
+    sourcePlayerId:
+      event.sourcePlayerId ??
+      GameState.priority.sourcePlayerId ??
+      null,
+    createdAt: event.createdAt ?? Date.now(),
+    status: "pending",
     resume:
       typeof event.resume === "function"
         ? event.resume
@@ -1193,10 +1199,27 @@ function resumePendingEvent() {
     return false;
   }
 
+  event.status = "resolving";
+
   try {
-    event.resume(event.payload);
+    const result = event.resume(event.payload);
+
+    if (result && typeof result.then === "function") {
+      result.catch((error) => {
+        console.error(
+          `Failed to resume pending event "${event.type}".`,
+          error
+        );
+        addLog(`The pending ${event.type} event could not resume.`);
+        renderGame();
+      });
+    }
+
+    event.status = "resumed";
     return true;
   } catch (error) {
+    event.status = "failed";
+
     console.error(
       `Failed to resume pending event "${event.type}".`,
       error
