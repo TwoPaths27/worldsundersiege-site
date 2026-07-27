@@ -2065,6 +2065,28 @@ function getStackTypeIcon(type) {
   }[type] ?? "◆";
 }
 
+/**
+ * Returns the readable label used by layered stack cards when a source card
+ * does not provide its own stats/type line. Keep this independent from DOM
+ * rendering so every stack-entry type has a safe fallback.
+ */
+function getStackEntryTypeLabel(type) {
+  const normalizedType = String(type ?? "effect").toLowerCase();
+
+  return {
+    action: "Action",
+    attack: "Attack",
+    event: "Game Event",
+    trigger: "Triggered Ability",
+    ability: "Activated Ability",
+    movement: "Movement",
+    move: "Movement",
+    effect: "Effect",
+  }[normalizedType] ?? normalizedType
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function getStackCardSource(entry) {
   if (!entry) return null;
 
