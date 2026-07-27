@@ -574,14 +574,25 @@ function commitSelectedAction(targetId = null) {
     targetMode,
   });
 
-  GameState.nextActionStackId += 1;
   stackEntry.zone = ZoneTypes.STACK;
   stackEntry.costsPaid = {
     resource: "energy",
     amount: card.cost,
     paidAt: Date.now(),
   };
-  GameState.actionStack.push(stackEntry);
+
+  const queuedStackEntry =
+    typeof addStackEntry === "function"
+      ? addStackEntry(stackEntry, {
+          announce: false,
+          openPriority: false,
+        })
+      : stackEntry;
+
+  if (typeof addStackEntry !== "function") {
+    GameState.nextActionStackId += 1;
+    GameState.actionStack.push(queuedStackEntry);
+  }
 
   emitGameEvent(
     "cardPlayed",
@@ -590,7 +601,7 @@ function commitSelectedAction(targetId = null) {
       playerId,
       user,
       target,
-      stackEntry,
+      stackEntry: queuedStackEntry,
     },
     {
       source: card,
@@ -629,13 +640,15 @@ function commitSelectedAction(targetId = null) {
   playOneShot(gameplayAudio.energy);
 
   /*
-   * The opponent receives the first chance to respond.
-   * Opening the window also resets the pass count.
+   * The Action's controller receives priority first, matching the normal
+   * priority sequence. Smart auto-pass makes this feel like MTG Arena unless
+   * that player has Full Control enabled.
    */
-  openPriorityWindow(
-    playerId === 1 ? 2 : 1,
-    PRIORITY.ACTION
-  );
+  beginPriorityWindow({
+    playerId,
+    reason: PRIORITY.ACTION,
+    sourcePlayerId: playerId,
+  });
 
   renderGame();
   return true;

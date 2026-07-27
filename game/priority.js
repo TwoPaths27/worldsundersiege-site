@@ -7,6 +7,309 @@
  * Action Stack rendering, stack previews, and Action-to-User arrows.
  */
 
+const STACK_ENTRY_TYPES = Object.freeze({
+  ACTION: "action",
+  ACTIVATED_ABILITY: "ability",
+  TRIGGER: "trigger",
+  ATTACK: "attack",
+  EVENT: "event",
+});
+
+function createStackEntryId(type = "effect") {
+  GameState.nextStackEntryId ??= GameState.nextActionStackId ?? 1;
+
+  const id = `${type}-${GameState.nextStackEntryId}`;
+  GameState.nextStackEntryId += 1;
+
+  /*
+   * Keep the legacy counter synchronized while older code still references it.
+   */
+  GameState.nextActionStackId = GameState.nextStackEntryId;
+
+  return id;
+}
+
+function normalizeStackEntry(entry = {}) {
+  if (!entry || typeof entry !== "object") {
+    throw new TypeError("A stack entry must be an object.");
+  }
+
+  const type = entry.type ?? STACK_ENTRY_TYPES.ACTION;
+  const owner = entry.owner ?? entry.controller ?? null;
+  const source = entry.source ?? entry.card ?? null;
+  const stackId = entry.stackId ?? entry.id ?? createStackEntryId(type);
+
+  return {
+    ...entry,
+    stackId,
+    id: stackId,
+    type,
+    owner,
+    controller: owner,
+    source,
+    sourceId:
+      entry.sourceId ??
+      source?.id ??
+      entry.card?.id ??
+      null,
+    sourceName:
+      entry.sourceName ??
+      entry.card?.name ??
+      entry.name ??
+      source?.name ??
+      "Unknown Effect",
+    payload: entry.payload ?? null,
+    createdAt: entry.createdAt ?? entry.timestamp ?? Date.now(),
+    timestamp: entry.timestamp ?? entry.createdAt ?? Date.now(),
+    status: entry.status ?? "waiting",
+    countered: Boolean(entry.countered),
+    resolutionStartedAt: entry.resolutionStartedAt ?? null,
+    resolutionFinishedAt: entry.resolutionFinishedAt ?? null,
+    resolution: entry.resolution ?? null,
+    validate:
+      typeof entry.validate === "function"
+        ? entry.validate
+        : null,
+    resolve:
+      typeof entry.resolve === "function"
+        ? entry.resolve
+        : null,
+    onCountered:
+      typeof entry.onCountered === "function"
+        ? entry.onCountered
+        : null,
+    onFizzled:
+      typeof entry.onFizzled === "function"
+        ? entry.onFizzled
+        : null,
+  };
+}
+
+function addStackEntry(entry, {
+  announce = true,
+  openPriority = false,
+  firstPlayerId = null,
+  reason = PRIORITY.ACTION,
+} = {}) {
+  const normalized = normalizeStackEntry(entry);
+
+  GameState.actionStack.push(normalized);
+
+  if (announce) {
+    addLog(`${getStackEntryName(normalized)} is added to the stack.`);
+  }
+
+  emitGameEvent(
+    "stackEntryAdded",
+    { entry: normalized },
+    { source: normalized.card ?? normalized.source ?? normalized }
+  );
+
+  if (openPriority && !GameState.priority.resolving) {
+    const priorityPlayer =
+      firstPlayerId ??
+      normalized.controller ??
+      GameState.activePlayer;
+
+    beginPriorityWindow({
+      playerId: priorityPlayer,
+      reason,
+      sourcePlayerId: normalized.controller ?? priorityPlayer,
+    });
+  }
+
+  return normalized;
+}
+
+function peekStackEntry() {
+  return GameState.actionStack.at(-1) ?? null;
+}
+
+function findStackEntry(stackId) {
+  return (
+    GameState.actionStack.find(
+      (entry) => entry.stackId === stackId || entry.id === stackId
+    ) ?? null
+  );
+}
+
+function removeStackEntry(entryOrId) {
+  const entry =
+    typeof entryOrId === "string"
+      ? findStackEntry(entryOrId)
+      : entryOrId;
+
+  if (!entry) return false;
+
+  const index = GameState.actionStack.lastIndexOf(entry);
+
+  if (index < 0) return false;
+
+  GameState.actionStack.splice(index, 1);
+  return true;
+}
+
+function clearStackEntries(reason = "cleared") {
+  const removed = GameState.actionStack.splice(
+    0,
+    GameState.actionStack.length
+  );
+
+  for (const entry of removed) {
+    entry.status = reason;
+  }
+
+  return removed;
+}
+
+function isStackEmpty() {
+  return GameState.actionStack.length === 0;
+}
+
+function counterStackEntry(entryOrId, context = {}) {
+  const entry =
+    typeof entryOrId === "string"
+      ? findStackEntry(entryOrId)
+      : entryOrId;
+
+  if (
+    !entry ||
+    entry.status === "resolving" ||
+    entry.status === "resolved" ||
+    entry.status === "fizzled"
+  ) {
+    return false;
+  }
+
+  entry.countered = true;
+  entry.status = "countered";
+  entry.counterContext = context;
+
+  addLog(`${getStackEntryName(entry)} is countered.`);
+
+  emitGameEvent(
+    "stackEntryCountered",
+    { entry, context },
+    { source: context.source ?? entry.card ?? entry.source ?? entry }
+  );
+
+  return true;
+}
+
+function createActivatedAbilityStackEntry({
+  source,
+  controller,
+  name = null,
+  payload = null,
+  validate = null,
+  resolve,
+  onCountered = null,
+  onFizzled = null,
+} = {}) {
+  if (!source || !GameState.players[controller]) {
+    throw new TypeError(
+      "An activated ability stack entry requires a source and controller."
+    );
+  }
+
+  if (typeof resolve !== "function") {
+    throw new TypeError(
+      "An activated ability stack entry requires a resolve function."
+    );
+  }
+
+  return normalizeStackEntry({
+    type: STACK_ENTRY_TYPES.ACTIVATED_ABILITY,
+    owner: controller,
+    source,
+    name: name ?? `${source.name ?? "Permanent"} — Ability`,
+    payload,
+    validate,
+    resolve,
+    onCountered,
+    onFizzled,
+  });
+}
+
+function queueActivatedAbility(options = {}) {
+  const entry = createActivatedAbilityStackEntry(options);
+
+  return addStackEntry(entry, {
+    openPriority: true,
+    /*
+     * The controller receives priority first. Smart auto-pass makes this feel
+     * like Arena unless Full Control is enabled.
+     */
+    firstPlayerId: entry.controller,
+    reason: PRIORITY.ACTION,
+  });
+}
+
+function runStackEntryValidation(entry) {
+  if (typeof entry.validate !== "function") {
+    return {
+      valid: true,
+      reason: null,
+    };
+  }
+
+  try {
+    const result = entry.validate({
+      game: GameState,
+      entry,
+      payload: entry.payload,
+    });
+
+    if (result === false) {
+      return {
+        valid: false,
+        reason: "validation-failed",
+      };
+    }
+
+    if (result && typeof result === "object" && result.valid === false) {
+      return {
+        valid: false,
+        reason: result.reason ?? "validation-failed",
+      };
+    }
+
+    return {
+      valid: true,
+      reason: null,
+    };
+  } catch (error) {
+    console.error(
+      `Validation failed for ${getStackEntryName(entry)}.`,
+      error
+    );
+
+    return {
+      valid: false,
+      reason: "validation-error",
+      error,
+    };
+  }
+}
+
+function notifyStackEntryFizzled(entry, resolution) {
+  if (typeof entry.onFizzled !== "function") return;
+
+  try {
+    entry.onFizzled({
+      game: GameState,
+      entry,
+      payload: entry.payload,
+      resolution,
+    });
+  } catch (error) {
+    console.error(
+      `onFizzled failed for ${getStackEntryName(entry)}.`,
+      error
+    );
+  }
+}
+
 function beginPriorityWindow({
   playerId = GameState.activePlayer,
   reason = PRIORITY.NONE,
@@ -404,9 +707,10 @@ function queueTriggeredAbility({
     originalEvent,
   });
 
-  GameState.actionStack.push(entry);
-
-  addLog(`${entry.name} is added to the stack.`);
+  const queuedEntry = addStackEntry(entry, {
+    announce: true,
+    openPriority: false,
+  });
 
   /*
    * Batch callers pass openPriority:false and open one shared priority window
@@ -415,11 +719,11 @@ function queueTriggeredAbility({
   if (openPriority && !GameState.priority.resolving) {
     openPriorityForQueuedTriggers({
       event: originalEvent,
-      entries: [entry],
+      entries: [queuedEntry],
     });
   }
 
-  return entry;
+  return queuedEntry;
 }
 
 function openPriorityForQueuedTriggers({
@@ -550,18 +854,100 @@ function resolveTriggeredAbility(entry) {
 }
 
 function resolveStackEntry(entry) {
-  if (entry?.type === "trigger") {
+  if (!entry || typeof entry !== "object") {
+    return createResolutionResult(false, "invalid-entry");
+  }
+
+  if (entry.countered || entry.status === "countered") {
+    if (typeof entry.onCountered === "function") {
+      try {
+        entry.onCountered({
+          game: GameState,
+          entry,
+          payload: entry.payload,
+          context: entry.counterContext ?? null,
+        });
+      } catch (error) {
+        console.error(
+          `onCountered failed for ${getStackEntryName(entry)}.`,
+          error
+        );
+      }
+    }
+
+    return createResolutionResult(false, "countered");
+  }
+
+  const validation = runStackEntryValidation(entry);
+
+  if (!validation.valid) {
+    const resolution = createResolutionResult(
+      false,
+      validation.reason ?? "validation-failed"
+    );
+
+    notifyStackEntryFizzled(entry, resolution);
+    return resolution;
+  }
+
+  if (typeof entry.resolve === "function") {
+    let result;
+
+    try {
+      result = entry.resolve({
+        game: GameState,
+        entry,
+        payload: entry.payload,
+      });
+    } catch (error) {
+      console.error(
+        `Custom resolver failed for ${getStackEntryName(entry)}.`,
+        error
+      );
+
+      const resolution = createResolutionResult(
+        false,
+        "resolution-error"
+      );
+
+      notifyStackEntryFizzled(entry, resolution);
+      return resolution;
+    }
+
+    const resolution =
+      result && typeof result === "object" && "resolved" in result
+        ? result
+        : createResolutionResult(result !== false, result === false
+            ? "custom-resolution-failed"
+            : null);
+
+    if (!resolution.resolved) {
+      notifyStackEntryFizzled(entry, resolution);
+    }
+
+    return resolution;
+  }
+
+  let resolution;
+
+  if (entry.type === STACK_ENTRY_TYPES.TRIGGER) {
     if (entry.optional && entry.optionalDecision === false) {
-      return createResolutionResult(
+      resolution = createResolutionResult(
         false,
         entry.choiceCancellationReason ?? "optional-trigger-declined"
       );
+    } else {
+      resolution = resolveTriggeredAbility(entry);
     }
-
-    return resolveTriggeredAbility(entry);
+  } else {
+    resolution = resolveActionEffect(entry);
   }
 
-  return resolveActionEffect(entry);
+  if (!resolution?.resolved) {
+    notifyStackEntryFizzled(entry, resolution);
+  }
+
+  return resolution;
 }
 
 
@@ -861,7 +1247,7 @@ async function beginResolveTopAction() {
     return false;
   }
 
-  const entry = GameState.actionStack.at(-1);
+  const entry = peekStackEntry();
 
   if (!entry) {
     closePriorityWindow();
@@ -1111,14 +1497,7 @@ function clearPendingActionSelection() {
 }
 
 function removeActionStackEntry(entry) {
-  const index = GameState.actionStack.lastIndexOf(entry);
-
-  if (index >= 0) {
-    GameState.actionStack.splice(index, 1);
-    return true;
-  }
-
-  return false;
+  return removeStackEntry(entry);
 }
 
 function getPriorityPlayerAfterResolution() {

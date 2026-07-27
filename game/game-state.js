@@ -84,6 +84,12 @@ selectedCardId: null,
 selectedUnitAction: "move",
 actionSelectionMessage: "",
 actionStack: [],
+
+/*
+ * Generic runtime ID source for every stack entry. nextActionStackId remains
+ * available for compatibility with older card code and saved test fixtures.
+ */
+nextStackEntryId: 1,
 nextActionStackId: 1,
 priority: {
   active: false,
