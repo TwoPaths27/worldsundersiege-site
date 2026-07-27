@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=18.6">
+  <link rel="stylesheet" href="./game.css?v=18.7">
 </head>
 <body>
   <main class="game-layout">
@@ -29,71 +29,44 @@
         </div>
       </section>
 
-      <section
-        id="actionPrompt"
-        class="panel-card priority-panel action-prompt"
-        role="status"
-        aria-live="polite"
-        hidden
-      >
-        <div id="actionPromptText" class="priority-panel__message"></div>
-
-        <div
-          id="triggerChoiceControls"
-          class="trigger-choice-controls"
-          hidden
-        >
-          <button
-            id="acceptTriggerButton"
-            class="trigger-choice-button trigger-choice-button--accept"
-            type="button"
-          >
-            Yes
-          </button>
-
-          <button
-            id="declineTriggerButton"
-            class="trigger-choice-button trigger-choice-button--decline"
-            type="button"
-          >
-            No
-          </button>
+      <section id="priorityDock" class="priority-dock" aria-label="Priority controls">
+        <div class="priority-step-bar" aria-label="Turn step stops">
+          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="beginning" aria-pressed="true" title="Beginning Step stop">BS</button>
+          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="draw" aria-pressed="true" title="Draw Step stop">DS</button>
+          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="main" aria-pressed="true" title="Main Step stop">MS</button>
+          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="end" aria-pressed="true" title="End Step stop">ES</button>
+          <button id="prioritySettingsButton" class="priority-icon-button" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel" title="Advanced priority stops">⚙</button>
         </div>
 
-        <button
-          id="passPriorityButton"
-          class="action-priority-pass"
-          type="button"
-          hidden
-        >
-          Pass Priority
-        </button>
-
-        <div class="arena-priority-toolbar" aria-label="Priority controls">
-          <button id="fullControlButton" class="arena-toggle" type="button" aria-pressed="false">
-            Full Control: Off
-          </button>
-          <button id="prioritySettingsButton" class="arena-toggle" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel">
-            Stops
-          </button>
-          <button id="priorityDebugButton" class="arena-toggle" type="button" aria-expanded="false" aria-controls="priorityDebugPanel">
-            Debug
-          </button>
+        <div class="priority-action-row">
+          <button id="fullControlButton" class="priority-mode-toggle" type="button" aria-pressed="false" title="Toggle Full Control (Ctrl/Cmd+F)">AUTO</button>
+          <div id="priorityStatusText" class="priority-status" role="status" aria-live="polite">Auto priority</div>
+          <button id="passPriorityButton" class="priority-pass-button" type="button" disabled>PASS</button>
         </div>
 
-        <div id="prioritySettingsPanel" class="arena-settings" hidden>
-          <strong>Player 1 Stops</strong>
+        <div id="actionPrompt" class="priority-choice-prompt" role="status" aria-live="polite" hidden>
+          <div id="actionPromptText" class="priority-choice-prompt__message"></div>
+          <div id="triggerChoiceControls" class="trigger-choice-controls" hidden>
+            <button id="acceptTriggerButton" class="trigger-choice-button trigger-choice-button--accept" type="button">Yes</button>
+            <button id="declineTriggerButton" class="trigger-choice-button trigger-choice-button--decline" type="button">No</button>
+          </div>
+        </div>
+
+        <div id="prioritySettingsPanel" class="priority-popover" hidden>
+          <div class="priority-popover__header">
+            <strong>Advanced Stops</strong>
+            <button id="priorityDebugButton" class="priority-debug-toggle" type="button" aria-expanded="false" aria-controls="priorityDebugPanel">Debug</button>
+          </div>
           <div id="priorityStopControls" class="arena-stop-grid"></div>
+          <dl id="priorityDebugPanel" class="arena-debug" hidden>
+            <div><dt>State</dt><dd id="priorityDebugState">Idle</dd></div>
+            <div><dt>Priority</dt><dd id="priorityDebugPlayer">None</dd></div>
+            <div><dt>Reason</dt><dd id="priorityDebugReason">None</dd></div>
+            <div><dt>Stack</dt><dd id="priorityDebugStack">0</dd></div>
+            <div><dt>Pending</dt><dd id="priorityDebugPending">None</dd></div>
+            <div><dt>Passes</dt><dd id="priorityDebugPasses">0</dd></div>
+          </dl>
         </div>
-
-        <dl id="priorityDebugPanel" class="arena-debug" hidden>
-          <div><dt>State</dt><dd id="priorityDebugState">Idle</dd></div>
-          <div><dt>Priority</dt><dd id="priorityDebugPlayer">None</dd></div>
-          <div><dt>Reason</dt><dd id="priorityDebugReason">None</dd></div>
-          <div><dt>Stack</dt><dd id="priorityDebugStack">0</dd></div>
-          <div><dt>Pending</dt><dd id="priorityDebugPending">None</dd></div>
-          <div><dt>Passes</dt><dd id="priorityDebugPasses">0</dd></div>
-        </dl>
       </section>
 
       <section class="panel-card chat-panel">
@@ -139,6 +112,14 @@
         </marker>
       </defs>
     </svg>
+
+    <aside id="floatingStack" class="floating-stack is-empty" aria-label="Stack" hidden>
+      <div class="floating-stack__header">
+        <span>STACK</span>
+        <strong id="floatingStackCount">0</strong>
+      </div>
+      <div id="floatingStackEntries" class="floating-stack__entries"></div>
+    </aside>
 
     <!-- Enemy deck, discard, and banish -->
     <div class="zone-group zone-group--enemy-piles">
@@ -247,12 +228,6 @@
     <span>Empty</span>
   </button>
 
-  <div
-    id="enemyActionStack"
-    class="action-stack action-stack--enemy is-empty"
-    aria-label="Player 2 Action stack empty"
-  ></div>
-
   <div class="battlefield-energy battlefield-energy--enemy">
     <span>Energy</span>
     <strong>
@@ -286,12 +261,6 @@
     <strong>Player Event</strong>
     <span>Empty</span>
   </button>
-
-  <div
-    id="playerActionStack"
-    class="action-stack action-stack--player is-empty"
-    aria-label="Player 1 Action stack empty"
-  ></div>
 
   <div class="battlefield-energy battlefield-energy--player">
     <span>Energy</span>
@@ -559,9 +528,9 @@
 <script src="./event-controller.js?v=17.1"></script>
 <script src="./rules.js?v=17.1"></script>
 <script src="./audio.js?v=1"></script>
-<script src="./ui.js?v=18.6"></script>
+<script src="./ui.js?v=18.7"></script>
 <script src="./animation.js?v=1"></script>
-<script src="./priority.js?v=18.6"></script>
+<script src="./priority.js?v=18.7"></script>
 <script src="./battlefield.js?v=17.1"></script>
 <script src="./cards.js?v=17.1"></script>
 <script src="./match.js?v=17.1"></script>

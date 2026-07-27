@@ -1889,7 +1889,7 @@ function renderArenaPriorityControls(playerId = 1) {
 
   if (elements.fullControlButton) {
     elements.fullControlButton.textContent =
-      `Full Control: ${settings.fullControl ? "On" : "Off"}`;
+      settings.fullControl ? "FULL" : "AUTO";
     elements.fullControlButton.setAttribute(
       "aria-pressed",
       String(settings.fullControl)
@@ -1902,16 +1902,28 @@ function renderArenaPriorityControls(playerId = 1) {
       "Toggle Full Control (Ctrl/Cmd+F)";
   }
 
+  document.querySelectorAll("[data-priority-group=\"phase\"][data-priority-reason]")
+    .forEach((button) => {
+      const reason = button.dataset.priorityReason;
+      const enabled = isPriorityStopEnabled(playerId, reason);
+      button.setAttribute("aria-pressed", String(enabled));
+      button.classList.toggle("is-active", enabled);
+      button.disabled = settings.fullControl;
+    });
+
   if (elements.priorityStopControls) {
     const signature = JSON.stringify({
       phase: settings.phaseStops,
       reaction: settings.reactionStops,
+      fullControl: settings.fullControl,
     });
 
     if (elements.priorityStopControls.dataset.signature !== signature) {
       elements.priorityStopControls.replaceChildren();
 
       for (const [group, reason, label] of PRIORITY_STOP_DEFINITIONS) {
+        if (group === "phase") continue;
+
         const wrapper = document.createElement("label");
         wrapper.className = "arena-stop";
 
@@ -1945,11 +1957,12 @@ function renderArenaPriorityControls(playerId = 1) {
     elements.priorityDebugPasses.textContent = String(GameState.priority.passes);
   }
 
-  elements.actionPrompt?.classList.toggle(
+  const priorityDock = document.querySelector("#priorityDock");
+  priorityDock?.classList.toggle(
     "has-priority",
     GameState.priority.active && GameState.priority.playerId === playerId
   );
-  elements.actionPrompt?.setAttribute(
+  priorityDock?.setAttribute(
     "aria-label",
     GameState.priority.active
       ? `${priorityPlayer?.name ?? "A player"} has priority`
@@ -1984,22 +1997,30 @@ function setStackEntryPreview(entry, active) {
 
 function renderActionStacks() {
   renderArenaPriorityControls(1);
-  renderActionStackForPlayer(1, elements.playerActionStack);
-  renderActionStackForPlayer(2, elements.enemyActionStack);
+  renderFloatingActionStack();
 
   const priorityPlayer =
     GameState.priority.playerId
       ? GameState.players[GameState.priority.playerId]
       : null;
 
-  const promptText =
-    GameState.actionSelectionMessage ||
-    (GameState.priority.active && priorityPlayer
-      ? `${priorityPlayer.name} has priority. Play an Action or pass.`
-      : "");
+  const promptText = GameState.actionSelectionMessage || "";
 
   elements.actionPrompt.hidden = !promptText;
   elements.actionPromptText.textContent = promptText;
+
+  if (elements.priorityStatusText) {
+    elements.priorityStatusText.textContent =
+      GameState.priority.resolving
+        ? "Resolving stack…"
+        : GameState.priority.active && priorityPlayer
+          ? GameState.priority.playerId === 1
+            ? "Your priority"
+            : `Waiting for ${priorityPlayer.name}`
+          : GameState.actionStack.length
+            ? "Responses pending"
+            : "Auto priority";
+  }
 
   const pendingTriggerChoice =
     getPendingTriggeredChoice();
@@ -2023,20 +2044,84 @@ function renderActionStacks() {
    * Passing is hidden while an optional decision or target selection is
    * pending. Stack order itself is never player-controlled.
    */
-  elements.passPriorityButton.hidden =
-    Boolean(pendingTriggerChoice);
+  elements.passPriorityButton.hidden = false;
   elements.passPriorityButton.disabled =
     Boolean(pendingTriggerChoice) ||
     !canPassPriority();
 
   elements.passPriorityButton.textContent =
-    GameState.priority.resolving
-      ? "Resolving..."
-      : GameState.priority.active && priorityPlayer
-        ? `${priorityPlayer.name}: Pass Priority`
-        : "Pass Priority";
+    GameState.priority.resolving ? "WAIT" : "PASS";
 
   window.requestAnimationFrame(renderActionArrows);
+}
+
+function getStackTypeIcon(type) {
+  return {
+    action: "✦",
+    attack: "⚔",
+    event: "↟",
+    trigger: "✧",
+    ability: "⬡",
+  }[type] ?? "◆";
+}
+
+function renderFloatingActionStack() {
+  const container = elements.floatingStackEntries;
+  const shell = elements.floatingStack;
+
+  if (!container || !shell) return;
+
+  container.replaceChildren();
+
+  const entries = [...GameState.actionStack].reverse();
+  const isEmpty = entries.length === 0;
+  shell.hidden = isEmpty;
+  shell.classList.toggle("is-empty", isEmpty);
+  elements.floatingStackCount.textContent = String(entries.length);
+
+  if (isEmpty) return;
+
+  entries.forEach((entry, index) => {
+    const view = createStackViewModel(entry, index);
+    const card = document.createElement("article");
+    card.className = "floating-stack-card";
+    card.dataset.actionStackId = entry.stackId;
+    card.tabIndex = 0;
+    card.classList.toggle("is-top", index === 0);
+    card.classList.toggle("is-resolving", entry.status === "resolving");
+    card.classList.toggle("is-fizzled", entry.status === "fizzled");
+
+    const icon = document.createElement("span");
+    icon.className = "floating-stack-card__icon";
+    icon.textContent = getStackTypeIcon(view.type);
+
+    const content = document.createElement("span");
+    content.className = "floating-stack-card__content";
+
+    const title = document.createElement("strong");
+    title.textContent = view.title;
+
+    const meta = document.createElement("span");
+    meta.textContent = `${view.type.toUpperCase()} · ${view.controllerName}`;
+
+    const target = document.createElement("span");
+    target.className = "floating-stack-card__target";
+    target.textContent = view.targetLabel && view.targetLabel !== "None"
+      ? `→ ${view.targetLabel}`
+      : view.statusLabel;
+
+    content.append(title, meta, target);
+    card.append(icon, content);
+
+    const activate = () => setStackEntryPreview(entry, true);
+    const deactivate = () => setStackEntryPreview(entry, false);
+    card.addEventListener("mouseenter", activate);
+    card.addEventListener("mouseleave", deactivate);
+    card.addEventListener("focus", activate);
+    card.addEventListener("blur", deactivate);
+
+    container.appendChild(card);
+  });
 }
 
 function renderActionStackForPlayer(playerId, container) {

@@ -18,8 +18,9 @@ const elements = {
   enemyMaxEnergy: document.querySelector("#enemyMaxEnergy"),
   playerDiscardCount: document.querySelector("#playerDiscardCount"),
   enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
-  playerActionStack: document.querySelector("#playerActionStack"),
-  enemyActionStack: document.querySelector("#enemyActionStack"),
+  floatingStack: document.querySelector("#floatingStack"),
+  floatingStackEntries: document.querySelector("#floatingStackEntries"),
+  floatingStackCount: document.querySelector("#floatingStackCount"),
   playerEventZone: document.querySelector("#playerEventZone"),
   enemyEventZone: document.querySelector("#enemyEventZone"),
   actionPrompt: document.querySelector("#actionPrompt"),
@@ -28,6 +29,7 @@ const elements = {
   acceptTriggerButton: document.querySelector("#acceptTriggerButton"),
   declineTriggerButton: document.querySelector("#declineTriggerButton"),
   passPriorityButton: document.querySelector("#passPriorityButton"),
+  priorityStatusText: document.querySelector("#priorityStatusText"),
   actionArrowLayer: document.querySelector("#actionArrowLayer"),
   fullControlButton: document.querySelector("#fullControlButton"),
   prioritySettingsButton: document.querySelector("#prioritySettingsButton"),
@@ -122,6 +124,17 @@ function bindEvents() {
     elements.prioritySettingsPanel.hidden = !expanded;
     elements.prioritySettingsButton.setAttribute("aria-expanded", String(expanded));
   });
+
+  document.querySelectorAll("[data-priority-group][data-priority-reason]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const group = button.dataset.priorityGroup;
+        const reason = button.dataset.priorityReason;
+        const enabled = !isPriorityStopEnabled(1, reason);
+        setPriorityStop(1, group, reason, enabled);
+        renderGame();
+      });
+    });
 
   elements.priorityDebugButton?.addEventListener("click", () => {
     const expanded = elements.priorityDebugPanel.hidden;
