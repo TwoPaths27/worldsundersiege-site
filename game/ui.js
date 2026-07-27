@@ -20,6 +20,7 @@ const elements = {
   enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
   floatingStack: document.querySelector("#floatingStack"),
   floatingStackEntries: document.querySelector("#floatingStackEntries"),
+  floatingStackCards: document.querySelector("#floatingStackCards"),
   floatingStackCount: document.querySelector("#floatingStackCount"),
   playerEventZone: document.querySelector("#playerEventZone"),
   enemyEventZone: document.querySelector("#enemyEventZone"),

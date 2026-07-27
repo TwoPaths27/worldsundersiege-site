@@ -1573,7 +1573,7 @@ function isDeclaredAttackSourceStillValid(attacker, constructOperator = null) {
 function findAttackableStrongholdForResolution(attacker) {
   return isConstruct(attacker)
     ? findConstructAttackableStronghold(attacker)
-    : findAttackableStronghold(attacker);
+    : findAttackableStronghold(attacker, { ignoreAttackSpent: true });
 }
 
 function commitDeclaredAttack(attacker, constructOperator = null) {
@@ -1750,7 +1750,7 @@ function validateDeclaredAttack(payload = {}) {
 
   const legalTargets = isConstruct(attacker)
     ? findConstructAttackableUnits(attacker)
-    : findAttackableUnits(attacker);
+    : findAttackableUnits(attacker, { ignoreAttackSpent: true });
 
   return {
     valid: legalTargets.has(defender.id),
@@ -2008,7 +2008,7 @@ async function resolveUnitAttack(attacker, defender, constructOperator = null) {
 
   const legalTargets = isConstruct(attacker)
     ? findConstructAttackableUnits(attacker)
-    : findAttackableUnits(attacker);
+    : findAttackableUnits(attacker, { ignoreAttackSpent: true });
 
   if (!legalTargets.has(defender.id)) {
     addLog(`${defender.name} is no longer a legal target for ${attacker.name}.`);

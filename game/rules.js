@@ -64,13 +64,13 @@ function isStrongholdLaneProtected(attacker, strongholdColumn, defenderOwner) {
   return false;
 }
 
-function findAttackableUnits(unit) {
+function findAttackableUnits(unit, { ignoreAttackSpent = false } = {}) {
   const targets = new Set();
 
   if (
     !unit ||
     !canAttack(unit) ||
-    unit.hasAttacked ||
+    (!ignoreAttackSpent && unit.hasAttacked) ||
     (typeof hasStatus === "function" &&
       (hasStatus(unit, StatusTypes.STUNNED) ||
        hasStatus(unit, StatusTypes.FROZEN)))
@@ -94,8 +94,8 @@ function findAttackableUnits(unit) {
   return targets;
 }
 
-function findAttackableStronghold(unit) {
-  if (!unit || !canAttack(unit) || unit.hasAttacked || GameState.gameOver) {
+function findAttackableStronghold(unit, { ignoreAttackSpent = false } = {}) {
+  if (!unit || !canAttack(unit) || (!ignoreAttackSpent && unit.hasAttacked) || GameState.gameOver) {
     return null;
   }
 

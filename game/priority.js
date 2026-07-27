@@ -1846,9 +1846,9 @@ function createStackViewModel(entry, index = 0) {
   let targetLabel = "None";
   if (target) targetLabel = target.name;
   else if (entry.type === STACK_ENTRY_TYPES.ATTACK) {
-    targetLabel = payload.targetType === "stronghold"
+    targetLabel = Number.isInteger(payload.targetPlayerId)
       ? `${GameState.players[payload.targetPlayerId]?.name ?? "Player"} Stronghold`
-      : getUnitById(payload.targetId)?.name ?? "Unavailable";
+      : getUnitById(payload.defenderId)?.name ?? "Unavailable";
   } else if (entry.type === STACK_ENTRY_TYPES.EVENT && payload.to) {
     targetLabel = `(${payload.to.x + 1}, ${payload.to.y + 1})`;
   }
@@ -2065,13 +2065,117 @@ function getStackTypeIcon(type) {
   }[type] ?? "◆";
 }
 
+function getStackCardSource(entry) {
+  if (!entry) return null;
+
+  if (entry.type === STACK_ENTRY_TYPES.ATTACK) {
+    return getUnitById(entry.payload?.attackerId) ?? entry.source ?? null;
+  }
+
+  return entry.card ?? entry.source ?? null;
+}
+
+function getStackCardStats(source, entry) {
+  if (!source) return getStackEntryTypeLabel(entry?.type ?? "event");
+
+  if (entry?.type === STACK_ENTRY_TYPES.ATTACK) {
+    const attack = source.currentAttack ?? source.printedAttack ?? source.attack ?? 0;
+    const hp = source.currentHP ?? source.printedHP ?? source.hp ?? 0;
+    const range = source.currentRange ?? source.printedRange ?? source.range ?? 0;
+    const speed = source.remainingSpeed ?? source.printedSpeed ?? source.speed ?? 0;
+    return `ATK ${attack} · HP ${hp} · RNG ${range} · SPD ${speed}`;
+  }
+
+  if (typeof isAction === "function" && isAction(source)) {
+    return `Action · Cost ${source.cost ?? source.printedCost ?? 0}`;
+  }
+
+  if (typeof isItem === "function" && isItem(source)) {
+    return `Item · Cost ${source.cost ?? source.printedCost ?? 0}`;
+  }
+
+  return getStackEntryTypeLabel(entry?.type ?? source.cardType ?? "effect");
+}
+
+function createLayeredStackCard(entry, index, total) {
+  const view = createStackViewModel(entry, index);
+  const source = getStackCardSource(entry);
+  const card = document.createElement("article");
+  card.className = "stack-full-card";
+  card.dataset.actionStackId = entry.stackId;
+  card.style.setProperty("--layer-index", String(index));
+  card.style.setProperty("--layer-count", String(total));
+  card.tabIndex = 0;
+  card.classList.toggle("is-top", index === 0);
+  card.classList.toggle("is-resolving", entry.status === "resolving");
+  card.classList.toggle("is-fizzled", entry.status === "fizzled");
+
+  const artWrap = document.createElement("div");
+  artWrap.className = "stack-full-card__art";
+
+  if (source?.cardImage) {
+    const image = document.createElement("img");
+    image.src = source.cardImage;
+    image.alt = `${source.name ?? view.title} card`;
+    image.loading = "eager";
+    artWrap.appendChild(image);
+  } else {
+    const fallback = document.createElement("span");
+    fallback.textContent = getStackTypeIcon(view.type);
+    artWrap.appendChild(fallback);
+  }
+
+  const details = document.createElement("div");
+  details.className = "stack-full-card__details";
+
+  const type = document.createElement("span");
+  type.className = "stack-full-card__type";
+  type.textContent = `${getStackTypeIcon(view.type)} ${view.type.toUpperCase()}`;
+
+  const name = document.createElement("strong");
+  name.textContent = source?.name ?? view.title;
+
+  const stats = document.createElement("span");
+  stats.className = "stack-full-card__stats";
+  stats.textContent = getStackCardStats(source, entry);
+
+  const target = document.createElement("span");
+  target.className = "stack-full-card__target";
+  target.textContent = view.targetLabel && view.targetLabel !== "None"
+    ? `→ ${view.targetLabel}`
+    : view.statusLabel;
+
+  details.append(type, name, stats, target);
+  card.append(artWrap, details);
+
+  const activate = () => {
+    setStackEntryPreview(entry, true);
+    card.parentElement?.querySelectorAll(".stack-full-card")
+      .forEach((node) => node.classList.toggle("is-muted", node !== card));
+    card.classList.add("is-focused");
+  };
+  const deactivate = () => {
+    setStackEntryPreview(entry, false);
+    card.parentElement?.querySelectorAll(".stack-full-card")
+      .forEach((node) => node.classList.remove("is-muted", "is-focused"));
+  };
+
+  card.addEventListener("mouseenter", activate);
+  card.addEventListener("mouseleave", deactivate);
+  card.addEventListener("focus", activate);
+  card.addEventListener("blur", deactivate);
+  return card;
+}
+
 function renderFloatingActionStack() {
   const container = elements.floatingStackEntries;
+  const cardContainer = elements.floatingStackCards;
   const shell = elements.floatingStack;
 
-  if (!container || !shell) return;
+  if (!container || !cardContainer || !shell) return;
 
   container.replaceChildren();
+  cardContainer.replaceChildren();
 
   const entries = [...GameState.actionStack].reverse();
   const isEmpty = entries.length === 0;
@@ -2083,13 +2187,13 @@ function renderFloatingActionStack() {
 
   entries.forEach((entry, index) => {
     const view = createStackViewModel(entry, index);
-    const card = document.createElement("article");
-    card.className = "floating-stack-card";
-    card.dataset.actionStackId = entry.stackId;
-    card.tabIndex = 0;
-    card.classList.toggle("is-top", index === 0);
-    card.classList.toggle("is-resolving", entry.status === "resolving");
-    card.classList.toggle("is-fizzled", entry.status === "fizzled");
+    const summary = document.createElement("article");
+    summary.className = "floating-stack-card";
+    summary.dataset.actionStackId = entry.stackId;
+    summary.tabIndex = 0;
+    summary.classList.toggle("is-top", index === 0);
+    summary.classList.toggle("is-resolving", entry.status === "resolving");
+    summary.classList.toggle("is-fizzled", entry.status === "fizzled");
 
     const icon = document.createElement("span");
     icon.className = "floating-stack-card__icon";
@@ -2111,16 +2215,17 @@ function renderFloatingActionStack() {
       : view.statusLabel;
 
     content.append(title, meta, target);
-    card.append(icon, content);
+    summary.append(icon, content);
 
     const activate = () => setStackEntryPreview(entry, true);
     const deactivate = () => setStackEntryPreview(entry, false);
-    card.addEventListener("mouseenter", activate);
-    card.addEventListener("mouseleave", deactivate);
-    card.addEventListener("focus", activate);
-    card.addEventListener("blur", deactivate);
+    summary.addEventListener("mouseenter", activate);
+    summary.addEventListener("mouseleave", deactivate);
+    summary.addEventListener("focus", activate);
+    summary.addEventListener("blur", deactivate);
 
-    container.appendChild(card);
+    container.appendChild(summary);
+    cardContainer.appendChild(createLayeredStackCard(entry, index, entries.length));
   });
 }
 
