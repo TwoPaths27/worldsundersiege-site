@@ -28,6 +28,40 @@ const PRIORITY = Object.freeze({
   ACTION: "action",
   END_TURN: "end_turn",
 });
+
+const PRIORITY_STATE = Object.freeze({
+  IDLE: "idle",
+  OPEN: "open",
+  WAITING: "waiting_for_player",
+  PASSING: "passing",
+  RESOLVING: "resolving",
+  CLOSED: "closed",
+});
+
+function createDefaultPrioritySettings() {
+  return {
+    fullControl: false,
+    phaseStops: {
+      beginning: false,
+      draw: false,
+      main: false,
+      end: false,
+    },
+    reactionStops: {
+      recruit: false,
+      move: false,
+      attack: true,
+      damage: false,
+      action: true,
+      end_turn: false,
+      trigger: true,
+      ability: true,
+      cardPlayed: true,
+      permanentEntered: false,
+      unitDestroyed: false,
+    },
+  };
+}
 const GameState = {
   turn: 1,
   activePlayer: 1,
@@ -39,11 +73,20 @@ actionStack: [],
 nextActionStackId: 1,
 priority: {
   active: false,
+  state: PRIORITY_STATE.IDLE,
   reason: PRIORITY.NONE,
   playerId: null,
   passes: 0,
   openedAt: 0,
   resolving: false,
+  windowId: 0,
+  sourcePlayerId: null,
+  mandatory: false,
+  autoPassQueued: false,
+},
+prioritySettings: {
+  1: createDefaultPrioritySettings(),
+  2: createDefaultPrioritySettings(),
 },
 
 pendingEvent: null,

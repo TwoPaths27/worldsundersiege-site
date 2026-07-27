@@ -11,6 +11,8 @@ function beginPriorityWindow({
   playerId = GameState.activePlayer,
   reason = PRIORITY.NONE,
   event = null,
+  sourcePlayerId = null,
+  mandatory = false,
 } = {}) {
   if (GameState.priority.resolving) {
     console.warn("Cannot open a priority window while the stack is resolving.");
@@ -23,15 +25,17 @@ function beginPriorityWindow({
   }
 
   GameState.priority.active = true;
+  GameState.priority.state = PRIORITY_STATE.OPEN;
   GameState.priority.reason = reason;
   GameState.priority.playerId = playerId;
   GameState.priority.passes = 0;
   GameState.priority.openedAt = Date.now();
   GameState.priority.resolving = false;
+  GameState.priority.windowId = (GameState.priority.windowId ?? 0) + 1;
+  GameState.priority.sourcePlayerId = sourcePlayerId ?? playerId;
+  GameState.priority.mandatory = Boolean(mandatory);
+  GameState.priority.autoPassQueued = false;
 
-  // Do not allow a stale recruit/equipment selection to remain active under
-  // a newly opened priority window. Action-card selection is handled by the
-  // priority flow and is therefore preserved.
   const selectedCard =
     typeof getSelectedCard === "function" ? getSelectedCard() : null;
 
@@ -45,9 +49,7 @@ function beginPriorityWindow({
     setPendingEvent(event);
   }
 
-  GameState.actionSelectionMessage =
-    `${GameState.players[playerId].name} has priority. Play an Action or pass.`;
-
+  continuePriorityWindow(GameState.priority.windowId);
   return true;
 }
 
@@ -73,6 +75,138 @@ function openPriorityWindow(
 }
 
 
+function getPrioritySettings(playerId) {
+  GameState.prioritySettings ??= {};
+  GameState.prioritySettings[playerId] ??=
+    typeof createDefaultPrioritySettings === "function"
+      ? createDefaultPrioritySettings()
+      : { fullControl: false, phaseStops: {}, reactionStops: {} };
+
+  return GameState.prioritySettings[playerId];
+}
+
+function isPhasePriorityReason(reason) {
+  return ["beginning", "draw", "main", "end"].includes(reason);
+}
+
+function isPriorityStopEnabled(playerId, reason = GameState.priority.reason) {
+  const settings = getPrioritySettings(playerId);
+
+  if (settings.fullControl || GameState.priority.mandatory) {
+    return true;
+  }
+
+  if (isPhasePriorityReason(reason)) {
+    return Boolean(settings.phaseStops?.[reason]);
+  }
+
+  return Boolean(settings.reactionStops?.[reason]);
+}
+
+function shouldPauseForPriority(playerId) {
+  const settings = getPrioritySettings(playerId);
+
+  if (settings.fullControl || GameState.priority.mandatory) {
+    return true;
+  }
+
+  if (
+    typeof playerHasPlayableAction !== "function" ||
+    !playerHasPlayableAction(playerId)
+  ) {
+    return false;
+  }
+
+  return isPriorityStopEnabled(playerId, GameState.priority.reason);
+}
+
+function queueAutomaticPriorityPass(windowId) {
+  if (GameState.priority.autoPassQueued) return;
+
+  GameState.priority.autoPassQueued = true;
+
+  const run = () => {
+    if (
+      !GameState.priority.active ||
+      GameState.priority.windowId !== windowId
+    ) {
+      return;
+    }
+
+    GameState.priority.autoPassQueued = false;
+    passPriority({ automatic: true });
+  };
+
+  if (typeof queueMicrotask === "function") {
+    queueMicrotask(run);
+  } else {
+    window.setTimeout(run, 0);
+  }
+}
+
+function continuePriorityWindow(windowId = GameState.priority.windowId) {
+  if (
+    !GameState.priority.active ||
+    GameState.priority.resolving ||
+    GameState.priority.windowId !== windowId
+  ) {
+    return false;
+  }
+
+  const playerId = GameState.priority.playerId;
+  const player = GameState.players[playerId];
+
+  if (!player) {
+    closePriorityWindow();
+    return false;
+  }
+
+  GameState.priority.state = PRIORITY_STATE.WAITING;
+  GameState.priority.autoPassQueued = false;
+
+  if (!shouldPauseForPriority(playerId)) {
+    GameState.actionSelectionMessage =
+      `${player.name} has no enabled legal response and automatically passes.`;
+    renderGame();
+    queueAutomaticPriorityPass(windowId);
+    return false;
+  }
+
+  GameState.actionSelectionMessage =
+    `${player.name} has priority. Play an Action or pass.`;
+  renderGame();
+  return true;
+}
+
+function setFullControl(playerId, enabled) {
+  const settings = getPrioritySettings(playerId);
+  settings.fullControl = Boolean(enabled);
+
+  if (
+    GameState.priority.active &&
+    GameState.priority.playerId === playerId
+  ) {
+    continuePriorityWindow(GameState.priority.windowId);
+  }
+
+  return settings.fullControl;
+}
+
+function setPriorityStop(playerId, group, reason, enabled) {
+  const settings = getPrioritySettings(playerId);
+  const collection =
+    group === "phase"
+      ? settings.phaseStops
+      : settings.reactionStops;
+
+  if (!collection || !(reason in collection)) {
+    return false;
+  }
+
+  collection[reason] = Boolean(enabled);
+  return true;
+}
+
 function canPassPriority(playerId = GameState.priority.playerId) {
   return Boolean(
     GameState.priority.active &&
@@ -84,7 +218,7 @@ function canPassPriority(playerId = GameState.priority.playerId) {
   );
 }
 
-function passPriority() {
+function passPriority({ automatic = false } = {}) {
   if (!canPassPriority()) {
     return false;
   }
@@ -99,6 +233,7 @@ function passPriority() {
     return false;
   }
 
+  GameState.priority.state = PRIORITY_STATE.PASSING;
   GameState.priority.passes += 1;
 
   emitGameEvent(
@@ -110,7 +245,11 @@ function passPriority() {
     { source: passingPlayer }
   );
 
-  addLog(`${passingPlayerState.name} passes priority.`);
+  addLog(
+    automatic
+      ? `${passingPlayerState.name} automatically passes priority.`
+      : `${passingPlayerState.name} passes priority.`
+  );
 
   if (GameState.priority.passes >= 2) {
     addLog("Both players passed priority.");
@@ -130,10 +269,7 @@ function passPriority() {
   GameState.priority.playerId = nextPlayer;
   clearPendingActionSelection();
 
-  GameState.actionSelectionMessage =
-    `${GameState.players[nextPlayer].name} has priority. Play an Action or pass.`;
-
-  renderGame();
+  continuePriorityWindow(GameState.priority.windowId);
   return true;
 }
 
@@ -738,6 +874,7 @@ async function beginResolveTopAction() {
   };
 
   GameState.priority.resolving = true;
+  GameState.priority.state = PRIORITY_STATE.RESOLVING;
   GameState.priority.active = false;
   clearPendingActionSelection();
 
@@ -944,11 +1081,15 @@ function reopenPriorityWindowAfterResolution() {
 
 function closePriorityWindow() {
   GameState.priority.active = false;
+  GameState.priority.state = PRIORITY_STATE.CLOSED;
   GameState.priority.reason = PRIORITY.NONE;
   GameState.priority.playerId = null;
   GameState.priority.passes = 0;
   GameState.priority.openedAt = 0;
   GameState.priority.resolving = false;
+  GameState.priority.sourcePlayerId = null;
+  GameState.priority.mandatory = false;
+  GameState.priority.autoPassQueued = false;
   GameState.actionSelectionMessage = "";
 }
 

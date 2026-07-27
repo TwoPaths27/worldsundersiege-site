@@ -131,6 +131,103 @@ function createHandCard(card, player) {
 }
 
 
+/* Action-card playability inspection */
+
+function getActionPlayabilityContext(card, playerId, extra = {}) {
+  const player = GameState.players[playerId] ?? null;
+
+  return {
+    game: GameState,
+    card,
+    playerId,
+    owner: playerId,
+    player,
+    opponent: GameState.players[playerId === 1 ? 2 : 1] ?? null,
+    priorityReason: GameState.priority.reason,
+    pendingEvent: GameState.pendingEvent,
+    ...extra,
+  };
+}
+
+function getPlayableActionOption(card, playerId) {
+  const player = GameState.players[playerId];
+
+  if (
+    !player ||
+    !card ||
+    !isAction(card) ||
+    player.energy < card.cost ||
+    !getAbility(card)
+  ) {
+    return null;
+  }
+
+  const baseContext = getActionPlayabilityContext(card, playerId);
+
+  if (!canPlayAbility(card, baseContext)) {
+    return null;
+  }
+
+  const ability = getAbility(card);
+  const requiresUser = ability?.requiresUser !== false;
+  const targetMode = getAbilityTargetMode(card);
+  const users = requiresUser
+    ? GameState.units.filter((unit) =>
+        isEligibleAbilityUser(
+          card,
+          unit,
+          getActionPlayabilityContext(card, playerId, { user: unit })
+        )
+      )
+    : [null];
+
+  for (const user of users) {
+    const userContext = getActionPlayabilityContext(card, playerId, { user });
+
+    if (!canPlayAbility(card, userContext)) {
+      continue;
+    }
+
+    if (targetMode === "none" || targetMode === "user") {
+      return { card, user, target: targetMode === "user" ? user : null };
+    }
+
+    const target = GameState.units.find((candidate) =>
+      isEligibleAbilityTarget(
+        card,
+        candidate,
+        getActionPlayabilityContext(card, playerId, {
+          user,
+          target: candidate,
+        })
+      )
+    );
+
+    if (target) {
+      return { card, user, target };
+    }
+  }
+
+  return null;
+}
+
+function getPlayableActions(playerId) {
+  const player = GameState.players[playerId];
+
+  if (!player || GameState.gameOver || GameState.priority.resolving) {
+    return [];
+  }
+
+  return player.hand
+    .filter((card) => isAction(card))
+    .map((card) => getPlayableActionOption(card, playerId))
+    .filter(Boolean);
+}
+
+function playerHasPlayableAction(playerId) {
+  return getPlayableActions(playerId).length > 0;
+}
+
 /* Action-card selection state */
 
 function getSelectedActionContext(extra = {}) {

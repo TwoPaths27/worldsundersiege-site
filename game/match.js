@@ -33,6 +33,11 @@ function initializeStrongholdPermanents() {
 }
 
 function initializeGame() {
+  GameState.prioritySettings ??= {};
+  for (const playerId of [1, 2]) {
+    GameState.prioritySettings[playerId] ??= createDefaultPrioritySettings();
+  }
+
   validateRequiredElements();
   bindEvents();
 
