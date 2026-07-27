@@ -6378,10 +6378,17 @@ body::after {
   box-shadow: 0 0 0 1px rgba(118,185,255,.22), 0 0 18px rgba(72,145,229,.22);
 }
 
-.priority-step-bar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-  gap: .35rem;
+.priority-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.priority-toolbar__label {
+  color: #8fa2b6;
+  font: 800 .66rem/1 system-ui, sans-serif;
+  letter-spacing: .12em;
 }
 
 .priority-step,

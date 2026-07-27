@@ -24,7 +24,7 @@ function renderHandCardPreview(card) {
   const stats = document.createElement("p");
   stats.textContent =
     isAction(card)
-      ? `Action · Cost ${card.cost}`
+      ? `${hasCounterKeyword(card) ? "Counter Action" : "Action · Sorcery Speed"} · Cost ${card.cost}`
       : isItem(card)
         ? `Item · Cost ${card.cost}`
         : isEvent(card)
@@ -86,6 +86,7 @@ function renderHand() {
 
 
 function createHandCard(card, player) {
+  const playerId = getInteractionPlayerId();
   const cardButton = document.createElement("button");
   cardButton.type = "button";
   cardButton.className = "hand-card";
@@ -94,12 +95,16 @@ function createHandCard(card, player) {
   const hasPriority =
     !GameState.priority.active ||
     GameState.priority.playerId === getInteractionPlayerId();
+  const legalActionTiming =
+    !isAction(card) ||
+    canPlayActionAtCurrentSpeed(card, playerId, getActionPlayabilityContext(card, playerId));
   const legalDuringPriority =
-    !GameState.priority.active || isAction(card);
+    !GameState.priority.active || (isAction(card) && hasCounterKeyword(card));
   const isPlayable =
     (isEvent(card) || card.cost <= player.energy) &&
     hasPriority &&
     legalDuringPriority &&
+    legalActionTiming &&
     !GameState.priority.resolving;
 
   cardButton.disabled = !isPlayable;
@@ -119,7 +124,7 @@ function createHandCard(card, player) {
   const cost=document.createElement("span"); cost.className="hand-card__cost"; cost.textContent=String(card.cost);
   const name=document.createElement("strong"); name.className="hand-card__name"; name.textContent=card.name;
   const stats=document.createElement("span"); stats.className="hand-card__stats";
-  if(isAction(card)){cardButton.classList.add("hand-card--action"); stats.textContent="ACTION";}
+  if(isAction(card)){cardButton.classList.add("hand-card--action"); stats.textContent=hasCounterKeyword(card)?"ACTION · COUNTER":"ACTION · SORCERY";}
   else if(isEvent(card)){cardButton.classList.add("hand-card--event"); stats.textContent="EVENT · FREE";}
   else if(isItem(card)){stats.textContent="ITEM";}
   else{stats.textContent=`ATK ${card.attack} · HP ${card.hp} · RNG ${card.range} · SPD ${card.speed}`;}
@@ -130,6 +135,98 @@ function createHandCard(card, player) {
   return cardButton;
 }
 
+
+
+/* v18.8 Action timing ----------------------------------------------------- */
+
+const COUNTER_ACTION_IDS = new Set([
+  "BOA-141",
+  "BOA-155",
+  "BOA-156",
+  "BOA-157",
+]);
+
+function hasCounterKeyword(card) {
+  if (!card) return false;
+
+  const words = [
+    ...(Array.isArray(card.keywords) ? card.keywords : []),
+    ...(Array.isArray(card.characteristics) ? card.characteristics : []),
+  ].map((value) => String(value).trim().toLowerCase());
+
+  return words.includes("counter") ||
+    COUNTER_ACTION_IDS.has(card.databaseId ?? card.gameplayId ?? card.id);
+}
+
+function getTopStackEntry() {
+  return GameState.actionStack.at(-1) ?? null;
+}
+
+function stackEntryTargetsUnit(entry, unitId) {
+  if (!entry || !unitId) return false;
+  const payload = entry.payload ?? {};
+  return entry.targetId === unitId ||
+    payload.targetId === unitId ||
+    payload.defenderId === unitId ||
+    (Array.isArray(payload.targetIds) && payload.targetIds.includes(unitId));
+}
+
+function counterTimingConditionMatches(card, playerId, context = {}) {
+  if (!GameState.priority.active || GameState.priority.playerId !== playerId) {
+    return false;
+  }
+
+  const id = card.databaseId ?? card.gameplayId ?? card.id;
+  const top = getTopStackEntry();
+  const opponentId = playerId === 1 ? 2 : 1;
+
+  switch (id) {
+    case "BOA-141":
+      return GameState.priority.reason === PRIORITY.ATTACK || top?.type === "attack";
+
+    case "BOA-155": {
+      const user = context.user ?? null;
+      if (user) {
+        return user.owner === playerId &&
+          (top?.controller ?? top?.owner) === opponentId &&
+          stackEntryTargetsUnit(top, user.id);
+      }
+
+      return GameState.units.some((unit) =>
+        unit.owner === playerId &&
+        (top?.controller ?? top?.owner) === opponentId &&
+        stackEntryTargetsUnit(top, unit.id)
+      );
+    }
+
+    case "BOA-156":
+      return top?.type === "action";
+
+    case "BOA-157":
+      return GameState.priority.reason === PRIORITY.RECRUIT ||
+        top?.type === "recruit" ||
+        top?.payload?.eventType === "permanentEntered" ||
+        top?.payload?.eventType === "cardPlayed";
+
+    default:
+      return true;
+  }
+}
+
+function canPlayActionAtCurrentSpeed(card, playerId, context = {}) {
+  if (!card || !isAction(card) || !GameState.players[playerId]) return false;
+
+  if (hasCounterKeyword(card)) {
+    return counterTimingConditionMatches(card, playerId, context);
+  }
+
+  return playerId === GameState.activePlayer &&
+    GameState.turnFlow?.step === "main" &&
+    !GameState.turnFlow?.transitioning &&
+    !GameState.priority.active &&
+    !GameState.priority.resolving &&
+    GameState.actionStack.length === 0;
+}
 
 /* Action-card playability inspection */
 
@@ -163,6 +260,10 @@ function getPlayableActionOption(card, playerId) {
   }
 
   const baseContext = getActionPlayabilityContext(card, playerId);
+
+  if (!canPlayActionAtCurrentSpeed(card, playerId, baseContext)) {
+    return null;
+  }
 
   if (!canPlayAbility(card, baseContext)) {
     return null;
@@ -277,7 +378,8 @@ function isChoosingActionTarget() {
 }
 function isEligibleActionUser(unit) {
   const context = getSelectedActionContext({ user: unit });
-  return isEligibleAbilityUser(context.card, unit, context);
+  return canPlayActionAtCurrentSpeed(context.card, context.playerId, context) &&
+    isEligibleAbilityUser(context.card, unit, context);
 }
 
 function getEligibleActionUsers() {
@@ -496,6 +598,16 @@ function commitSelectedAction(targetId = null) {
     target,
   });
 
+  if (!canPlayActionAtCurrentSpeed(card, playerId, context)) {
+    addLog(
+      hasCounterKeyword(card)
+        ? `${card.name} cannot respond to the current event.`
+        : `${card.name} can only be played during your Main Step while the stack is empty.`
+    );
+    renderGame();
+    return false;
+  }
+
   if (!isEligibleAbilityUser(card, user, context)) {
     addLog(
       `${user.name} cannot currently use ${card.name}.`
@@ -641,7 +753,9 @@ function commitSelectedAction(targetId = null) {
    * that player has Full Control enabled.
    */
   beginPriorityWindow({
-    playerId,
+    // Only Counter Actions may be added during this window. The opponent of
+    // the Action's controller receives the first chance to respond.
+    playerId: playerId === 1 ? 2 : 1,
     reason: PRIORITY.ACTION,
     sourcePlayerId: playerId,
   });
@@ -768,6 +882,17 @@ function selectCard(cardId) {
   }
 
   if (isAction(card)) {
+    const speedContext = getSelectedActionContext();
+
+    if (!canPlayActionAtCurrentSpeed(card, playerId, speedContext)) {
+      rejectSelectedCard(
+        hasCounterKeyword(card)
+          ? `${card.name} cannot respond to the current event.`
+          : `${card.name} is Sorcery Speed and may only be played during your Main Step while the stack is empty.`
+      );
+      return;
+    }
+
     if (!getAbility(card)) {
       rejectSelectedCard(`${card.name} has no registered ability.`);
       return;

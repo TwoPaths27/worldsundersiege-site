@@ -35,7 +35,6 @@ const elements = {
   fullControlButton: document.querySelector("#fullControlButton"),
   prioritySettingsButton: document.querySelector("#prioritySettingsButton"),
   prioritySettingsPanel: document.querySelector("#prioritySettingsPanel"),
-  priorityStopControls: document.querySelector("#priorityStopControls"),
   priorityDebugButton: document.querySelector("#priorityDebugButton"),
   priorityDebugPanel: document.querySelector("#priorityDebugPanel"),
   priorityDebugState: document.querySelector("#priorityDebugState"),
@@ -126,16 +125,6 @@ function bindEvents() {
     elements.prioritySettingsButton.setAttribute("aria-expanded", String(expanded));
   });
 
-  document.querySelectorAll("[data-priority-group][data-priority-reason]")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        const group = button.dataset.priorityGroup;
-        const reason = button.dataset.priorityReason;
-        const enabled = !isPriorityStopEnabled(1, reason);
-        setPriorityStop(1, group, reason, enabled);
-        renderGame();
-      });
-    });
 
   elements.priorityDebugButton?.addEventListener("click", () => {
     const expanded = elements.priorityDebugPanel.hidden;

@@ -24,6 +24,8 @@ function createCard({
   databaseId = null,
   abilityId = null,
   targetMode = null,
+  keywords = null,
+  characteristics = null,
 }) {
   return {
     id,
@@ -40,6 +42,8 @@ function createCard({
     databaseId,
     abilityId,
     targetMode,
+    keywords: Array.isArray(keywords) ? [...keywords] : keywords ? [keywords] : [],
+    characteristics: Array.isArray(characteristics) ? [...characteristics] : characteristics ? [characteristics] : [],
   };
 }
 
@@ -161,6 +165,8 @@ function createCardFromDatabase(cardId, overrides = {}) {
     databaseId: entry.id,
     abilityId: entry.abilityId ?? entry.ability ?? null,
     targetMode: entry.targetMode ?? null,
+    keywords: entry.keywords ?? [],
+    characteristics: entry.characteristics ?? [],
     ...overrides,
   });
 }

@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=18.7">
+  <link rel="stylesheet" href="./game.css?v=18.8">
 </head>
 <body>
   <main class="game-layout">
@@ -30,12 +30,9 @@
       </section>
 
       <section id="priorityDock" class="priority-dock" aria-label="Priority controls">
-        <div class="priority-step-bar" aria-label="Turn step stops">
-          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="beginning" aria-pressed="true" title="Beginning Step stop">BS</button>
-          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="draw" aria-pressed="true" title="Draw Step stop">DS</button>
-          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="main" aria-pressed="true" title="Main Step stop">MS</button>
-          <button class="priority-step" type="button" data-priority-group="phase" data-priority-reason="end" aria-pressed="true" title="End Step stop">ES</button>
-          <button id="prioritySettingsButton" class="priority-icon-button" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel" title="Advanced priority stops">⚙</button>
+        <div class="priority-toolbar" aria-label="Priority controls">
+          <span class="priority-toolbar__label">ACTION TIMING</span>
+          <button id="prioritySettingsButton" class="priority-icon-button" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel" title="Priority tools">⚙</button>
         </div>
 
         <div class="priority-action-row">
@@ -54,10 +51,9 @@
 
         <div id="prioritySettingsPanel" class="priority-popover" hidden>
           <div class="priority-popover__header">
-            <strong>Advanced Stops</strong>
+            <strong>Priority Tools</strong>
             <button id="priorityDebugButton" class="priority-debug-toggle" type="button" aria-expanded="false" aria-controls="priorityDebugPanel">Debug</button>
           </div>
-          <div id="priorityStopControls" class="arena-stop-grid"></div>
           <dl id="priorityDebugPanel" class="arena-debug" hidden>
             <div><dt>State</dt><dd id="priorityDebugState">Idle</dd></div>
             <div><dt>Priority</dt><dd id="priorityDebugPlayer">None</dd></div>
@@ -515,8 +511,8 @@
     </div>
   </noscript>
 
-<script src="../card-database.js?v=1"></script>
-<script src="./card-data.js?v=1"></script>
+<script src="../card-database.js?v=18.8"></script>
+<script src="./card-data.js?v=18.8"></script>
 <script src="./card-types.js?v=15"></script>
 <script src="./game-state.js?v=15"></script>
 <script src="./replacement.js?v=13"></script>
@@ -531,12 +527,12 @@
 <script src="./event-controller.js?v=17.1"></script>
 <script src="./rules.js?v=17.1"></script>
 <script src="./audio.js?v=1"></script>
-<script src="./ui.js?v=18.7"></script>
+<script src="./ui.js?v=18.8"></script>
 <script src="./animation.js?v=1"></script>
-<script src="./priority.js?v=18.7"></script>
+<script src="./priority.js?v=18.8"></script>
 <script src="./battlefield.js?v=17.1"></script>
-<script src="./cards.js?v=17.1"></script>
-<script src="./match.js?v=17.1"></script>
+<script src="./cards.js?v=18.8"></script>
+<script src="./match.js?v=18.8"></script>
 <script src="./game.js?v=37"></script>
 </body>
 </html>

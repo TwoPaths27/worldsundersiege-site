@@ -526,7 +526,7 @@ function isPriorityStopEnabled(playerId, reason = GameState.priority.reason) {
   }
 
   if (isPhasePriorityReason(reason)) {
-    return Boolean(settings.phaseStops?.[reason]);
+    return false;
   }
 
   return Boolean(settings.reactionStops?.[reason]);
@@ -539,6 +539,8 @@ function shouldPauseForPriority(playerId) {
     return true;
   }
 
+  // v18.8 priority is event-driven. A window pauses only when the player has
+  // a legal Counter Action (or Full Control is explicitly enabled).
   if (
     typeof playerHasPlayableAction !== "function" ||
     !playerHasPlayableAction(playerId)
@@ -546,7 +548,7 @@ function shouldPauseForPriority(playerId) {
     return false;
   }
 
-  return isPriorityStopEnabled(playerId, GameState.priority.reason);
+  return true;
 }
 
 function queueAutomaticPriorityPass(windowId) {
@@ -602,7 +604,7 @@ function continuePriorityWindow(windowId = GameState.priority.windowId) {
   }
 
   GameState.actionSelectionMessage =
-    `${player.name} has priority. Play an Action or pass.`;
+    `${player.name} may play a legal Counter Action or pass.`;
   renderGame();
   return true;
 }
@@ -1868,20 +1870,7 @@ function createStackViewModel(entry, index = 0) {
   };
 }
 
-const PRIORITY_STOP_DEFINITIONS = Object.freeze([
-  ["phase", "beginning", "Beginning"],
-  ["phase", "draw", "Draw"],
-  ["phase", "main", "Main"],
-  ["phase", "end", "End"],
-  ["reaction", "recruit", "Recruit"],
-  ["reaction", "move", "Movement"],
-  ["reaction", "attack", "Attack"],
-  ["reaction", "damage", "Damage"],
-  ["reaction", "action", "Action"],
-  ["reaction", "trigger", "Trigger"],
-  ["reaction", "ability", "Ability"],
-  ["reaction", "end_turn", "End Turn"],
-]);
+const PRIORITY_STOP_DEFINITIONS = Object.freeze([]);
 
 function renderArenaPriorityControls(playerId = 1) {
   const settings = getPrioritySettings(playerId);
@@ -1902,49 +1891,7 @@ function renderArenaPriorityControls(playerId = 1) {
       "Toggle Full Control (Ctrl/Cmd+F)";
   }
 
-  document.querySelectorAll("[data-priority-group=\"phase\"][data-priority-reason]")
-    .forEach((button) => {
-      const reason = button.dataset.priorityReason;
-      const enabled = isPriorityStopEnabled(playerId, reason);
-      button.setAttribute("aria-pressed", String(enabled));
-      button.classList.toggle("is-active", enabled);
-      button.disabled = settings.fullControl;
-    });
 
-  if (elements.priorityStopControls) {
-    const signature = JSON.stringify({
-      phase: settings.phaseStops,
-      reaction: settings.reactionStops,
-      fullControl: settings.fullControl,
-    });
-
-    if (elements.priorityStopControls.dataset.signature !== signature) {
-      elements.priorityStopControls.replaceChildren();
-
-      for (const [group, reason, label] of PRIORITY_STOP_DEFINITIONS) {
-        if (group === "phase") continue;
-
-        const wrapper = document.createElement("label");
-        wrapper.className = "arena-stop";
-
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.checked = isPriorityStopEnabled(playerId, reason);
-        input.disabled = settings.fullControl;
-        input.addEventListener("change", () => {
-          setPriorityStop(playerId, group, reason, input.checked);
-          renderGame();
-        });
-
-        const text = document.createElement("span");
-        text.textContent = label;
-        wrapper.append(input, text);
-        elements.priorityStopControls.appendChild(wrapper);
-      }
-
-      elements.priorityStopControls.dataset.signature = signature;
-    }
-  }
 
   const priorityPlayer = GameState.players[GameState.priority.playerId];
   if (elements.priorityDebugState) {

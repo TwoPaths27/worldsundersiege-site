@@ -49,18 +49,8 @@ const PRIORITY_STATE = Object.freeze({
 function createDefaultPrioritySettings() {
   return {
     fullControl: false,
-    phaseStops: {
-      /*
-       * v18.2 defaults to Arena-style stops at each turn step. Smart priority
-       * still auto-passes when the player has no legal Action.
-       *
-       * The v18.6 controls will let each player toggle these individually.
-       */
-      beginning: true,
-      draw: true,
-      main: true,
-      end: true,
-    },
+    // Retained for save compatibility. v18.8 no longer opens phase priority.
+    phaseStops: {},
     reactionStops: {
       recruit: false,
       move: false,
