@@ -3599,7 +3599,9 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [],
+    "characteristics": [
+      "Counter"
+    ],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3609,7 +3611,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-141",
     "copyLimit": 3,
-    "effectText": "You can only activate this Action during an opponent's turn. Characters you control take 0 Damage during this turn."
+    "effectText": "Play only when your opponent declares an attack. Characters you control take 0 Damage during this turn."
   },
   {
     "id": "BOA-142",
@@ -3921,7 +3923,9 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [],
+    "characteristics": [
+      "Counter"
+    ],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3931,7 +3935,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-155",
     "copyLimit": 3,
-    "effectText": "The User cannot be Targeted by your opponent's effects during this turn."
+    "effectText": "Play only when this card's User is targeted by an opponent's effect. The User cannot be Targeted by your opponent's effects during this turn."
   },
   {
     "id": "BOA-156",
@@ -3944,7 +3948,9 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [],
+    "characteristics": [
+      "Counter"
+    ],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3967,7 +3973,9 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [],
+    "characteristics": [
+      "Counter"
+    ],
     "effectName": "",
     "setCode": "BOA",
     "types": [
