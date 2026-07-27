@@ -1835,7 +1835,155 @@ function getActionStackStatusLabel(status) {
   }[status] ?? "Waiting";
 }
 
+
+function createStackViewModel(entry, index = 0) {
+  const targetInfo = getActionStackTarget(entry);
+  const target = targetInfo.unit;
+  const controller = GameState.players[entry.controller ?? entry.owner];
+  const user = entry.userId ? getUnitById(entry.userId) : null;
+  const payload = entry.payload ?? {};
+
+  let targetLabel = "None";
+  if (target) targetLabel = target.name;
+  else if (entry.type === STACK_ENTRY_TYPES.ATTACK) {
+    targetLabel = payload.targetType === "stronghold"
+      ? `${GameState.players[payload.targetPlayerId]?.name ?? "Player"} Stronghold`
+      : getUnitById(payload.targetId)?.name ?? "Unavailable";
+  } else if (entry.type === STACK_ENTRY_TYPES.EVENT && payload.to) {
+    targetLabel = `(${payload.to.x + 1}, ${payload.to.y + 1})`;
+  }
+
+  return {
+    id: entry.stackId,
+    index,
+    title: getStackEntryName(entry),
+    type: entry.type ?? "effect",
+    controllerId: entry.controller ?? entry.owner ?? null,
+    controllerName: controller?.name ?? "Unknown controller",
+    userName: user?.name ?? null,
+    targetLabel,
+    status: entry.status ?? "waiting",
+    statusLabel: getActionStackStatusLabel(entry.status),
+    source: entry.card ?? entry.source ?? null,
+  };
+}
+
+const PRIORITY_STOP_DEFINITIONS = Object.freeze([
+  ["phase", "beginning", "Beginning"],
+  ["phase", "draw", "Draw"],
+  ["phase", "main", "Main"],
+  ["phase", "end", "End"],
+  ["reaction", "recruit", "Recruit"],
+  ["reaction", "move", "Movement"],
+  ["reaction", "attack", "Attack"],
+  ["reaction", "damage", "Damage"],
+  ["reaction", "action", "Action"],
+  ["reaction", "trigger", "Trigger"],
+  ["reaction", "ability", "Ability"],
+  ["reaction", "end_turn", "End Turn"],
+]);
+
+function renderArenaPriorityControls(playerId = 1) {
+  const settings = getPrioritySettings(playerId);
+  const player = GameState.players[playerId];
+
+  if (elements.fullControlButton) {
+    elements.fullControlButton.textContent =
+      `Full Control: ${settings.fullControl ? "On" : "Off"}`;
+    elements.fullControlButton.setAttribute(
+      "aria-pressed",
+      String(settings.fullControl)
+    );
+    elements.fullControlButton.classList.toggle(
+      "is-active",
+      settings.fullControl
+    );
+    elements.fullControlButton.title =
+      "Toggle Full Control (Ctrl/Cmd+F)";
+  }
+
+  if (elements.priorityStopControls) {
+    const signature = JSON.stringify({
+      phase: settings.phaseStops,
+      reaction: settings.reactionStops,
+    });
+
+    if (elements.priorityStopControls.dataset.signature !== signature) {
+      elements.priorityStopControls.replaceChildren();
+
+      for (const [group, reason, label] of PRIORITY_STOP_DEFINITIONS) {
+        const wrapper = document.createElement("label");
+        wrapper.className = "arena-stop";
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = isPriorityStopEnabled(playerId, reason);
+        input.disabled = settings.fullControl;
+        input.addEventListener("change", () => {
+          setPriorityStop(playerId, group, reason, input.checked);
+          renderGame();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = label;
+        wrapper.append(input, text);
+        elements.priorityStopControls.appendChild(wrapper);
+      }
+
+      elements.priorityStopControls.dataset.signature = signature;
+    }
+  }
+
+  const priorityPlayer = GameState.players[GameState.priority.playerId];
+  if (elements.priorityDebugState) {
+    elements.priorityDebugState.textContent = GameState.priority.state;
+    elements.priorityDebugPlayer.textContent = priorityPlayer?.name ?? "None";
+    elements.priorityDebugReason.textContent = GameState.priority.reason;
+    elements.priorityDebugStack.textContent = String(GameState.actionStack.length);
+    elements.priorityDebugPending.textContent =
+      GameState.pendingEvent?.type ?? "None";
+    elements.priorityDebugPasses.textContent = String(GameState.priority.passes);
+  }
+
+  elements.actionPrompt?.classList.toggle(
+    "has-priority",
+    GameState.priority.active && GameState.priority.playerId === playerId
+  );
+  elements.actionPrompt?.setAttribute(
+    "aria-label",
+    GameState.priority.active
+      ? `${priorityPlayer?.name ?? "A player"} has priority`
+      : `${player?.name ?? "Player"} priority controls`
+  );
+}
+
+function setStackEntryPreview(entry, active) {
+  const sourceId = entry.sourceId ?? entry.userId ?? entry.payload?.attackerId;
+  const targetId = entry.targetId ?? entry.payload?.targetId ?? null;
+
+  document.querySelectorAll(".unit-token.is-stack-source, .unit-token.is-stack-target")
+    .forEach((node) => node.classList.remove("is-stack-source", "is-stack-target"));
+  document.querySelectorAll(".stronghold.is-stack-target")
+    .forEach((node) => node.classList.remove("is-stack-target"));
+
+  if (!active) return;
+
+  if (sourceId) {
+    elements.battlefield.querySelector(`[data-unit-id="${CSS.escape(sourceId)}"]`)
+      ?.classList.add("is-stack-source");
+  }
+  if (targetId) {
+    elements.battlefield.querySelector(`[data-unit-id="${CSS.escape(targetId)}"]`)
+      ?.classList.add("is-stack-target");
+  }
+  if (entry.payload?.targetType === "stronghold") {
+    document.querySelector(`[data-owner="${entry.payload.targetPlayerId}"].stronghold`)
+      ?.classList.add("is-stack-target");
+  }
+}
+
 function renderActionStacks() {
+  renderArenaPriorityControls(1);
   renderActionStackForPlayer(1, elements.playerActionStack);
   renderActionStackForPlayer(2, elements.enemyActionStack);
 
@@ -1911,6 +2059,7 @@ function renderActionStackForPlayer(playerId, container) {
 
   entries.forEach((entry, index) => {
     const actionCard = document.createElement("article");
+    const view = createStackViewModel(entry, index);
     const user = getUnitById(entry.userId);
     const targetInfo = getActionStackTarget(entry);
     const target = targetInfo.unit;
@@ -1974,10 +2123,18 @@ function renderActionStackForPlayer(playerId, container) {
       }
     };
 
-    actionCard.addEventListener("mouseenter", showStackCardPreview);
-    actionCard.addEventListener("mouseleave", restorePreviewAfterStackCard);
-    actionCard.addEventListener("focus", showStackCardPreview);
-    actionCard.addEventListener("blur", restorePreviewAfterStackCard);
+    const activateStackPreview = () => {
+      showStackCardPreview();
+      setStackEntryPreview(entry, true);
+    };
+    const deactivateStackPreview = () => {
+      restorePreviewAfterStackCard();
+      setStackEntryPreview(entry, false);
+    };
+    actionCard.addEventListener("mouseenter", activateStackPreview);
+    actionCard.addEventListener("mouseleave", deactivateStackPreview);
+    actionCard.addEventListener("focus", activateStackPreview);
+    actionCard.addEventListener("blur", deactivateStackPreview);
 
     const image =
       entry.card?.cardImage ??
@@ -2000,7 +2157,11 @@ function renderActionStackForPlayer(playerId, container) {
         ? `User: ${user.name}`
         : entry.type === "trigger"
           ? "Triggered ability"
-          : "User unavailable";
+          : `${view.controllerName}`;
+
+    const typeLabel = document.createElement("small");
+    typeLabel.className = "action-stack-card__type";
+    typeLabel.textContent = `${view.type.toUpperCase()} · ${view.targetLabel}`;
 
     const inspector = document.createElement("div");
     inspector.className = "action-stack-inspector";
@@ -2038,7 +2199,7 @@ function renderActionStackForPlayer(playerId, container) {
       inspectorStatus
     );
 
-    actionCard.append(label, userLabel, inspector);
+    actionCard.append(label, userLabel, typeLabel, inspector);
     container.appendChild(actionCard);
   });
 }

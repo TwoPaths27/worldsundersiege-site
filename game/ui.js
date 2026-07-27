@@ -29,6 +29,18 @@ const elements = {
   declineTriggerButton: document.querySelector("#declineTriggerButton"),
   passPriorityButton: document.querySelector("#passPriorityButton"),
   actionArrowLayer: document.querySelector("#actionArrowLayer"),
+  fullControlButton: document.querySelector("#fullControlButton"),
+  prioritySettingsButton: document.querySelector("#prioritySettingsButton"),
+  prioritySettingsPanel: document.querySelector("#prioritySettingsPanel"),
+  priorityStopControls: document.querySelector("#priorityStopControls"),
+  priorityDebugButton: document.querySelector("#priorityDebugButton"),
+  priorityDebugPanel: document.querySelector("#priorityDebugPanel"),
+  priorityDebugState: document.querySelector("#priorityDebugState"),
+  priorityDebugPlayer: document.querySelector("#priorityDebugPlayer"),
+  priorityDebugReason: document.querySelector("#priorityDebugReason"),
+  priorityDebugStack: document.querySelector("#priorityDebugStack"),
+  priorityDebugPending: document.querySelector("#priorityDebugPending"),
+  priorityDebugPasses: document.querySelector("#priorityDebugPasses"),
 
   endTurnButton: document.querySelector("#endTurnButton"),
 
@@ -99,6 +111,23 @@ function bindEvents() {
 
   elements.endTurnButton.addEventListener("click", endTurn);
   elements.passPriorityButton.addEventListener("click", passPriority);
+
+  elements.fullControlButton?.addEventListener("click", () => {
+    setFullControl(1, !getPrioritySettings(1).fullControl);
+    renderGame();
+  });
+
+  elements.prioritySettingsButton?.addEventListener("click", () => {
+    const expanded = elements.prioritySettingsPanel.hidden;
+    elements.prioritySettingsPanel.hidden = !expanded;
+    elements.prioritySettingsButton.setAttribute("aria-expanded", String(expanded));
+  });
+
+  elements.priorityDebugButton?.addEventListener("click", () => {
+    const expanded = elements.priorityDebugPanel.hidden;
+    elements.priorityDebugPanel.hidden = !expanded;
+    elements.priorityDebugButton.setAttribute("aria-expanded", String(expanded));
+  });
 
   elements.playerEventZone.addEventListener("click", () => inspectControlledEvent(1));
   elements.enemyEventZone.addEventListener("click", () => inspectControlledEvent(2));
@@ -181,6 +210,13 @@ elements.enemyStronghold.addEventListener(
   });
 
   document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      setFullControl(1, !getPrioritySettings(1).fullControl);
+      renderGame();
+      return;
+    }
+
     if (event.key === "Escape") {
       const pendingTriggerChoice =
         typeof getPendingTriggeredChoice === "function"

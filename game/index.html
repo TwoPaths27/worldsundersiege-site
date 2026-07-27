@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=17.1">
+  <link rel="stylesheet" href="./game.css?v=18.6">
 </head>
 <body>
   <main class="game-layout">
@@ -68,6 +68,32 @@
         >
           Pass Priority
         </button>
+
+        <div class="arena-priority-toolbar" aria-label="Priority controls">
+          <button id="fullControlButton" class="arena-toggle" type="button" aria-pressed="false">
+            Full Control: Off
+          </button>
+          <button id="prioritySettingsButton" class="arena-toggle" type="button" aria-expanded="false" aria-controls="prioritySettingsPanel">
+            Stops
+          </button>
+          <button id="priorityDebugButton" class="arena-toggle" type="button" aria-expanded="false" aria-controls="priorityDebugPanel">
+            Debug
+          </button>
+        </div>
+
+        <div id="prioritySettingsPanel" class="arena-settings" hidden>
+          <strong>Player 1 Stops</strong>
+          <div id="priorityStopControls" class="arena-stop-grid"></div>
+        </div>
+
+        <dl id="priorityDebugPanel" class="arena-debug" hidden>
+          <div><dt>State</dt><dd id="priorityDebugState">Idle</dd></div>
+          <div><dt>Priority</dt><dd id="priorityDebugPlayer">None</dd></div>
+          <div><dt>Reason</dt><dd id="priorityDebugReason">None</dd></div>
+          <div><dt>Stack</dt><dd id="priorityDebugStack">0</dd></div>
+          <div><dt>Pending</dt><dd id="priorityDebugPending">None</dd></div>
+          <div><dt>Passes</dt><dd id="priorityDebugPasses">0</dd></div>
+        </dl>
       </section>
 
       <section class="panel-card chat-panel">
@@ -533,9 +559,9 @@
 <script src="./event-controller.js?v=17.1"></script>
 <script src="./rules.js?v=17.1"></script>
 <script src="./audio.js?v=1"></script>
-<script src="./ui.js?v=17.1"></script>
+<script src="./ui.js?v=18.6"></script>
 <script src="./animation.js?v=1"></script>
-<script src="./priority.js?v=13"></script>
+<script src="./priority.js?v=18.6"></script>
 <script src="./battlefield.js?v=17.1"></script>
 <script src="./cards.js?v=17.1"></script>
 <script src="./match.js?v=17.1"></script>
