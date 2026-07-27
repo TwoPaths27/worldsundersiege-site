@@ -6775,3 +6775,83 @@ body::after {
     right: .35rem;
   }
 }
+
+/* v18.7.7 — right-side layered stack lane and target-click visibility fix
+   Keep the complete physical card face, but use a smaller display scale and
+   reserve the far-right battlefield lane for the stack so it does not cover
+   the grid or the compact event summary. */
+@media (min-width: 1101px) {
+  .floating-stack {
+    /* Pull the entire event/card pair into the unused lane immediately before
+       the Card Preview sidebar. Negative positioning intentionally lets the
+       overlay occupy the stage gutter without participating in grid layout. */
+    right: clamp(-9.75rem, -8.25vw, -7.25rem);
+    width: min(25rem, calc(100% - .5rem));
+  }
+
+  .floating-stack__body {
+    grid-template-columns: minmax(8.75rem, 10.25rem) minmax(9.75rem, 11rem);
+    gap: .35rem;
+  }
+
+  .floating-stack__cards {
+    height: min(45vh, 21.5rem);
+  }
+
+  /* This is still the complete card, including its printed art and text.
+     Only the on-screen stack copy is reduced so it fits between the event
+     summary and the dedicated full-size Card Preview panel. */
+  .stack-full-card {
+    --stack-card-offset: clamp(1.7rem, 4vh, 2.45rem);
+    width: clamp(9.75rem, 11.5vw, 11rem);
+    height: clamp(13.9rem, 31.5vh, 16.2rem);
+  }
+
+  .stack-full-card__details {
+    min-height: 4.35rem;
+    padding: .42rem .52rem .5rem;
+  }
+
+  .stack-full-card__details strong { font-size: .73rem; }
+  .stack-full-card__type { font-size: .5rem; }
+  .stack-full-card__stats,
+  .stack-full-card__target { font-size: .53rem; }
+}
+
+/* Unit names must never interfere with target selection. Keep the helpful
+   label, but require a deliberate hover before revealing it and keep it
+   visually closer to the tile instead of immediately covering nearby units. */
+.unit-name-banner {
+  bottom: calc(100% + 3px);
+  max-width: 140px;
+  transition-delay: 0s;
+}
+
+.unit-token:hover .unit-name-banner {
+  transition-delay: 360ms;
+}
+
+/* Selected-unit controls already identify the selected Character. Suppress
+   the extra name banner there, where Actions commonly require clicking a
+   nearby card or tile. */
+.cell-selected .unit-name-banner {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .floating-stack {
+    right: clamp(-5.5rem, -5vw, -3.5rem);
+    width: min(23rem, calc(100% - .5rem));
+  }
+
+  .floating-stack__body {
+    grid-template-columns: minmax(8rem, 9.5rem) minmax(9rem, 10.5rem);
+    gap: .3rem;
+  }
+
+  .stack-full-card {
+    width: clamp(9rem, 14vw, 10.25rem);
+    height: clamp(13rem, 30vh, 15.25rem);
+  }
+}
