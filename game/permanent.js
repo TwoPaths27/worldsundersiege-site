@@ -47,6 +47,126 @@ function normalizeDefinitions(value) {
   return (Array.isArray(value) ? value : [value]).filter(Boolean);
 }
 
+function getPermanentGameplayIdentity(permanent) {
+  if (!permanent || typeof permanent !== "object") return null;
+
+  return (
+    permanent.gameplayId ??
+    permanent.databaseId ??
+    permanent.sourceCard?.gameplayId ??
+    permanent.sourceCard?.databaseId ??
+    permanent.sourceCard?.id ??
+    permanent.id ??
+    null
+  );
+}
+
+function isUniqueUnitPermanent(permanent) {
+  if (!permanent) return false;
+
+  const character =
+    typeof isCharacter === "function"
+      ? isCharacter(permanent)
+      : permanent.type === "Character" ||
+        permanent.cardType === "Character" ||
+        permanent.types?.includes?.("Character");
+
+  const animal =
+    typeof isAnimal === "function"
+      ? isAnimal(permanent)
+      : permanent.type === "Animal" ||
+        permanent.cardType === "Animal" ||
+        permanent.types?.includes?.("Animal");
+
+  return Boolean(character || animal);
+}
+
+function isPermanentCurrentlyUnique(permanent) {
+  return Boolean(
+    isUniqueUnitPermanent(permanent) &&
+    permanent.isUnique !== false &&
+    permanent.permanentState?.isUnique !== false &&
+    permanent.sourceCard?.isUnique !== false &&
+    permanent.sourceCard?.permanentState?.isUnique !== false
+  );
+}
+
+function getControlledBattlefieldPermanents(controller, options = {}) {
+  if (Array.isArray(options.battlefieldPermanents)) {
+    return options.battlefieldPermanents;
+  }
+
+  if (
+    typeof GameState !== "undefined" &&
+    Array.isArray(GameState.units)
+  ) {
+    return GameState.units;
+  }
+
+  return [];
+}
+
+function findConflictingUniquePermanent(permanent, options = {}) {
+  if (!isPermanentCurrentlyUnique(permanent)) return null;
+
+  const controller =
+    options.controller ??
+    permanent.controller ??
+    permanent.owner;
+
+  const identity = getPermanentGameplayIdentity(permanent);
+  if (controller == null || identity == null) return null;
+
+  return (
+    getControlledBattlefieldPermanents(controller, options).find((existing) => {
+      if (!existing || existing === permanent) return false;
+
+      const existingController =
+        existing.controller ??
+        existing.owner;
+
+      return (
+        existingController === controller &&
+        isPermanentCurrentlyUnique(existing) &&
+        getPermanentGameplayIdentity(existing) === identity
+      );
+    }) ?? null
+  );
+}
+
+function canEnterPermanent(permanent, options = {}) {
+  normalizePermanent(permanent, options);
+
+  if (!isPermanent(permanent)) {
+    return {
+      allowed: false,
+      reason: "not-permanent",
+      message: "Only permanent cards can enter the battlefield.",
+      conflict: null,
+    };
+  }
+
+  const conflict = findConflictingUniquePermanent(permanent, options);
+
+  if (conflict) {
+    return {
+      allowed: false,
+      reason: "unique-conflict",
+      message:
+        `${permanent.name ?? "That card"} is unique. ` +
+        `Its controller already controls a copy.`,
+      conflict,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: null,
+    message: "",
+    conflict: null,
+  };
+}
+
 function registerPermanent(permanent) {
   normalizePermanent(permanent);
   if (!isPermanent(permanent) || permanent.permanentState.registered) return permanent;
@@ -87,14 +207,38 @@ function unregisterPermanent(permanent, reason = "left-battlefield") {
 
 function enterPermanent(permanent, options = {}) {
   normalizePermanent(permanent, options);
-  if (!isPermanent(permanent)) throw new TypeError("enterPermanent() requires a permanent card.");
+
+  if (!isPermanent(permanent)) {
+    throw new TypeError("enterPermanent() requires a permanent card.");
+  }
+
+  const legality = canEnterPermanent(permanent, options);
+
+  if (!legality.allowed) {
+    if (options.logFailure !== false && typeof addLog === "function") {
+      addLog(legality.message);
+    }
+
+    return false;
+  }
+
   permanent.permanentState.entering = true;
   permanent.zone = options.zone ?? PermanentZones.BATTLEFIELD;
   registerPermanent(permanent);
   resetPermanentState(permanent);
+
   if (typeof emitGameEvent === "function") {
-    emitGameEvent("permanentEntered", { permanent, playerId: permanent.controller, cause: options.cause ?? "played" }, { source: permanent });
+    emitGameEvent(
+      "permanentEntered",
+      {
+        permanent,
+        playerId: permanent.controller,
+        cause: options.cause ?? "played",
+      },
+      { source: permanent }
+    );
   }
+
   return permanent;
 }
 

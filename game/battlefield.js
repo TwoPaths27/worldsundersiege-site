@@ -1209,10 +1209,18 @@ async function recruitSelectedCard(x, y) {
     return false;
   }
 
-  if (playerControlsUniqueCopy(card, GameState.activePlayer)) {
-    addLog(`${player.name} already controls ${card.name}. Characters and Animals are unique unless an effect says otherwise.`);
-    renderGame();
-    return false;
+  if (typeof canEnterPermanent === "function") {
+    const entryLegality = canEnterPermanent(card, {
+      controller: GameState.activePlayer,
+      owner: GameState.activePlayer,
+      battlefieldPermanents: GameState.units,
+    });
+
+    if (!entryLegality.allowed) {
+      addLog(entryLegality.message);
+      renderGame();
+      return false;
+    }
   }
 
   if (!recruitingSpaces.has(destinationKey)) {
@@ -1278,7 +1286,9 @@ async function recruitSelectedCard(x, y) {
       cardImage: card.cardImage,
       tileImage: card.tileImage,
       effectText: card.effectText,
+      gameplayId: card.gameplayId,
       databaseId: card.databaseId,
+      isUnique: card.isUnique,
     });
 
     normalizeCard(unit);
@@ -1293,8 +1303,36 @@ async function recruitSelectedCard(x, y) {
       normalizeUnitBaseStats(unit);
     }
 
+    /*
+     * enterPermanent() is the authoritative entry gate. It repeats the
+     * uniqueness check so effects that put cards directly into play cannot
+     * bypass the Character/Animal uniqueness rule.
+     */
+    const entered = typeof enterPermanent === "function"
+      ? enterPermanent(unit, {
+          controller: GameState.activePlayer,
+          owner: GameState.activePlayer,
+          battlefieldPermanents: GameState.units,
+          cause: "recruited",
+        })
+      : unit;
+
+    if (!entered) {
+      player.energy += card.cost;
+      if (cardIndex >= 0) {
+        player.hand.splice(cardIndex, 0, card);
+      }
+      card.zone = ZoneTypes.HAND;
+      addLog(`${card.name} could not enter the battlefield.`);
+      renderGame();
+      return false;
+    }
+
     GameState.units.push(unit);
-    registerTriggersForSource(unit);
+
+    if (typeof enterPermanent !== "function") {
+      registerTriggersForSource(unit);
+    }
 
     emitGameEvent(
       "unitEnteredPlay",
@@ -1341,43 +1379,6 @@ async function recruitSelectedCard(x, y) {
     setInteractionLock(false);
   }
 }
-
-
-function getUniqueCardIdentity(card) {
-  return (
-    card?.gameplayId ??
-    card?.databaseId ??
-    card?.sourceCard?.gameplayId ??
-    card?.sourceCard?.databaseId ??
-    card?.id ??
-    null
-  );
-}
-
-function isUniqueBattlefieldCard(card) {
-  return isCharacter(card) || isAnimal(card);
-}
-
-function isCardCurrentlyUnique(card) {
-  return (
-    isUniqueBattlefieldCard(card) &&
-    card?.isUnique !== false &&
-    card?.sourceCard?.isUnique !== false
-  );
-}
-
-function playerControlsUniqueCopy(card, playerId) {
-  if (!isCardCurrentlyUnique(card)) return false;
-  const identity = getUniqueCardIdentity(card);
-  if (!identity) return false;
-
-  return GameState.units.some((unit) =>
-    unit.owner === playerId &&
-    isCardCurrentlyUnique(unit) &&
-    getUniqueCardIdentity(unit) === identity
-  );
-}
-
 
 function createRecruitGhost(card, owner) {
   const ghost = document.createElement("div");
