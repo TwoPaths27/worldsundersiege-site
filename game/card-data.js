@@ -55,10 +55,17 @@ function createUnit({
   speed,
   cost,
   cardType = "Unit",
+  type = cardType,
+  types = null,
+  traits = null,
+  capabilities = null,
+  capabilityOverrides = null,
   cardImage = null,
   tileImage = null,
   effectText = "",
+  gameplayId = null,
   databaseId = null,
+  isUnique = undefined,
 }) {
   return {
     id,
@@ -83,11 +90,18 @@ function createUnit({
     hasAttacked: false,
     temporaryRangeBonus: 0,
     cardType,
+    type,
+    types: Array.isArray(types) && types.length ? [...types] : [type || cardType].filter(Boolean),
+    traits: Array.isArray(traits) ? [...traits] : traits ? [traits] : [],
+    capabilities: capabilities && typeof capabilities === "object" ? { ...capabilities } : {},
+    capabilityOverrides: capabilityOverrides && typeof capabilityOverrides === "object" ? { ...capabilityOverrides } : {},
 
     cardImage,
     tileImage,
     effectText,
+    gameplayId,
     databaseId,
+    isUnique,
   };
 }
 

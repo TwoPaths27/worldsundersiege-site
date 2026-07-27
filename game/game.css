@@ -6598,3 +6598,22 @@ body::after {
 .stronghold-lane--player .stronghold {
   justify-self: stretch;
 }
+
+
+/* v18.7.2 — recruitment type handoff and popover clipping hotfix */
+.game-layout > .side-panel:first-of-type {
+  overflow: visible;
+}
+
+.priority-popover {
+  left: .75rem;
+  right: auto;
+  width: min(20rem, calc(100vw - 1.5rem));
+  max-width: none;
+}
+
+@media (max-width: 900px) {
+  .priority-popover {
+    width: min(19rem, calc(100vw - 1.5rem));
+  }
+}
