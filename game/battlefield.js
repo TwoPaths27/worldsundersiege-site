@@ -1248,13 +1248,36 @@ async function recruitSelectedCard(x, y) {
   try {
     pulseActiveEnergy(GameState.activePlayer);
     playOneShot(gameplayAudio.energy);
-    await animateEnergyToCard(
-      GameState.activePlayer,
-      sourceCard,
-      card.cost
+
+    /*
+     * Recruitment animations are presentation only. A cancelled Web Animation
+     * or a detached DOM node must never leave the game trapped in recruit mode.
+     * Each animation is given a generous timeout, and deployment continues even
+     * if the visual promise rejects or never settles.
+     */
+    const runRecruitAnimation = async (animationPromise, label) => {
+      try {
+        await Promise.race([
+          Promise.resolve(animationPromise),
+          wait(4000).then(() => {
+            throw new Error(`${label} timed out`);
+          }),
+        ]);
+      } catch (error) {
+        console.warn(`Recruitment ${label} skipped:`, error);
+      }
+    };
+
+    await runRecruitAnimation(
+      animateEnergyToCard(GameState.activePlayer, sourceCard, card.cost),
+      "energy animation"
     );
+
     playOneShot(gameplayAudio.placement);
-    await animateCardToCell(sourceCard, destinationCell);
+    await runRecruitAnimation(
+      animateCardToCell(sourceCard, destinationCell),
+      "placement animation"
+    );
 
     player.energy -= card.cost;
 

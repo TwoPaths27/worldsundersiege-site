@@ -6469,8 +6469,10 @@ body::after {
   position: absolute;
   z-index: 120;
   top: calc(100% + .4rem);
-  right: 0;
+  left: .35rem;
+  right: auto;
   width: min(18rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 1rem);
   padding: .7rem;
   border: 1px solid rgba(255,255,255,.2);
   border-radius: .65rem;
@@ -6576,4 +6578,23 @@ body::after {
   .floating-stack { top:auto; right:.5rem; bottom:.5rem; width:min(15rem, 45vw); transform:none; }
   .priority-status { display:none; }
   .priority-action-row { grid-template-columns:1fr 1fr; }
+}
+
+
+/* v18.7.1 — interface alignment hotfixes */
+.priority-popover {
+  /* Open toward the battlefield rather than beyond the viewport edge. */
+  left: .35rem;
+  right: auto;
+}
+
+.stronghold-lane--enemy,
+.stronghold-lane--player {
+  justify-self: center;
+  width: calc(var(--battlefield-cell-size) * 7 + var(--screen-gap) * 6);
+}
+
+.stronghold-lane--enemy .stronghold,
+.stronghold-lane--player .stronghold {
+  justify-self: stretch;
 }
