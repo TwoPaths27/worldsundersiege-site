@@ -321,6 +321,36 @@ function createPlayerTwoStartingHand() {
   ];
 }
 
+
+function createPrototypeDeckFromCards(cards, playerId, size = 60) {
+  const templates = Array.isArray(cards) ? cards : [];
+  const deck = [];
+  if (!templates.length) return deck;
+
+  for (let index = 0; index < size; index += 1) {
+    const template = templates[index % templates.length];
+    const card = {
+      ...template,
+      id: `${template.id}-deck-${playerId}-${index + 1}`,
+      keywords: Array.isArray(template.keywords) ? [...template.keywords] : [],
+      characteristics: Array.isArray(template.characteristics) ? [...template.characteristics] : [],
+      owner: playerId,
+      controller: playerId,
+      zone: "deck",
+    };
+    deck.push(card);
+  }
+  return deck;
+}
+
+function createPlayerOneStartingDeck() {
+  return createPrototypeDeckFromCards(createPlayerOneStartingHand(), 1, 60);
+}
+
+function createPlayerTwoStartingDeck() {
+  return createPrototypeDeckFromCards(createPlayerTwoStartingHand(), 2, 60);
+}
+
 function createStartingUnits() {
   return [
     getCardDatabaseEntry("BOA-001")

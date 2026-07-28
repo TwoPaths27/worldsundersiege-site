@@ -10,3 +10,5 @@ Expected sound files in the site root `sounds` folder:
 - attack.mp3
 - death.mp3
 - stronghold-hit.mp3
+
+V19.9.4 adds the Army Zone engine and interface. See V19_9_4_ARMY_ZONE_NOTES.md.

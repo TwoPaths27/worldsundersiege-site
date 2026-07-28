@@ -138,6 +138,15 @@ function beginDrawStep(playerId = GameState.activePlayer) {
     turn: GameState.turn,
   }, { source: GameState.players[playerId] });
 
+  const drawnCard = typeof drawCard === "function"
+    ? drawCard(playerId, { reason: "turn-draw" })
+    : null;
+
+  if (GameState.gameOver) return false;
+  if (drawnCard && typeof queueDrawAnimation === "function") {
+    queueDrawAnimation(drawnCard, playerId);
+  }
+
   return beginMainStep(playerId);
 }
 
@@ -205,8 +214,11 @@ function renderGame() {
   renderStrongholds();
   renderActionStacks();
   renderEventZones();
+  if (typeof renderArmyZones === "function") renderArmyZones();
   renderEventReplacementChoice();
+  renderZoneCounts();
   renderHand();
+  renderPendingDrawAnimation();
   renderGameLog();
 }
 

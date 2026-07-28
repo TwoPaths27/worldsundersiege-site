@@ -16,8 +16,24 @@ const elements = {
   playerMaxEnergy: document.querySelector("#playerMaxEnergy"),
   enemyCurrentEnergy: document.querySelector("#enemyCurrentEnergy"),
   enemyMaxEnergy: document.querySelector("#enemyMaxEnergy"),
+  playerDeckZone: document.querySelector("#playerDeckZone"),
+  enemyDeckZone: document.querySelector("#enemyDeckZone"),
+  playerDeckCount: document.querySelector("#playerDeckCount"),
+  enemyDeckCount: document.querySelector("#enemyDeckCount"),
   playerDiscardCount: document.querySelector("#playerDiscardCount"),
   enemyDiscardCount: document.querySelector("#enemyDiscardCount"),
+  playerBanishCount: document.querySelector("#playerBanishCount"),
+  enemyBanishCount: document.querySelector("#enemyBanishCount"),
+  playerDiscardZone: document.querySelector("#playerDiscardZone"),
+  enemyDiscardZone: document.querySelector("#enemyDiscardZone"),
+  playerBanishZone: document.querySelector("#playerBanishZone"),
+  enemyBanishZone: document.querySelector("#enemyBanishZone"),
+  publicZoneModal: document.querySelector("#publicZoneModal"),
+  publicZoneTitle: document.querySelector("#publicZoneTitle"),
+  publicZoneOwner: document.querySelector("#publicZoneOwner"),
+  publicZoneCount: document.querySelector("#publicZoneCount"),
+  publicZoneCards: document.querySelector("#publicZoneCards"),
+  closePublicZoneButton: document.querySelector("#closePublicZoneButton"),
   floatingStack: document.querySelector("#floatingStack"),
   floatingStackEntries: document.querySelector("#floatingStackEntries"),
   floatingStackCards: document.querySelector("#floatingStackCards"),
@@ -132,6 +148,16 @@ function bindEvents() {
     elements.priorityDebugButton.setAttribute("aria-expanded", String(expanded));
   });
 
+  elements.playerDeckZone.addEventListener("click", () => inspectDeckPile(1));
+  elements.enemyDeckZone.addEventListener("click", () => inspectDeckPile(2));
+  elements.playerDiscardZone.addEventListener("click", () => openPublicZoneBrowser(1, ZoneTypes.DISCARD));
+  elements.enemyDiscardZone.addEventListener("click", () => openPublicZoneBrowser(2, ZoneTypes.DISCARD));
+  elements.playerBanishZone.addEventListener("click", () => openPublicZoneBrowser(1, ZoneTypes.BANISH));
+  elements.enemyBanishZone.addEventListener("click", () => openPublicZoneBrowser(2, ZoneTypes.BANISH));
+  elements.closePublicZoneButton.addEventListener("click", closePublicZoneBrowser);
+  elements.publicZoneModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-public-zone-close]")) closePublicZoneBrowser();
+  });
   elements.playerEventZone.addEventListener("click", () => inspectControlledEvent(1));
   elements.enemyEventZone.addEventListener("click", () => inspectControlledEvent(2));
   elements.keepCurrentEventButton.addEventListener("click", () => resolveEventReplacementChoice("existing"));
@@ -221,6 +247,10 @@ elements.enemyStronghold.addEventListener(
     }
 
     if (event.key === "Escape") {
+      if (window.PublicZoneBrowser?.isOpen) {
+        closePublicZoneBrowser();
+        return;
+      }
       const pendingTriggerChoice =
         typeof getPendingTriggeredChoice === "function"
           ? getPendingTriggeredChoice()
@@ -319,4 +349,42 @@ function addLog(message) {
 
 function formatCoordinate(x, y) {
   return `(${x + 1}, ${y + 1})`;
+}
+
+
+function inspectDeckPile(playerId) {
+  const player = GameState.players[playerId];
+  if (!player) return;
+  elements.cardPreview.replaceChildren();
+  elements.cardPreview.className = "card-preview deck-preview";
+
+  const heading = document.createElement("h3");
+  heading.textContent = `${player.name} Deck`;
+  const count = document.createElement("p");
+  count.textContent = `${player.deck.length} ${player.deck.length === 1 ? "card" : "cards"} remaining.`;
+  const note = document.createElement("p");
+  note.className = "card-preview__effect";
+  note.textContent = playerId === getInteractionPlayerId()
+    ? "A card is drawn automatically during this player's Draw Step."
+    : "Deck contents are hidden.";
+  elements.cardPreview.append(heading, count, note);
+}
+
+function renderZoneCounts() {
+  for (const playerId of [1, 2]) {
+    if (typeof syncZoneCounts === "function") syncZoneCounts(playerId);
+  }
+  const p1 = GameState.players[1];
+  const p2 = GameState.players[2];
+  elements.playerDeckCount.textContent = String(p1.deck.length);
+  elements.enemyDeckCount.textContent = String(p2.deck.length);
+  elements.playerDiscardCount.textContent = String(p1.discard.length);
+  elements.enemyDiscardCount.textContent = String(p2.discard.length);
+  elements.playerBanishCount.textContent = String(p1.banish.length);
+  elements.enemyBanishCount.textContent = String(p2.banish.length);
+
+  elements.playerDeckZone.classList.toggle("is-empty", p1.deck.length === 0);
+  elements.enemyDeckZone.classList.toggle("is-empty", p2.deck.length === 0);
+  elements.playerDeckZone.setAttribute("aria-label", `Player 1 Deck, ${p1.deck.length} cards remaining`);
+  elements.enemyDeckZone.setAttribute("aria-label", `Player 2 Deck, ${p2.deck.length} cards remaining`);
 }
