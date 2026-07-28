@@ -305,7 +305,7 @@ function setSelectedUnitAction(action) {
     !unit ||
     GameState.gameOver ||
     GameState.isAnimating ||
-    (action !== "move" && action !== "attack")
+    (action !== "move" && action !== "attack" && action !== "mount" && action !== "dismount")
   ) {
     return;
   }
@@ -349,6 +349,41 @@ function setSelectedUnitAction(action) {
     }
   }
 
+  if (action === "mount") {
+    if (typeof canMount !== "function") return;
+    const legalMounts = GameState.units.filter((candidate) => canMount(unit, candidate));
+    if (!legalMounts.length) return;
+    GameState.selectedUnitAction = "mount";
+    GameState.mountTargetIds = new Set(legalMounts.map((candidate) => candidate.id));
+    GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
+    addLog(`Choose a Mount for ${unit.name}.`);
+  }
+
+  if (action === "dismount") {
+    if (typeof canDismount !== "function" || !canDismount(unit)) return;
+    const mount = typeof getMount === "function" ? getMount(unit) : null;
+    if (!mount) return;
+    const spaces = new Map();
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const x = mount.x + dx;
+      const y = mount.y + dy;
+      if (x < 0 || x >= BOARD_COLUMNS || y < 0 || y >= BOARD_ROWS) continue;
+      if (!getUnitAt(x, y)) spaces.set(getCoordinateKey(x, y), 1);
+    }
+    if (!spaces.size) {
+      addLog(`${unit.name} has no legal space to dismount.`);
+      return;
+    }
+    GameState.selectedUnitAction = "dismount";
+    GameState.dismountSpaces = spaces;
+    GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
+    addLog(`Choose an adjacent space for ${unit.name} to dismount.`);
+  }
+
   clearAttackHoverState();
   renderGame();
 }
@@ -383,7 +418,7 @@ function createSelectedUnitControls(unit) {
    */
   const rangeControl = createSelectedUnitControl({
     label: "RNG",
-    value: unit.currentRange,
+    value: typeof getEffectiveRange === "function" ? getEffectiveRange(unit) : unit.currentRange,
     kind: "range",
     action: null,
     isActive: false,
@@ -420,7 +455,7 @@ function createSelectedUnitControls(unit) {
 
   const speedControl = createSelectedUnitControl({
     label: "SPD",
-    value: unit.remainingSpeed,
+    value: typeof getRemainingEffectiveSpeed === "function" ? getRemainingEffectiveSpeed(unit) : unit.remainingSpeed,
     kind: "speed",
     action: "move",
     isActive: GameState.selectedUnitAction === "move",
@@ -466,6 +501,32 @@ function createSelectedUnitControls(unit) {
   bottomRow.append(attackControl, healthControl);
   controls.append(topRow, bottomRow);
 
+  const mountRow = document.createElement("div");
+  mountRow.className = "selected-unit-controls__mount-row";
+  const mounted = typeof isMounted === "function" && isMounted(unit);
+  const legalMounts = !mounted && typeof canMount === "function"
+    ? GameState.units.filter((candidate) => canMount(unit, candidate))
+    : [];
+  const canDismountNow = mounted && typeof canDismount === "function" && canDismount(unit);
+
+  if (legalMounts.length || mounted) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "selected-unit-mount-control";
+    button.textContent = mounted ? "DISMOUNT" : "MOUNT";
+    button.disabled = mounted ? !canDismountNow : !legalMounts.length;
+    button.classList.toggle("is-active",
+      GameState.selectedUnitAction === (mounted ? "dismount" : "mount")
+    );
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!button.disabled) setSelectedUnitAction(mounted ? "dismount" : "mount");
+    });
+    mountRow.appendChild(button);
+    controls.appendChild(mountRow);
+  }
+
   controls.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
@@ -494,7 +555,7 @@ function showSelectedUnitRangePreview(unit) {
 
     const isWithinRange =
       distance > 0 &&
-      distance <= unit.currentRange;
+      distance <= (typeof getEffectiveRange === "function" ? getEffectiveRange(unit) : unit.currentRange);
 
     cell.classList.toggle(
       "cell-range-preview",
@@ -610,6 +671,14 @@ function createBattlefieldCell(x, y) {
     occupant &&
     selectedUnit &&
     GameState.attackableUnitIds.has(occupant.id);
+  const isMountTarget =
+    occupant &&
+    GameState.selectedUnitAction === "mount" &&
+    GameState.mountTargetIds?.has(occupant.id);
+  const isDismountTarget =
+    !occupant &&
+    GameState.selectedUnitAction === "dismount" &&
+    GameState.dismountSpaces?.has(coordinateKey);
 
   if (ENEMY_RECRUITING_SPACES.has(coordinateKey)) {
     cell.classList.add("cell-recruit-enemy");
@@ -639,6 +708,15 @@ function createBattlefieldCell(x, y) {
     cell.addEventListener("mouseleave", () => {
       cell.classList.remove("is-recruit-preview");
     });
+  }
+
+  if (isMountTarget) {
+    cell.classList.add("cell-mount-target");
+    cell.title = `Mount ${occupant.name}`;
+  }
+  if (isDismountTarget) {
+    cell.classList.add("cell-dismount-target");
+    cell.title = "Dismount here";
   }
 
   if (occupant) {
@@ -741,7 +819,7 @@ function createBattlefieldCell(x, y) {
 
   if (
     rangeDistance > 0 &&
-    rangeDistance <= selectedUnit.currentRange
+    rangeDistance <= (typeof getEffectiveRange === "function" ? getEffectiveRange(selectedUnit) : selectedUnit.currentRange)
   ) {
     cell.classList.add("cell-range");
     cell.title = "Within Attack Range";
@@ -804,6 +882,11 @@ function createUnitToken(unit) {
 
   token.dataset.unitId = unit.id;
   token.className = "unit-token";
+  if (typeof initializeConcealState === "function") initializeConcealState(unit);
+  const viewerId = GameState.activePlayer;
+  const visibleToViewer = typeof isVisibleToPlayer !== "function" || isVisibleToPlayer(unit, viewerId);
+  token.classList.toggle("is-concealed", Boolean(unit.isConcealed));
+  token.classList.toggle("is-concealed-opponent", Boolean(unit.isConcealed && !visibleToViewer));
   token.classList.toggle(
     "unit-spawn",
     GameState.lastSpawnedUnitId === unit.id
@@ -861,10 +944,9 @@ function createUnitToken(unit) {
   token.setAttribute("aria-disabled", String(exhausted));
   token.setAttribute(
     "aria-label",
-    `${unit.name}. RNG ${unit.currentRange}. ` +
-    `SPD ${unit.remainingSpeed}. ` +
-    `ATK ${unit.currentAttack}. ` +
-    `HP ${unit.currentHP}.`
+    visibleToViewer
+      ? `${unit.name}. RNG ${typeof getEffectiveRange === "function" ? getEffectiveRange(unit) : unit.currentRange}. SPD ${typeof getRemainingEffectiveSpeed === "function" ? getRemainingEffectiveSpeed(unit) : unit.remainingSpeed}. ATK ${unit.currentAttack}. HP ${unit.currentHP}.`
+      : `Concealed Unit. Cost ${unit.concealedCost ?? unit.currentCost ?? 0}.`
   );
 
   token.style.width = "calc(100% - 8px)";
@@ -873,7 +955,9 @@ function createUnitToken(unit) {
   token.style.padding = "0";
   token.style.display = "block";
 
-  if (unit.tileImage) {
+  if (unit.isConcealed && !visibleToViewer) {
+    token.classList.add("unit-token--concealed-back");
+  } else if (unit.tileImage) {
     token.classList.add("unit-token--art");
     token.style.backgroundImage =
       `linear-gradient(to bottom, rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0.12)), ` +
@@ -895,12 +979,37 @@ function createUnitToken(unit) {
 
   const nameBanner = document.createElement("span");
   nameBanner.className = "unit-name-banner";
-  nameBanner.textContent = unit.name;
+  nameBanner.textContent = visibleToViewer ? unit.name : `Concealed · ${unit.concealedCost ?? unit.currentCost ?? 0}`;
   nameBanner.setAttribute("aria-hidden", "true");
   token.appendChild(nameBanner);
 
+  const rider = typeof getRider === "function" ? getRider(unit) : null;
+  if (rider) {
+    token.classList.add("has-rider");
+    const riderBadge = document.createElement("button");
+    riderBadge.type = "button";
+    riderBadge.className = "unit-rider-badge";
+    riderBadge.textContent = `⚔ ${rider.name}`;
+    riderBadge.title = `Select rider: ${rider.name}`;
+    riderBadge.setAttribute("aria-label", `Select rider ${rider.name}, mounted on ${unit.name}`);
+    riderBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
+    riderBadge.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      selectUnit(rider.id);
+    });
+    riderBadge.addEventListener("mouseenter", (event) => {
+      event.stopPropagation();
+      renderCardPreview(rider);
+    });
+    token.appendChild(riderBadge);
+  }
+
   token.addEventListener("mouseenter", () => {
-    renderCardPreview(unit);
+    renderCardPreview(visibleToViewer ? unit : {
+      name: "Concealed Unit", cardImage: null, printedCost: unit.concealedCost ?? unit.currentCost ?? 0,
+      printedAttack: "?", printedHP: "?", printedRange: 0, printedSpeed: 1, effectText: "Identity hidden from the opponent."
+    });
   });
 
   token.addEventListener("mouseleave", () => {
@@ -977,6 +1086,21 @@ function handleBattlefieldClick(x, y) {
     return;
   }
 
+  if (
+    GameState.selectedUnitAction === "mount" &&
+    clickedUnit &&
+    GameState.mountTargetIds?.has(clickedUnit.id) &&
+    selectedUnit
+  ) {
+    if (mountCharacter(selectedUnit, clickedUnit)) {
+      GameState.mountTargetIds = new Set();
+      GameState.selectedUnitAction = "selected";
+      addLog(`${selectedUnit.name} mounted ${clickedUnit.name}.`);
+      renderGame();
+    }
+    return;
+  }
+
   if (clickedUnit) {
    if (
   selectedUnit &&
@@ -988,6 +1112,8 @@ function handleBattlefieldClick(x, y) {
   GameState.attackableStrongholdPlayerId = null;
   GameState.constructOperatorIds = new Set();
   GameState.pendingConstructOperatorId = null;
+  GameState.mountTargetIds = new Set();
+  GameState.dismountSpaces = new Map();
 
   clearAttackHoverState();
   renderGame();
@@ -1019,6 +1145,22 @@ function handleBattlefieldClick(x, y) {
 }
 
 const destinationKey = getCoordinateKey(x, y);
+
+if (
+  GameState.selectedUnitAction === "dismount" &&
+  GameState.dismountSpaces?.has(destinationKey) &&
+  typeof dismountCharacter === "function"
+) {
+  const mount = typeof getMount === "function" ? getMount(selectedUnit) : null;
+  if (dismountCharacter(selectedUnit, { x, y })) {
+    GameState.dismountSpaces = new Map();
+    GameState.selectedUnitAction = "selected";
+    addLog(`${selectedUnit.name} dismounted${mount ? ` from ${mount.name}` : ""}.`);
+    renderGame();
+  }
+  return;
+}
+
 const movementCost =
   GameState.reachableSpaces.get(destinationKey);
 
@@ -1128,6 +1270,8 @@ GameState.attackableUnitIds = new Set();
 GameState.attackableStrongholdPlayerId = null;
 GameState.constructOperatorIds = new Set();
 GameState.pendingConstructOperatorId = null;
+GameState.mountTargetIds = new Set();
+GameState.dismountSpaces = new Map();
 
 addLog(
   isConstruct(unit)
@@ -1237,6 +1381,11 @@ async function recruitSelectedCard(x, y) {
     return;
   }
 
+  let deployConcealed = false;
+  if (typeof canPlayConcealed === "function" && canPlayConcealed(card)) {
+    deployConcealed = window.confirm(`Play ${card.name} concealed?\n\nOK: Concealed (SPD 1, RNG 0)\nCancel: Face-up`);
+  }
+
   const sourceCard = elements.hand.querySelector(
     `[data-card-id="${CSS.escape(card.id)}"]`
   );
@@ -1312,9 +1461,14 @@ async function recruitSelectedCard(x, y) {
       gameplayId: card.gameplayId,
       databaseId: card.databaseId,
       isUnique: card.isUnique,
+      keywords: Array.isArray(card.keywords) ? [...card.keywords] : [],
     });
 
     normalizeCard(unit);
+    if (typeof initializeConcealState === "function") initializeConcealState(unit);
+    if (deployConcealed && typeof concealUnit === "function") {
+      concealUnit(unit, "played", { costPaid: card.cost, silent: true });
+    }
 
     GameState.nextUnitId += 1;
 
@@ -1380,11 +1534,19 @@ async function recruitSelectedCard(x, y) {
       },
       { source: unit }
     );
+    if (!unit.isConcealed) {
+      emitGameEvent("unitRevealed", { unit, card, playerId: GameState.activePlayer, reason: "played-face-up" }, { source: unit });
+    }
+    if (typeof checkConcealedDetection === "function") {
+      checkConcealedDetection({ reason: "deployment", render: false });
+    }
     cancelInteraction();
     GameState.attackableUnitIds = new Set();
     GameState.lastSpawnedUnitId = unit.id;
 
-    addLog(`⚔ ${player.name} deployed ${card.name}.`);
+    addLog(deployConcealed
+      ? `◈ ${player.name} deployed a concealed Unit for ${card.cost} Energy.`
+      : `⚔ ${player.name} deployed ${card.name}.`);
     addLog(`🔋 −${card.cost} Energy.`);
     addLog(`📍 Deployed to ${formatCoordinate(x, y)}.`);
 
@@ -1433,7 +1595,8 @@ function getRecruitingSpacesForPlayer(playerId) {
 
 
 function moveSelectedUnit(destinationX, destinationY) {
-  const unit = getSelectedUnit();
+  const selectedUnit = getSelectedUnit();
+  const unit = typeof getMovementUnit === "function" ? getMovementUnit(selectedUnit) : selectedUnit;
 
   if (!unit) {
     return;
@@ -1447,7 +1610,8 @@ function moveSelectedUnit(destinationX, destinationY) {
     return false;
   }
 
-  if (getUnitAt(destinationX, destinationY)) {
+  const destinationOccupant = getUnitAt(destinationX, destinationY);
+  if (destinationOccupant && destinationOccupant.id !== unit.id && destinationOccupant.id !== unit.riderId) {
     addLog("That space is occupied.");
     return;
   }
@@ -1459,8 +1623,13 @@ function moveSelectedUnit(destinationX, destinationY) {
 
   unit.x = destinationX;
   unit.y = destinationY;
-  unit.remainingSpeed -= movementCost;
+  unit.movementSpent = Number(unit.movementSpent ?? 0) + movementCost;
+  unit.remainingSpeed = typeof getRemainingEffectiveSpeed === "function"
+    ? getRemainingEffectiveSpeed(unit)
+    : Math.max(0, unit.remainingSpeed - movementCost);
+  if (typeof syncMountedPairPosition === "function") syncMountedPairPosition(unit);
   emitGameEvent("unitMoved", { unit, from: { x: previousX, y: previousY }, to: { x: destinationX, y: destinationY }, movementCost }, { source: unit });
+  if (typeof checkConcealedDetection === "function") checkConcealedDetection({ reason: "movement" });
 
   addLog(
     `${unit.name} moved from ` +
@@ -1621,6 +1790,12 @@ function declareAttack({
 
   if (!isConstruct(attacker) && attacker.hasAttacked) {
     addLog(`${attacker.name} has already attacked this turn.`);
+    renderGame();
+    return false;
+  }
+
+  if (typeof canMountedUnitDeclareAttack === "function" && !canMountedUnitDeclareAttack(attacker)) {
+    addLog(`${attacker.name} cannot attack while carrying a rider.`);
     renderGame();
     return false;
   }
@@ -2046,45 +2221,45 @@ const combatResult = applyUnitCombatDamage(
   canRetaliate
 );
 
+const defenderDamageTarget = combatResult.defenderDamageTarget ?? defender;
+const attackerDamageTarget = combatResult.attackerDamageTarget ?? attacker;
 
 addLog(
-  `⚔ Player ${attacker.owner}'s ${attacker.name} attacked ${defender.name} for ${attacker.currentAttack} damage.`
+  `⚔ Player ${attacker.owner}'s ${attacker.name} dealt ${combatResult.attackerDamage ?? attacker.currentAttack} damage to ${defenderDamageTarget.name}.`
 );
 
 if (canRetaliate) {
   addLog(
-    `↩ Player ${defender.owner}'s ${defender.name} retaliated against ${attacker.name} for ${defender.currentAttack} damage.`
+    `↩ Player ${defender.owner}'s ${defender.name} dealt ${combatResult.defenderDamage ?? defender.currentAttack} damage to ${attackerDamageTarget.name}.`
   );
 }
 
 const { defenderDestroyed, attackerDestroyed } = combatResult;
 
-// Resolve the defender's result after all combat damage has been applied.
+// Resolve the chosen target of the attacker's damage.
 if (defenderDestroyed) {
   playOneShot(gameplayAudio.death);
-  await animateUnitToDiscard(defenderToken, defender.owner);
-
-  destroyUnit(defender);
-
-  addLog(
-    `💀 Player ${defender.owner}'s ${defender.name} was destroyed.`
-  );
+  const destroyedToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(defenderDamageTarget.id)}"]`
+  ) ?? defenderToken;
+  await animateUnitToDiscard(destroyedToken, defenderDamageTarget.owner);
+  destroyUnit(defenderDamageTarget);
+  addLog(`💀 Player ${defenderDamageTarget.owner}'s ${defenderDamageTarget.name} was destroyed.`);
 } else {
-  addLog(`❤ ${defender.name} has ${defender.currentHP} HP remaining.`);
+  addLog(`❤ ${defenderDamageTarget.name} has ${defenderDamageTarget.currentHP} HP remaining.`);
 }
 
-// Resolve the attacker's result separately, allowing both units to die.
+// Resolve the chosen target of retaliation separately, allowing both targets to die.
 if (attackerDestroyed) {
   playOneShot(gameplayAudio.death);
-  await animateUnitToDiscard(attackerToken, attacker.owner);
-
-  destroyUnit(attacker);
-
-  addLog(
-    `💀 Player ${attacker.owner}'s ${attacker.name} was destroyed by the counterattack.`
-  );
+  const destroyedToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(attackerDamageTarget.id)}"]`
+  ) ?? attackerToken;
+  await animateUnitToDiscard(destroyedToken, attackerDamageTarget.owner);
+  destroyUnit(attackerDamageTarget);
+  addLog(`💀 Player ${attackerDamageTarget.owner}'s ${attackerDamageTarget.name} was destroyed by the counterattack.`);
 } else if (canRetaliate) {
-  addLog(`❤ ${attacker.name} has ${attacker.currentHP} HP remaining.`);
+  addLog(`❤ ${attackerDamageTarget.name} has ${attackerDamageTarget.currentHP} HP remaining.`);
 }
 
     const attackerStillExists = GameState.units.some(
@@ -2199,9 +2374,11 @@ function renderSelectedUnitPanel() {
   }
 
   elements.selectedUnitPanel.className = "";
+  const viewerId = GameState.activePlayer;
+  const visibleToViewer = typeof isVisibleToPlayer !== "function" || isVisibleToPlayer(unit, viewerId);
 
   const name = document.createElement("h3");
-  name.textContent = unit.name;
+  name.textContent = visibleToViewer ? unit.name : "Concealed Unit";
 
   const owner = document.createElement("p");
   owner.textContent = `Controller: Player ${unit.owner}`;
@@ -2211,25 +2388,34 @@ function renderSelectedUnitPanel() {
     `Position: ${formatCoordinate(unit.x, unit.y)}`;
 
   const attack = document.createElement("p");
-  attack.textContent = `Attack: ${unit.currentAttack}`;
+  attack.textContent = `Attack: ${visibleToViewer ? unit.currentAttack : "?"}`;
 
   const hp = document.createElement("p");
   hp.textContent =
-    `HP: ${unit.currentHP} / ${unit.printedHP}`;
+    `HP: ${visibleToViewer ? `${unit.currentHP} / ${unit.printedHP}` : "?"}`;
 
   const range = document.createElement("p");
-  range.textContent = `Range: ${unit.currentRange}`;
+  range.textContent = `Range: ${visibleToViewer ? (typeof getEffectiveRange === "function" ? getEffectiveRange(unit) : unit.currentRange) : 0}`;
 
   const speed = document.createElement("p");
   speed.textContent =
-    `Remaining Speed: ${unit.remainingSpeed} / ${unit.currentSpeed}`;
+    `Remaining Speed: ${visibleToViewer ? (typeof getRemainingEffectiveSpeed === "function" ? getRemainingEffectiveSpeed(unit) : unit.remainingSpeed) : 1} / ${visibleToViewer ? (typeof getEffectiveSpeed === "function" ? getEffectiveSpeed(unit) : unit.currentSpeed) : 1}`;
 
   const attackStatus = document.createElement("p");
   attackStatus.className = unit.hasAttacked ? "unit-action-used" : "unit-action-ready";
   attackStatus.textContent = unit.hasAttacked ? "Attack: Used" : "Attack: Ready";
 
   const cost = document.createElement("p");
-  cost.textContent = `Cost: ${unit.currentCost}`;
+  cost.textContent = `Cost: ${unit.isConcealed ? unit.concealedCost : unit.currentCost}`;
+
+  if (unit.isConcealed && Number(unit.owner) === Number(GameState.activePlayer)) {
+    const revealButton = document.createElement("button");
+    revealButton.type = "button";
+    revealButton.className = "conceal-reveal-button";
+    revealButton.textContent = "Reveal";
+    revealButton.addEventListener("click", () => revealUnit(unit, "manual"));
+    elements.selectedUnitPanel.appendChild(revealButton);
+  }
 
   elements.selectedUnitPanel.append(
     name,

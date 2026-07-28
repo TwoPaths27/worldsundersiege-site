@@ -2162,7 +2162,7 @@ function renderFloatingActionStack() {
   container.replaceChildren();
   cardContainer.replaceChildren();
 
-  const entries = [...GameState.actionStack].reverse();
+  const entries = [...GameState.actionStack].reverse().filter((entry) => entry.type === STACK_ENTRY_TYPES.ACTION);
   const isEmpty = entries.length === 0;
   shell.hidden = isEmpty;
   shell.classList.toggle("is-empty", isEmpty);

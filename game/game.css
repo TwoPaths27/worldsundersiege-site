@@ -6915,3 +6915,100 @@ body::after {
   white-space: normal;
   line-height: 1.25;
 }
+
+/* v18.9 Conceal — Pass 1 */
+.unit-token--concealed-back {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(240, 205, 103, 0.24), transparent 28%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.055) 0 7px, rgba(0,0,0,0.06) 7px 14px),
+    linear-gradient(145deg, #241937, #090b14 68%, #3a2514) !important;
+  border: 2px solid rgba(225, 190, 98, 0.8) !important;
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,0.55), inset 0 0 22px rgba(218,173,75,0.18);
+}
+.unit-token--concealed-back::after {
+  content: "?";
+  position: absolute;
+  inset: 12% 22%;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(224, 190, 106, 0.55);
+  border-radius: 50%;
+  color: #ead28d;
+  font-size: clamp(1.4rem, 3vw, 2.5rem);
+  font-weight: 900;
+  text-shadow: 0 2px 6px #000;
+}
+.unit-token.is-concealed .unit-name-banner { z-index: 2; }
+.conceal-reveal-button {
+  float: left;
+  margin: 0 0.75rem 0.55rem 0;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(233, 198, 102, 0.85);
+  border-radius: 6px;
+  background: linear-gradient(#57431b, #241907);
+  color: #fff0b5;
+  font-weight: 800;
+  cursor: pointer;
+}
+.conceal-reveal-button:hover { filter: brightness(1.18); }
+
+/* v19.3 Mount controls and mounted-pair battlefield presentation */
+.selected-unit-controls__mount-row {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 39px);
+  transform: translateX(-50%);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.selected-unit-mount-control {
+  min-width: 92px;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 235, 170, 0.9);
+  border-radius: 8px;
+  color: #fff7d6;
+  background: linear-gradient(145deg, #72551b, #342306);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(0,0,0,.55);
+}
+.selected-unit-mount-control:hover:not(:disabled),
+.selected-unit-mount-control.is-active {
+  filter: brightness(1.2);
+  box-shadow: 0 0 0 2px rgba(255,235,170,.38), 0 0 14px rgba(255,190,60,.55);
+}
+.selected-unit-mount-control:disabled { opacity: .5; cursor: not-allowed; }
+
+.unit-rider-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 8;
+  max-width: calc(100% - 10px);
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(25,16,5,.88);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.15;
+  cursor: pointer;
+  box-shadow: 0 2px 7px rgba(0,0,0,.72);
+}
+.unit-rider-badge:hover { filter: brightness(1.25); }
+
+.battlefield-cell.cell-mount-target {
+  box-shadow: inset 0 0 0 4px rgba(255, 188, 54, .95), 0 0 18px rgba(255, 166, 30, .8);
+}
+.battlefield-cell.cell-dismount-target {
+  box-shadow: inset 0 0 0 4px rgba(80, 220, 175, .95), 0 0 18px rgba(50, 210, 160, .72);
+}

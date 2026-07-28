@@ -122,11 +122,19 @@ function canUnitRetaliate(attacker, defender) {
     return false;
   }
 
+  if (typeof canMountedUnitRetaliate === "function" && !canMountedUnitRetaliate(defender)) {
+    return false;
+  }
+
   const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
   return distance > 0 && distance <= (typeof getCurrentRange === "function" ? getCurrentRange(defender) : defender.currentRange);
 }
 
 function applyUnitCombatDamage(attacker, defender, canRetaliate) {
+  if (typeof applyMountedCombatDamage === "function") {
+    return applyMountedCombatDamage(attacker, defender, canRetaliate);
+  }
+
   defender.currentHP -= (typeof getCurrentAttack === "function" ? getCurrentAttack(attacker) : attacker.currentAttack);
 
   if (canRetaliate) {
@@ -143,6 +151,9 @@ function applyUnitCombatDamage(attacker, defender, canRetaliate) {
 
 function destroyUnit(unit, options = {}) {
   if (!unit || !GameState.units.some((candidate) => candidate.id === unit.id)) return false;
+  if (typeof prepareMountedUnitForDestruction === "function") {
+    prepareMountedUnitForDestruction(unit);
+  }
   const source = options.source ?? unit;
   const cause = options.cause ?? "destroyed";
   const owner = GameState.players[unit.owner] ?? null;
@@ -158,6 +169,7 @@ function destroyUnit(unit, options = {}) {
 
   if (typeof updateContinuousEffects === "function") updateContinuousEffects({ phase: "stateCheck" });
   emitGameEvent("unitLeftPlay", { unit, ownerId: unit.owner, cause, source }, { source });
+  if (typeof checkConcealedDetection === "function") checkConcealedDetection({ reason: "unit-left-play" });
   return true;
 }
 
@@ -198,6 +210,7 @@ function applyTemporaryRangeBonus(unit, amount) {
 
   unit.temporaryRangeBonus = (unit.temporaryRangeBonus ?? 0) + amount;
   unit.currentRange = unit.printedRange + unit.temporaryRangeBonus;
+  if (typeof checkConcealedDetection === "function") checkConcealedDetection({ reason: "range-changed" });
   return unit.currentRange;
 }
 
@@ -222,6 +235,7 @@ function getItemStatModifier(item) {
 }
 
 function canAttachItemToHost(item, host, context = {}) {
+  if (host?.isConcealed) return false;
   if (!itemCanAttachTo(item, host, { game: GameState, ...context })) return false;
   const rule = getItemAttachmentRule(item);
   return getAttachedItems(host).length < rule.maxPerHost;

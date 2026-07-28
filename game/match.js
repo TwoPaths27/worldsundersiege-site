@@ -277,6 +277,10 @@ function finalizeEndTurn(expectedPlayerId = GameState.activePlayer) {
     turn: GameState.turn,
   });
 
+  if (typeof checkConcealedDetection === "function") {
+    checkConcealedDetection({ reason: "turn-start", render: false });
+  }
+
   addLog(
     `Player ${previousPlayer} ended their turn. ` +
       `Player ${nextPlayer} is now active.`
@@ -313,16 +317,18 @@ function resetMatchSelection() {
 
 function refreshPlayerForTurn(playerId) {
   const player = GameState.players[playerId];
+  if (typeof resetMountChangesForPlayer === "function") resetMountChangesForPlayer(playerId);
 
   player.maxEnergy = Math.min(player.maxEnergy + 1, 10);
   player.energy = player.maxEnergy;
 
   for (const unit of GameState.units) {
     if (unit.owner === playerId) {
+      unit.movementSpent = 0;
       unit.remainingSpeed =
-        typeof getCurrentSpeed === "function"
-          ? getCurrentSpeed(unit)
-          : unit.currentSpeed;
+        typeof getRemainingEffectiveSpeed === "function"
+          ? getRemainingEffectiveSpeed(unit)
+          : (typeof getCurrentSpeed === "function" ? getCurrentSpeed(unit) : unit.currentSpeed);
       unit.hasAttacked = false;
     }
   }

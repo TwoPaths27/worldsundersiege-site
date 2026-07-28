@@ -70,6 +70,7 @@ function createUnit({
   gameplayId = null,
   databaseId = null,
   isUnique = undefined,
+  keywords = null,
 }) {
   return {
     id,
@@ -106,6 +107,17 @@ function createUnit({
     gameplayId,
     databaseId,
     isUnique,
+    keywords: Array.isArray(keywords) ? [...keywords] : keywords ? [keywords] : [],
+
+    mountedOn: null,
+    riderId: null,
+    mountChangeUsed: false,
+
+    isConcealed: false,
+    concealedCost: 0,
+    concealSource: null,
+    movementSpent: 0,
+    wasRevealed: false,
   };
 }
 

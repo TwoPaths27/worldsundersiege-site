@@ -185,11 +185,13 @@ function getUnitById(unitId) {
 }
 
 function getUnitAt(x, y) {
-  return (
-    GameState.units.find(
-      (unit) => unit.x === x && unit.y === y
-    ) ?? null
+  const occupants = GameState.units.filter(
+    (unit) => unit.x === x && unit.y === y
   );
+
+  // A mounted Character shares the Mount's coordinates but does not occupy
+  // a separate battlefield space. Prefer the Mount for cell occupancy.
+  return occupants.find((unit) => !unit.mountedOn) ?? occupants[0] ?? null;
 }
 
 function getCoordinateKey(x, y) {

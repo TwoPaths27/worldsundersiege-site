@@ -35,6 +35,7 @@ function createTargetRequest(options = {}) {
 
 function isValidTarget(request, target) {
     if (!target) return false;
+    if (typeof canInteractWithUnit === "function" && !canInteractWithUnit(request?.source, target)) return false;
     if (request.validator) return !!request.validator(target, request);
     if (request.types.includes(TargetTypes.ANY)) return true;
     return request.types.includes(target.cardType) || request.types.includes(target.type);

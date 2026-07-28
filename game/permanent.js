@@ -28,7 +28,8 @@ function normalizePermanent(permanent, options = {}) {
     registered: false,
     ...(permanent.permanentState || {}),
   });
-  permanent._permanentRegistrations ??= {
+  if (typeof initializeConcealState === "function") initializeConcealState(permanent);
+    permanent._permanentRegistrations ??= {
     triggerIds: [], replacementIds: [], continuousEffectIds: []
   };
   return permanent;
