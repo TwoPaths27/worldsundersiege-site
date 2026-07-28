@@ -143,12 +143,23 @@
     return cards;
   }
 
+  function getGameState() {
+    // GameState is declared with top-level const in game-state.js, so browsers do
+    // not expose it as window.GameState. Prefer the lexical binding and only
+    // fall back to the window property for compatibility.
+    if (typeof GameState !== "undefined") return GameState;
+    return global.GameState || null;
+  }
+
   function applySavedDeckToPlayer(rawDeck, playerId = 1, options = {}) {
-    if (!global.GameState?.players?.[playerId]) return { valid: false, errors: [`Unknown player ${playerId}.`] };
+    const gameState = getGameState();
+    if (!gameState?.players?.[playerId]) {
+      return { valid: false, errors: [`Unknown player ${playerId}.`] };
+    }
     const runtime = createRuntimeDeck(rawDeck, playerId);
     if (!runtime.valid) return runtime;
 
-    const player = GameState.players[playerId];
+    const player = gameState.players[playerId];
     player.deck = options.shuffle === false ? runtime.cards : shuffle(runtime.cards);
     player.deckCount = player.deck.length;
     player.hand = [];
