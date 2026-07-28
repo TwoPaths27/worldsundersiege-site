@@ -69,6 +69,8 @@ function createDefaultPrioritySettings() {
 const GameState = {
   turn: 1,
   activePlayer: 1,
+  firstPlayerId: null,
+  openingHandPhase: { active: false, completed: false, handSize: 6 },
   selectedUnitId: null,
 selectedCardId: null,
 selectedUnitAction: "move",
@@ -124,6 +126,9 @@ pendingConstructOperatorId: null,
   players: {
     1: {
       name: "Player 1",
+      usedMulligan: false,
+      mulliganDecisionMade: false,
+      mulliganAvailable: true,
       energy: 1,
       maxEnergy: 1,
       strongholdHP: 15,
@@ -139,6 +144,9 @@ pendingConstructOperatorId: null,
 
     2: {
       name: "Player 2",
+      usedMulligan: false,
+      mulliganDecisionMade: false,
+      mulliganAvailable: true,
       energy: 0,
       maxEnergy: 0,
       strongholdHP: 15,

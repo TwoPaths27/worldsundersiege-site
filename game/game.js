@@ -1,10 +1,12 @@
 "use strict";
 
-/*
- * Worlds Under Siege — Bootstrap
- *
- * All gameplay systems are loaded by the preceding modules. This file only
- * starts the match after those modules have initialized their shared globals.
- */
-
-initializeGame();
+/* Worlds Under Siege — V19.9.6.3 bootstrap. */
+(async function bootstrapMatch() {
+  if (typeof runPregameLobby === "function") await runPregameLobby();
+  if (typeof runCoinFlip === "function") await runCoinFlip();
+  if (typeof runOpeningHandPhase === "function") {
+    const ready = await runOpeningHandPhase();
+    if (ready === false || GameState.gameOver) return;
+  }
+  initializeGame();
+})();

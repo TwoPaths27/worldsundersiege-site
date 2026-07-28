@@ -523,6 +523,66 @@
     </section>
   </div>
 
+
+  <div id="pregameLobbyModal" class="pregame-lobby" hidden>
+    <div class="pregame-lobby__backdrop"></div>
+    <section class="pregame-lobby__dialog" role="dialog" aria-modal="true" aria-labelledby="pregameLobbyTitle">
+      <p class="pregame-lobby__eyebrow">Match Setup</p>
+      <h2 id="pregameLobbyTitle">Choose Decks</h2>
+      <p id="pregameLobbyMessage" class="pregame-lobby__message"></p>
+
+      <div class="pregame-lobby__players">
+        <article class="pregame-player-card">
+          <h3>Player 1</h3>
+          <label for="playerOneDeckSelect">Deck</label>
+          <select id="playerOneDeckSelect"></select>
+          <div id="playerOneDeckDetails" class="pregame-deck-details"></div>
+        </article>
+
+        <article class="pregame-player-card">
+          <h3>Player 2</h3>
+          <label for="playerTwoDeckSelect">Deck</label>
+          <select id="playerTwoDeckSelect"></select>
+          <div id="playerTwoDeckDetails" class="pregame-deck-details"></div>
+        </article>
+      </div>
+
+      <div class="pregame-lobby__actions">
+        <button id="cancelMatchSetupButton" class="modal-button modal-button--cancel" type="button">Cancel</button>
+        <button id="startMatchButton" class="modal-button modal-button--confirm" type="button">Start Match</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="coinFlipModal" class="coin-flip-modal" hidden>
+    <div class="coin-flip-modal__backdrop"></div>
+    <section class="coin-flip-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="coinFlipTitle">
+      <p class="coin-flip-modal__eyebrow">Match Setup</p>
+      <h2 id="coinFlipTitle">Coin Flip</h2>
+      <div class="coin-flip-modal__coin" aria-hidden="true">WUS</div>
+      <p id="coinFlipPrompt"></p>
+      <div class="coin-flip-modal__actions">
+        <button type="button" data-coin-call="heads">Heads</button>
+        <button type="button" data-coin-call="tails">Tails</button>
+      </div>
+      <p id="coinFlipResult" class="coin-flip-modal__result" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div id="mulliganModal" class="mulligan-modal" hidden>
+    <div class="mulligan-modal__backdrop"></div>
+    <section class="mulligan-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mulliganTitle">
+      <p class="mulligan-modal__eyebrow">Opening Hand</p>
+      <h2 id="mulliganTitle">Opening Hand</h2>
+      <p id="mulliganPrompt" class="mulligan-modal__prompt"></p>
+      <div id="mulliganCards" class="mulligan-cards"></div>
+      <div class="mulligan-modal__actions">
+        <button id="freeMulliganButton" type="button">Free Mulligan</button>
+        <button id="keepOpeningHandButton" type="button">Keep Hand</button>
+      </div>
+    </section>
+  </div>
+
   <noscript>
     <div class="noscript-message">
       JavaScript must be enabled to play Worlds Under Siege.
@@ -533,6 +593,10 @@
 <script src="./card-data.js?v=18.9"></script>
 <script src="./card-types.js?v=15"></script>
 <script src="./game-state.js?v=15"></script>
+<script src="./deck-loader.js?v=19.9.6.1a"></script>
+<script src="./pregame-lobby.js?v=19.9.6.2"></script>
+<script src="./coin-flip.js?v=19.9.6.3"></script>
+<script src="./opening-hand.js?v=19.9.6.3"></script>
 <script src="./construct-range.js?v=19.7"></script>
 <script src="./conceal.js?v=19.7"></script>
 <script src="./replacement.js?v=13"></script>
@@ -561,6 +625,6 @@
 <script src="./battlefield.js?v=19.8"></script>
 <script src="./cards.js?v=18.9"></script>
 <script src="./match.js?v=19.9.2"></script>
-<script src="./game.js?v=37"></script>
+<script src="./game.js?v=19.9.6.2"></script>
 </body>
 </html>

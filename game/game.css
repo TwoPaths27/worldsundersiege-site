@@ -7319,3 +7319,120 @@ body.public-zone-browser-open { overflow: hidden; }
   z-index: 1;
   text-shadow: 0 2px 4px #000, 0 0 7px #000;
 }
+
+/* V19.9.6.1a pre-match coin flip */
+body.prematch-locked { overflow: hidden; }
+.coin-flip-modal { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 20px; }
+.coin-flip-modal[hidden] { display: none; }
+.coin-flip-modal__backdrop { position: absolute; inset: 0; background: rgba(2, 6, 12, .92); backdrop-filter: blur(8px); }
+.coin-flip-modal__dialog { position: relative; width: min(520px, 100%); padding: 28px; text-align: center; color: #f4f6fb; border: 1px solid rgba(232, 185, 79, .48); border-radius: 16px; background: linear-gradient(180deg, rgba(19, 28, 44, .98), rgba(5, 10, 18, .98)); box-shadow: 0 25px 90px rgba(0, 0, 0, .7); }
+.coin-flip-modal__eyebrow { margin: 0; color: #e8b94f; font-size: 12px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.coin-flip-modal__dialog h2 { margin: 7px 0 14px; font-size: 36px; }
+.coin-flip-modal__coin { display: grid; place-items: center; width: 112px; height: 112px; margin: 12px auto 18px; border: 7px double #f2d27d; border-radius: 50%; color: #17120a; background: radial-gradient(circle at 35% 30%, #fff1a8, #d49a28 58%, #7a4b0c); font-weight: 1000; letter-spacing: .08em; box-shadow: 0 12px 30px rgba(0,0,0,.48), inset 0 0 0 4px rgba(90,50,5,.35); }
+.coin-flip-modal__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+.coin-flip-modal__actions button { min-height: 48px; border: 1px solid rgba(232,185,79,.5); border-radius: 9px; color: #fff; background: #8f6724; font: inherit; font-weight: 900; cursor: pointer; }
+.coin-flip-modal__actions button:hover:not(:disabled) { filter: brightness(1.16); }
+.coin-flip-modal__actions button:disabled { opacity: .45; cursor: wait; }
+.coin-flip-modal__result { min-height: 1.5em; margin: 17px 0 0; color: #ffe49a; font-weight: 900; }
+
+/* V19.9.6.2 — Pre-game deck lobby */
+.pregame-lobby[hidden] { display: none; }
+.pregame-lobby {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.pregame-lobby__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 8, 8, 0.88);
+  backdrop-filter: blur(8px);
+}
+.pregame-lobby__dialog {
+  position: relative;
+  width: min(920px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 30px;
+  border: 1px solid rgba(217, 188, 111, 0.55);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(35, 38, 34, 0.98), rgba(13, 16, 15, 0.99));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.75);
+  color: #f2ead4;
+}
+.pregame-lobby__eyebrow {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  color: #d9bc6f;
+}
+.pregame-lobby__dialog h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.7rem); }
+.pregame-lobby__message { min-height: 1.5em; color: #c9c4b5; }
+.pregame-lobby__players {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+.pregame-player-card {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.pregame-player-card h3 { margin: 0 0 14px; font-size: 1.3rem; }
+.pregame-player-card label { display: block; margin-bottom: 7px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: #bbb5a5; }
+.pregame-player-card select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(217, 188, 111, 0.45);
+  border-radius: 9px;
+  background: #171a18;
+  color: #f5efd9;
+}
+.pregame-deck-details { margin-top: 16px; }
+.pregame-deck-details__status { margin-bottom: 12px; font-weight: 700; }
+.pregame-deck-details__status--valid { color: #a7d58b; }
+.pregame-deck-details__status--invalid { color: #e28e82; }
+.pregame-deck-details dl { margin: 0; }
+.pregame-deck-details dl > div {
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.pregame-deck-details dt { color: #a9a495; }
+.pregame-deck-details dd { margin: 0; overflow-wrap: anywhere; }
+.pregame-deck-details__errors { margin: 12px 0 0; padding-left: 20px; color: #e6a097; font-size: 0.88rem; }
+.pregame-lobby__actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+.pregame-lobby__actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 720px) {
+  .pregame-lobby { padding: 10px; }
+  .pregame-lobby__dialog { padding: 20px; }
+  .pregame-lobby__players { grid-template-columns: 1fr; }
+}
+
+/* V19.9.6.3 opening-hand mulligan */
+.mulligan-modal[hidden] { display: none; }
+.mulligan-modal { position: fixed; inset: 0; z-index: 3050; display: grid; place-items: center; padding: 18px; }
+.mulligan-modal__backdrop { position: absolute; inset: 0; background: rgba(2, 6, 12, .94); backdrop-filter: blur(9px); }
+.mulligan-modal__dialog { position: relative; width: min(1120px, 100%); max-height: calc(100vh - 36px); overflow: auto; padding: 26px; color: #f5f2e8; border: 1px solid rgba(232,185,79,.5); border-radius: 16px; background: linear-gradient(180deg, rgba(20,29,44,.99), rgba(5,10,18,.99)); box-shadow: 0 25px 90px rgba(0,0,0,.72); text-align: center; }
+.mulligan-modal__eyebrow { margin: 0; color: #e8b94f; font-size: 12px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.mulligan-modal__dialog h2 { margin: 6px 0 8px; font-size: clamp(1.8rem, 4vw, 2.8rem); }
+.mulligan-modal__prompt { max-width: 760px; margin: 0 auto 20px; color: #cbc5b5; }
+.mulligan-cards { display: grid; grid-template-columns: repeat(6, minmax(105px, 1fr)); gap: 12px; }
+.mulligan-card { min-width: 0; padding: 8px; border: 1px solid rgba(232,185,79,.28); border-radius: 10px; background: rgba(255,255,255,.045); }
+.mulligan-card img, .mulligan-card__back { display: grid; place-items: center; width: 100%; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 7px; background: linear-gradient(145deg, #31220f, #101827); color: #e8b94f; font-weight: 1000; }
+.mulligan-card strong { display: block; margin-top: 8px; overflow-wrap: anywhere; font-size: .82rem; }
+.mulligan-modal__actions { display: flex; justify-content: center; gap: 14px; margin-top: 24px; }
+.mulligan-modal__actions button { min-width: 170px; min-height: 48px; border: 1px solid rgba(232,185,79,.55); border-radius: 9px; color: #fff; background: #78571f; font: inherit; font-weight: 900; cursor: pointer; }
+.mulligan-modal__actions button:last-child { background: #315f3d; }
+.mulligan-modal__actions button:disabled { opacity: .48; cursor: wait; }
+@media (max-width: 900px) { .mulligan-cards { grid-template-columns: repeat(3, minmax(95px, 1fr)); } }
+@media (max-width: 520px) { .mulligan-modal__dialog { padding: 18px; } .mulligan-cards { grid-template-columns: repeat(2, minmax(90px, 1fr)); } .mulligan-modal__actions { flex-direction: column; } .mulligan-modal__actions button { width: 100%; } }

@@ -209,7 +209,9 @@ function createUnitFromDatabase(cardId, unitOptions) {
   });
 }
 
-function getPlayerStrongholdCard() {
+function getPlayerStrongholdCard(playerId = 1) {
+  const selected = typeof GameState !== "undefined" ? GameState.players?.[playerId]?.selectedStrongholdCard : null;
+  if (selected) return selected;
   const databaseCard = getCardDatabaseEntry("BOA-211");
 
   if (!databaseCard) {

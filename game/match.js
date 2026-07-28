@@ -12,11 +12,13 @@ function initializeStrongholdPermanents() {
   GameState.strongholds ??= {};
   for (const playerId of [1, 2]) {
     if (GameState.strongholds[playerId]) continue;
-    const base = playerId === 1 ? getPlayerStrongholdCard() : {
-      id: "enemy-stronghold",
-      name: "Enemy Stronghold",
-      effectText: "",
-    };
+    const base = GameState.players[playerId]?.selectedStrongholdCard
+      ? getPlayerStrongholdCard(playerId)
+      : playerId === 1 ? getPlayerStrongholdCard(1) : {
+          id: "enemy-stronghold",
+          name: "Enemy Stronghold",
+          effectText: "",
+        };
     const stronghold = {
       ...base,
       type: CardTypes.STRONGHOLD,
