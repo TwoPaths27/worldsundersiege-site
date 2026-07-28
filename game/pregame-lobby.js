@@ -173,11 +173,23 @@
         cancelButton.removeEventListener("click", cancel);
       }
 
-      function start() {
+      function start(event) {
+        event?.preventDefault?.();
+        console.log("[Startup] Start Match clicked", {
+          playerOne: playerOneSelect.value,
+          playerTwo: playerTwoSelect.value,
+          disabled: startButton.disabled,
+        });
+        if (startButton.disabled) return;
+        startButton.disabled = true;
+        startButton.setAttribute("aria-busy", "true");
+
         const first = applySelection(playerOneSelect.value, 1, records);
         const second = applySelection(playerTwoSelect.value, 2, records);
         if (!first.valid || !second.valid) {
           message.textContent = [...(first.errors || []), ...(second.errors || [])].join(" ");
+          startButton.disabled = false;
+          startButton.removeAttribute("aria-busy");
           return;
         }
 
@@ -186,6 +198,7 @@
         modal.hidden = true;
         document.body.classList.remove("prematch-locked");
         cleanup();
+        console.log("[Startup] Lobby resolving");
         resolve({
           playerOne: playerOneSelect.value,
           playerTwo: playerTwoSelect.value,
