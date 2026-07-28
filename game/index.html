@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=19.3">
+  <link rel="stylesheet" href="./game.css?v=19.9.6.4e">
 </head>
 <body>
   <main class="game-layout">
@@ -88,6 +88,7 @@
 
 <section class="battlefield-column">
   <div class="battlefield-stage">
+    <button id="concealedRevealControl" class="concealed-reveal-control" type="button" hidden>Reveal?</button>
 
     <svg
       id="actionArrowLayer"
@@ -590,6 +591,21 @@
   </noscript>
 
 <script src="../card-database.js?v=18.9"></script>
+  <div id="deploymentChoiceModal" class="deployment-choice-modal" hidden>
+    <div class="deployment-choice-backdrop"></div>
+    <section class="deployment-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="deploymentChoiceTitle">
+      <div class="deployment-choice-kicker">DEPLOY UNIT</div>
+      <h2 id="deploymentChoiceTitle">How should this Unit enter play?</h2>
+      <p id="deploymentChoiceCardName" class="deployment-choice-card-name"></p>
+      <div class="deployment-choice-actions">
+        <button id="deployRevealedButton" class="deployment-choice-button deployment-choice-button--revealed" type="button">Revealed</button>
+        <button id="deployConcealedButton" class="deployment-choice-button deployment-choice-button--concealed" type="button">Concealed</button>
+        <button id="deployCancelButton" class="deployment-choice-button deployment-choice-button--cancel" type="button">Cancel</button>
+      </div>
+      <p class="deployment-choice-note">Concealed Units enter with Speed 1 and Range 0 and cannot attack, be targeted, mount, or use abilities until revealed.</p>
+    </section>
+  </div>
+
 <script src="./card-data.js?v=18.9"></script>
 <script src="./card-types.js?v=15"></script>
 <script src="./game-state.js?v=15"></script>
@@ -623,7 +639,7 @@
 <script src="./mounted-combat.js?v=19.4"></script>
 <script src="./rules-cleanup.js?v=19.8"></script>
 <script src="./ai-strategy.js?v=19.6"></script>
-<script src="./battlefield.js?v=19.8"></script>
+<script src="./battlefield.js?v=19.9.6.4e"></script>
 <script src="./cards.js?v=18.9"></script>
 <script src="./match.js?v=19.9.2"></script>
 <script src="./game.js?v=19.9.6.4c"></script>

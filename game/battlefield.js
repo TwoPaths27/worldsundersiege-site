@@ -1383,7 +1383,13 @@ async function recruitSelectedCard(x, y) {
 
   let deployConcealed = false;
   if (typeof canPlayConcealed === "function" && canPlayConcealed(card)) {
-    deployConcealed = window.confirm(`Play ${card.name} concealed?\n\nOK: Concealed (SPD 1, RNG 0)\nCancel: Face-up`);
+    const deploymentChoice = await requestDeploymentVisibilityChoice(card);
+    if (deploymentChoice === "cancel") {
+      addLog(`${card.name} deployment cancelled.`);
+      renderGame();
+      return false;
+    }
+    deployConcealed = deploymentChoice === "concealed";
   }
 
   const sourceCard = elements.hand.querySelector(
@@ -1661,39 +1667,17 @@ function moveSelectedUnit(destinationX, destinationY) {
     movedAt: Date.now(),
   };
 
-  const movementEntry = queueGameEvent({
-    type: STACK_ENTRY_TYPES.EVENT,
-    controller: unit.owner,
-    source: unit,
-    name: `${unit.name} — Movement`,
-    payload: movementPayload,
-    priorityReason: PRIORITY.MOVE,
-    validate: ({ payload }) => ({
-      valid: Boolean(getUnitById(payload.unitId)),
-      reason: "moved-unit-left-battlefield",
-    }),
-    resolve: ({ payload }) => {
-      const movedUnit = getUnitById(payload.unitId);
+  emitGameEvent(
+    "unitMoved",
+    { ...movementPayload, unit },
+    { source: unit }
+  );
 
-      emitGameEvent(
-        "movementResponseWindowResolved",
-        { ...payload, unit: movedUnit },
-        { source: movedUnit ?? unit }
-      );
-
-      return {
-        resolved: true,
-        reason: null,
-      };
-    },
-    onFizzled: () => {
-      addLog(`${unit.name}'s movement response window closes without resolving.`);
-    },
-  });
-
-  if (!movementEntry) {
-    addLog("The movement response window could not open.");
-  }
+  emitGameEvent(
+    "movementResolved",
+    { ...movementPayload, unit },
+    { source: unit }
+  );
 
   renderGame();
 }
@@ -1767,7 +1751,7 @@ function clearDeclaredAttackSelection() {
   clearAttackHoverState();
 }
 
-function declareAttack({
+async function declareAttack({
   attacker,
   defender = null,
   targetPlayerId = null,
@@ -1842,32 +1826,14 @@ function declareAttack({
     return false;
   }
 
-  const attackEntry = queueGameEvent({
-    type: STACK_ENTRY_TYPES.ATTACK,
-    controller: attacker.owner,
-    source: attacker,
-    name: isStrongholdAttack
-      ? `${attacker.name} → Player ${targetPlayerId}'s Stronghold`
-      : `${attacker.name} → ${defender.name}`,
-    payload,
-    priorityReason: PRIORITY.ATTACK,
-    validate: ({ payload }) => validateDeclaredAttack(payload),
-    resolve: ({ payload }) => resolveDeclaredAttack(payload),
-    onCountered: () => {
-      addLog(`${attacker.name}'s declared attack is countered.`);
-    },
-    onFizzled: ({ resolution }) => {
-      if (resolution?.reason !== "countered") {
-        addLog(`${attacker.name}'s declared attack no longer has a legal target.`);
-      }
-    },
-  });
-
-  if (!attackEntry) {
-    addLog(`${attacker.name}'s attack could not be added to the stack.`);
+  const attackValidation = validateDeclaredAttack(payload);
+  if (!attackValidation.valid) {
+    addLog(`${attacker.name}'s declared attack no longer has a legal target.`);
     renderGame();
     return false;
   }
+
+  await resolveDeclaredAttack(payload);
 
   clearDeclaredAttackSelection();
 
@@ -2368,6 +2334,7 @@ function getOrthogonalNeighbors(x, y) {
 
 function renderSelectedUnitPanel() {
   const unit = getSelectedUnit() ?? getInspectedUnit();
+  renderConcealedRevealControl(unit);
 
   elements.selectedUnitPanel.replaceChildren();
 
@@ -2412,15 +2379,6 @@ function renderSelectedUnitPanel() {
 
   const cost = document.createElement("p");
   cost.textContent = `Cost: ${unit.isConcealed ? unit.concealedCost : unit.currentCost}`;
-
-  if (unit.isConcealed && Number(unit.owner) === Number(GameState.activePlayer)) {
-    const revealButton = document.createElement("button");
-    revealButton.type = "button";
-    revealButton.className = "conceal-reveal-button";
-    revealButton.textContent = "Reveal";
-    revealButton.addEventListener("click", () => revealUnit(unit, "manual"));
-    elements.selectedUnitPanel.appendChild(revealButton);
-  }
 
   elements.selectedUnitPanel.append(
     name,
@@ -2557,4 +2515,62 @@ function toggleInspection(unit) {
   }
 
   inspectUnit(unit);
+}
+
+
+function requestDeploymentVisibilityChoice(card) {
+  const modal = document.querySelector("#deploymentChoiceModal");
+  const name = document.querySelector("#deploymentChoiceCardName");
+  const revealed = document.querySelector("#deployRevealedButton");
+  const concealed = document.querySelector("#deployConcealedButton");
+  const cancel = document.querySelector("#deployCancelButton");
+
+  if (!modal || !revealed || !concealed || !cancel) {
+    return Promise.resolve("revealed");
+  }
+
+  if (name) name.textContent = card?.name ?? "Selected Unit";
+  modal.hidden = false;
+  document.body.classList.add("deployment-choice-open");
+
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (choice) => {
+      if (done) return;
+      done = true;
+      modal.hidden = true;
+      document.body.classList.remove("deployment-choice-open");
+      revealed.removeEventListener("click", chooseRevealed);
+      concealed.removeEventListener("click", chooseConcealed);
+      cancel.removeEventListener("click", chooseCancel);
+      document.removeEventListener("keydown", onKeyDown);
+      resolve(choice);
+    };
+    const chooseRevealed = () => finish("revealed");
+    const chooseConcealed = () => finish("concealed");
+    const chooseCancel = () => finish("cancel");
+    const onKeyDown = (event) => { if (event.key === "Escape") chooseCancel(); };
+    revealed.addEventListener("click", chooseRevealed, { once: true });
+    concealed.addEventListener("click", chooseConcealed, { once: true });
+    cancel.addEventListener("click", chooseCancel, { once: true });
+    document.addEventListener("keydown", onKeyDown);
+    revealed.focus();
+  });
+}
+
+function renderConcealedRevealControl(unit) {
+  const button = document.querySelector("#concealedRevealControl");
+  if (!button) return;
+  const canReveal = Boolean(unit?.isConcealed && Number(unit.owner) === Number(GameState.activePlayer));
+  button.hidden = !canReveal;
+  button.onclick = null;
+  if (!canReveal) return;
+  const cell = getBattlefieldCell(unit.x, unit.y);
+  const stage = document.querySelector(".battlefield-stage");
+  if (!cell || !stage) { button.hidden = true; return; }
+  const cellRect = cell.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  button.style.left = `${Math.max(6, cellRect.left - stageRect.left - button.offsetWidth - 10)}px`;
+  button.style.top = `${cellRect.top - stageRect.top + (cellRect.height / 2)}px`;
+  button.onclick = () => revealUnit(unit, "manual");
 }
