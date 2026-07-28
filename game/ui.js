@@ -48,17 +48,6 @@ const elements = {
   passPriorityButton: document.querySelector("#passPriorityButton"),
   priorityStatusText: document.querySelector("#priorityStatusText"),
   actionArrowLayer: document.querySelector("#actionArrowLayer"),
-  fullControlButton: document.querySelector("#fullControlButton"),
-  prioritySettingsButton: document.querySelector("#prioritySettingsButton"),
-  prioritySettingsPanel: document.querySelector("#prioritySettingsPanel"),
-  priorityDebugButton: document.querySelector("#priorityDebugButton"),
-  priorityDebugPanel: document.querySelector("#priorityDebugPanel"),
-  priorityDebugState: document.querySelector("#priorityDebugState"),
-  priorityDebugPlayer: document.querySelector("#priorityDebugPlayer"),
-  priorityDebugReason: document.querySelector("#priorityDebugReason"),
-  priorityDebugStack: document.querySelector("#priorityDebugStack"),
-  priorityDebugPending: document.querySelector("#priorityDebugPending"),
-  priorityDebugPasses: document.querySelector("#priorityDebugPasses"),
 
   endTurnButton: document.querySelector("#endTurnButton"),
 
@@ -130,23 +119,8 @@ function bindEvents() {
   elements.endTurnButton.addEventListener("click", endTurn);
   elements.passPriorityButton.addEventListener("click", passPriority);
 
-  elements.fullControlButton?.addEventListener("click", () => {
-    setFullControl(1, !getPrioritySettings(1).fullControl);
-    renderGame();
-  });
-
-  elements.prioritySettingsButton?.addEventListener("click", () => {
-    const expanded = elements.prioritySettingsPanel.hidden;
-    elements.prioritySettingsPanel.hidden = !expanded;
-    elements.prioritySettingsButton.setAttribute("aria-expanded", String(expanded));
-  });
 
 
-  elements.priorityDebugButton?.addEventListener("click", () => {
-    const expanded = elements.priorityDebugPanel.hidden;
-    elements.priorityDebugPanel.hidden = !expanded;
-    elements.priorityDebugButton.setAttribute("aria-expanded", String(expanded));
-  });
 
   elements.playerDeckZone.addEventListener("click", () => inspectDeckPile(1));
   elements.enemyDeckZone.addEventListener("click", () => inspectDeckPile(2));
@@ -160,6 +134,14 @@ function bindEvents() {
   });
   elements.playerEventZone.addEventListener("click", () => inspectControlledEvent(1));
   elements.enemyEventZone.addEventListener("click", () => inspectControlledEvent(2));
+  elements.playerEventZone.addEventListener("mouseenter", () => inspectControlledEvent(1));
+  elements.enemyEventZone.addEventListener("mouseenter", () => inspectControlledEvent(2));
+  elements.playerEventZone.addEventListener("focus", () => inspectControlledEvent(1));
+  elements.enemyEventZone.addEventListener("focus", () => inspectControlledEvent(2));
+  elements.playerEventZone.addEventListener("mouseleave", () => renderCardPreview());
+  elements.enemyEventZone.addEventListener("mouseleave", () => renderCardPreview());
+  elements.playerEventZone.addEventListener("blur", () => renderCardPreview());
+  elements.enemyEventZone.addEventListener("blur", () => renderCardPreview());
   elements.keepCurrentEventButton.addEventListener("click", () => resolveEventReplacementChoice("existing"));
   elements.keepIncomingEventButton.addEventListener("click", () => resolveEventReplacementChoice("incoming"));
   elements.cancelEventChoiceButton.addEventListener("click", cancelEventReplacementChoice);
@@ -213,6 +195,13 @@ elements.enemyStronghold.addEventListener(
   "click",
   () => handleStrongholdClick(2)
 );
+
+  document.addEventListener("click", (event) => {
+    if (!GameState.selectedCardId) return;
+    if (event.target.closest(".hand-card, #battlefield, #deploymentChoiceModal, #eventChoiceModal")) return;
+    clearSelectedCardInteraction();
+    renderGame();
+  });
 
   elements.playAgainButton.addEventListener("click", () => window.location.reload());
   elements.victoryHomeButton.addEventListener("click", () => {

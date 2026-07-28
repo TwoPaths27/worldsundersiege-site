@@ -22,15 +22,16 @@ function renderHandCardPreview(card) {
   name.textContent = card.name;
 
   const stats = document.createElement("p");
-  stats.textContent =
-    isAction(card)
+  stats.textContent = card.previewHideCost || isArmy(card)
+    ? "Army"
+    : isAction(card)
       ? `${hasCounterKeyword(card) ? "Counter Action" : "Action · Sorcery Speed"} · Cost ${card.cost}`
       : isItem(card)
         ? `Item · Cost ${card.cost}`
         : isEvent(card)
           ? "Event · Free"
-        : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
-        `RNG ${card.range} · SPD ${card.speed}`;
+          : `Cost ${card.cost} · ATK ${card.attack} · HP ${card.hp} · ` +
+            `RNG ${card.range} · SPD ${card.speed}`;
 
   details.append(name, stats);
 

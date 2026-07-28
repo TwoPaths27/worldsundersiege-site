@@ -31,14 +31,8 @@ function renderPendingDrawAnimation() {
   cardNode.style.setProperty("--draw-end-x", `${targetRect.left + targetRect.width / 2}px`);
   cardNode.style.setProperty("--draw-end-y", `${targetRect.top + 18}px`);
 
-  if (card.cardImage) {
-    cardNode.style.backgroundImage = `url("${card.cardImage}")`;
-    cardNode.classList.add("draw-card-animation--art");
-  } else {
-    const back = document.createElement("span");
-    back.textContent = "WUS";
-    cardNode.appendChild(back);
-  }
+  cardNode.style.backgroundImage = 'url("../card-back.png")';
+  cardNode.classList.add("draw-card-animation--art", "draw-card-animation--back");
 
   document.body.appendChild(cardNode);
   window.requestAnimationFrame(() => cardNode.classList.add("is-drawing"));

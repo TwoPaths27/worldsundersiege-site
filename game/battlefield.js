@@ -1341,6 +1341,7 @@ async function recruitSelectedCard(x, y) {
 
   if (!isBattlefieldCard(card)) {
     addLog(`${card.name} cannot be deployed to the battlefield.`);
+    clearSelectedCardInteraction();
     renderGame();
     return false;
   }
@@ -1349,6 +1350,7 @@ async function recruitSelectedCard(x, y) {
     addLog(
       `${card.name} costs ${card.cost} Energy, but ${player.name} only has ${player.energy}.`
     );
+    clearSelectedCardInteraction();
     renderGame();
     return false;
   }
@@ -1362,7 +1364,8 @@ async function recruitSelectedCard(x, y) {
 
     if (!entryLegality.allowed) {
       addLog(entryLegality.message);
-      renderGame();
+      clearSelectedCardInteraction();
+    renderGame();
       return false;
     }
   }
@@ -1371,12 +1374,14 @@ async function recruitSelectedCard(x, y) {
     addLog(
       `Choose one of ${player.name}'s highlighted recruiting spaces.`
     );
+    clearSelectedCardInteraction();
     renderGame();
     return false;
   }
 
   if (getUnitAt(x, y)) {
     addLog("That recruiting space is occupied.");
+    clearSelectedCardInteraction();
     renderGame();
     return;
   }
@@ -2454,10 +2459,25 @@ function renderCardPreview(unit = null) {
 }
 
 function renderStrongholds() {
-const playerStrongholdCard = getPlayerStrongholdCard();
+  const playerStrongholdCard = getPlayerStrongholdCard(1);
+  const enemyStrongholdCard = getPlayerStrongholdCard(2);
 
-elements.playerStrongholdEffect.textContent =
-  playerStrongholdCard.effectText;
+  const playerImage = elements.playerStronghold.querySelector(".stronghold__card-image");
+  const playerName = elements.playerStronghold.querySelector(".stronghold__card-name");
+  if (playerImage) {
+    playerImage.src = playerStrongholdCard.cardImage || "../cards/BOA-211Camelot.jpg";
+    playerImage.alt = `${playerStrongholdCard.name} Stronghold card`;
+  }
+  if (playerName) playerName.textContent = playerStrongholdCard.name;
+  elements.playerStronghold.setAttribute("aria-label", `${playerStrongholdCard.name} Stronghold, ${GameState.players[1].strongholdHP} HP`);
+
+  const enemyOwner = elements.enemyStronghold.querySelector(".stronghold__owner");
+  const enemyName = elements.enemyStronghold.querySelector("div > strong");
+  if (enemyOwner) enemyOwner.textContent = GameState.players[2].name;
+  if (enemyName) enemyName.textContent = enemyStrongholdCard.name;
+  elements.enemyStronghold.setAttribute("aria-label", `${enemyStrongholdCard.name} Stronghold, ${GameState.players[2].strongholdHP} HP`);
+
+  elements.playerStrongholdEffect.textContent = playerStrongholdCard.effectText;
   elements.playerStrongholdHP.textContent = String(
     GameState.players[1].strongholdHP
   );

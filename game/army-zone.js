@@ -16,6 +16,7 @@
       ...army,
       name: army.armyType ?? army.name,
       type: "Army",
+      previewHideCost: true,
       effectText: `${army.amount} total ${army.armyType ?? army.name}. ${army.effectText ?? ""}`.trim(),
     };
     if (typeof renderHandCardPreview === "function") {
