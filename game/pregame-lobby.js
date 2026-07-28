@@ -1,6 +1,6 @@
 "use strict";
 
-/* Worlds Under Siege — V19.9.6.2 pre-game deck lobby. */
+/* Worlds Under Siege — V19.9.6.4c pre-game deck lobby startup fix. */
 (function initPregameLobby(global) {
   const PROTOTYPE_VALUE = "__prototype__";
 
@@ -175,34 +175,57 @@
 
       function start(event) {
         event?.preventDefault?.();
-        console.log("[Startup] Start Match clicked", {
+        const selections = {
           playerOne: playerOneSelect.value,
           playerTwo: playerTwoSelect.value,
+        };
+        console.log("[Startup] Start Match clicked", {
+          ...selections,
           disabled: startButton.disabled,
         });
-        if (startButton.disabled) return;
+        if (startButton.disabled || startButton.dataset.starting === "true") return;
+
+        startButton.dataset.starting = "true";
         startButton.disabled = true;
         startButton.setAttribute("aria-busy", "true");
+        message.textContent = "Loading selected decks…";
 
-        const first = applySelection(playerOneSelect.value, 1, records);
-        const second = applySelection(playerTwoSelect.value, 2, records);
-        if (!first.valid || !second.valid) {
-          message.textContent = [...(first.errors || []), ...(second.errors || [])].join(" ");
+        try {
+          console.log("[Startup] Applying Player 1 deck", selections.playerOne);
+          const first = applySelection(selections.playerOne, 1, records);
+          console.log("[Startup] Player 1 deck result", first);
+
+          console.log("[Startup] Applying Player 2 deck", selections.playerTwo);
+          const second = applySelection(selections.playerTwo, 2, records);
+          console.log("[Startup] Player 2 deck result", second);
+
+          if (!first?.valid || !second?.valid) {
+            const errors = [
+              ...(first?.errors || ["Player 1 deck could not be loaded."]),
+              ...(second?.errors || ["Player 2 deck could not be loaded."]),
+            ];
+            throw new Error(errors.join(" "));
+          }
+
+          if (!Array.isArray(GameState.log)) GameState.log = [];
+          GameState.log.push(`${GameState.players[1].name || "Player 1"} selected ${GameState.players[1].loadedDeckName || "a deck"}.`);
+          GameState.log.push(`${GameState.players[2].name || "Player 2"} selected ${GameState.players[2].loadedDeckName || "a deck"}.`);
+
+          console.log("[Startup] Decks applied; closing lobby");
+          modal.hidden = true;
+          document.body.classList.remove("prematch-locked");
+          cleanup();
+
+          const result = { ...selections };
+          console.log("[Startup] Lobby resolving", result);
+          resolve(result);
+        } catch (error) {
+          console.error("[Startup] Start Match failed while loading decks", error);
+          message.textContent = `Could not start match: ${error?.message || String(error)}`;
           startButton.disabled = false;
           startButton.removeAttribute("aria-busy");
-          return;
+          delete startButton.dataset.starting;
         }
-
-        GameState.log.push(`${GameState.players[1].name} selected ${GameState.players[1].loadedDeckName}.`);
-        GameState.log.push(`${GameState.players[2].name} selected ${GameState.players[2].loadedDeckName}.`);
-        modal.hidden = true;
-        document.body.classList.remove("prematch-locked");
-        cleanup();
-        console.log("[Startup] Lobby resolving");
-        resolve({
-          playerOne: playerOneSelect.value,
-          playerTwo: playerTwoSelect.value,
-        });
       }
 
       function cancel() {
