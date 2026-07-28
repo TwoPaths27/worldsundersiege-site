@@ -150,16 +150,35 @@ function createFallbackActionAbility(source) {
     primaryId,
     {
       targetMode: "user",
-      resolve({ card, user }) {
+      resolve(context) {
+        const { card, user } = context;
+        const effectSource = card ?? source;
+
+        if (typeof resolveCardEffects === "function") {
+          const resolution = resolveCardEffects(effectSource, context);
+          if (resolution.reason !== "no-effects") {
+            addLog(
+              `${effectSource?.name ?? "Action"} resolves` +
+              `${user ? ` with ${user.name} as its User` : ""}.`
+            );
+            return {
+              ...resolution,
+              fallback: false,
+              abilityId: primaryId,
+              userId: user?.id ?? null,
+            };
+          }
+        }
+
         addLog(
-          `${card?.name ?? source.name ?? "Action"} resolves` +
+          `${effectSource?.name ?? "Action"} resolves` +
           `${user ? ` with ${user.name} as its User` : ""}.`
         );
 
-        if (card?.effectText) {
+        if (effectSource?.effectText) {
           console.info(
-            `Action effect pending implementation: ${card.name}`,
-            card.effectText
+            `Action effect pending implementation: ${effectSource.name}`,
+            effectSource.effectText
           );
         }
 
