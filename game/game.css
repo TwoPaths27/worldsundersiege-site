@@ -7012,3 +7012,84 @@ body::after {
 .battlefield-cell.cell-dismount-target {
   box-shadow: inset 0 0 0 4px rgba(80, 220, 175, .95), 0 0 18px rgba(50, 210, 160, .72);
 }
+
+/* =============================================================
+   V19.7 — Animation and visual polish
+   ============================================================= */
+
+@keyframes wus-reveal-burst {
+  0% { transform: perspective(700px) rotateY(90deg) scale(.88); filter: brightness(.65) saturate(.35); opacity: .25; }
+  45% { transform: perspective(700px) rotateY(-8deg) scale(1.08); filter: brightness(1.9) saturate(1.45); opacity: 1; }
+  100% { transform: perspective(700px) rotateY(0) scale(1); filter: brightness(1) saturate(1); opacity: 1; }
+}
+
+@keyframes wus-conceal-fold {
+  0% { transform: perspective(700px) rotateY(0) scale(1); filter: brightness(1); }
+  50% { transform: perspective(700px) rotateY(82deg) scale(.92); filter: brightness(.55) saturate(.35); }
+  100% { transform: perspective(700px) rotateY(0) scale(1); filter: brightness(.8) saturate(.65); }
+}
+
+@keyframes wus-mount-depart {
+  0% { transform: translate3d(0,0,0) scale(1); opacity: 1; }
+  100% { transform: translate3d(18px,-18px,0) scale(.55); opacity: 0; }
+}
+
+@keyframes wus-mount-arrive {
+  0% { transform: scale(.94); filter: brightness(1); }
+  35% { transform: scale(1.12); filter: brightness(1.8) saturate(1.3); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes wus-dismount-release {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.08); filter: brightness(1.45); }
+}
+
+@keyframes wus-dismount-arrive {
+  0% { transform: translate3d(-14px,14px,0) scale(.6); opacity: 0; }
+  65% { transform: translate3d(2px,-2px,0) scale(1.06); opacity: 1; }
+  100% { transform: translate3d(0,0,0) scale(1); opacity: 1; }
+}
+
+@keyframes wus-construct-awaken {
+  0% { filter: brightness(.75) saturate(.6); box-shadow: 0 0 0 rgba(120,235,255,0); }
+  45% { filter: brightness(1.6) saturate(1.35); box-shadow: 0 0 22px rgba(120,235,255,.95); }
+  100% { filter: brightness(1) saturate(1); box-shadow: 0 0 8px rgba(120,235,255,.25); }
+}
+
+@keyframes wus-construct-sleep {
+  0% { filter: brightness(1.3) saturate(1.2); }
+  100% { filter: brightness(.72) saturate(.55); }
+}
+
+@keyframes wus-damage-chosen {
+  0%,100% { transform: scale(1); filter: brightness(1); }
+  22% { transform: scale(1.1); filter: brightness(2.15) saturate(1.7); }
+  48% { transform: translateX(-4px) scale(1.04); }
+  65% { transform: translateX(4px) scale(1.04); }
+}
+
+.unit-reveal-burst { animation: wus-reveal-burst .72s cubic-bezier(.2,.8,.2,1); transform-origin: center; }
+.unit-conceal-fold { animation: wus-conceal-fold .52s ease-in-out; transform-origin: center; }
+.unit-mount-depart { animation: wus-mount-depart .42s ease-in forwards; }
+.unit-mount-arrive { animation: wus-mount-arrive .62s cubic-bezier(.18,.8,.2,1); }
+.unit-dismount-release { animation: wus-dismount-release .48s ease-out; }
+.unit-dismount-arrive { animation: wus-dismount-arrive .62s cubic-bezier(.18,.8,.2,1); }
+.construct-range-awaken { animation: wus-construct-awaken .76s ease-out; }
+.construct-range-sleep { animation: wus-construct-sleep .62s ease-out; }
+.combat-damage-chosen { animation: wus-damage-chosen .62s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .unit-reveal-burst,
+  .unit-conceal-fold,
+  .unit-mount-depart,
+  .unit-mount-arrive,
+  .unit-dismount-release,
+  .unit-dismount-arrive,
+  .construct-range-awaken,
+  .construct-range-sleep,
+  .combat-damage-chosen {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

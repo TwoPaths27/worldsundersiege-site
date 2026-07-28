@@ -75,6 +75,11 @@
     if ((changes.length || options.forceRender) && typeof global.renderGame === "function" && options.render !== false) {
       global.renderGame();
     }
+    if (options.animate !== false && typeof global.animateConstructRangeChange === "function") {
+      for (const change of changes) {
+        global.animateConstructRangeChange(change.unit, change.active);
+      }
+    }
     return changes;
   }
 

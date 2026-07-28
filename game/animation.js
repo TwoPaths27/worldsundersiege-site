@@ -461,3 +461,73 @@ async function animateAttack(attackerToken, defenderToken, attacker, defender) {
     damageNumber.remove();
   }
 }
+
+/* =============================================================
+ * V19.7 — Conceal, Mount, Construct, and Damage visual polish
+ * =========================================================== */
+
+function getUnitAnimationElement(unit) {
+  const id = unit?.id ?? unit?.instanceId;
+  if (!id || !elements?.battlefield) return null;
+  return elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(String(id))}"]`
+  );
+}
+
+function runTransientClass(element, className, duration = 600) {
+  if (!element) return false;
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+  window.setTimeout(() => element.classList.remove(className), duration);
+  return true;
+}
+
+function animateUnitReveal(unit) {
+  const play = () => runTransientClass(getUnitAnimationElement(unit), "unit-reveal-burst", 720);
+  window.requestAnimationFrame(() => window.requestAnimationFrame(play));
+}
+
+function animateUnitConceal(unit) {
+  runTransientClass(getUnitAnimationElement(unit), "unit-conceal-fold", 520);
+}
+
+function animateUnitMounted(character, mount) {
+  const riderElement = getUnitAnimationElement(character);
+  const mountElement = getUnitAnimationElement(mount);
+  runTransientClass(riderElement, "unit-mount-depart", 420);
+  window.setTimeout(() => {
+    window.requestAnimationFrame(() => {
+      runTransientClass(getUnitAnimationElement(mount) ?? mountElement, "unit-mount-arrive", 620);
+    });
+  }, 120);
+}
+
+function animateUnitDismounted(character, mount) {
+  runTransientClass(getUnitAnimationElement(mount), "unit-dismount-release", 480);
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      runTransientClass(getUnitAnimationElement(character), "unit-dismount-arrive", 620);
+    });
+  });
+}
+
+function animateConstructRangeChange(construct, active) {
+  runTransientClass(
+    getUnitAnimationElement(construct),
+    active ? "construct-range-awaken" : "construct-range-sleep",
+    active ? 760 : 620
+  );
+}
+
+function animateCombatDamageTarget(unit) {
+  runTransientClass(getUnitAnimationElement(unit), "combat-damage-chosen", 620);
+}
+
+window.getUnitAnimationElement = getUnitAnimationElement;
+window.animateUnitReveal = animateUnitReveal;
+window.animateUnitConceal = animateUnitConceal;
+window.animateUnitMounted = animateUnitMounted;
+window.animateUnitDismounted = animateUnitDismounted;
+window.animateConstructRangeChange = animateConstructRangeChange;
+window.animateCombatDamageTarget = animateCombatDamageTarget;

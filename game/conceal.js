@@ -70,17 +70,18 @@ function getConcealUnitById(id) {
 
 function getMountedPartner(unit) {
   if (!unit) return null;
-  const partnerId = unit.mountedUnitId ?? unit.mountId ?? unit.riderId ?? unit.mountedToId ?? null;
+  const partnerId = unit.mountedOn ?? unit.mountedUnitId ?? unit.mountId ?? unit.riderId ?? unit.mountedToId ?? null;
   if (partnerId) return getConcealUnitById(partnerId);
   return (GameState?.units ?? []).find((candidate) =>
     candidate.id !== unit.id &&
-    [candidate.mountedUnitId, candidate.mountId, candidate.riderId, candidate.mountedToId].includes(unit.id)
+    [candidate.mountedOn, candidate.mountedUnitId, candidate.mountId, candidate.riderId, candidate.mountedToId].includes(unit.id)
   ) ?? null;
 }
 
 function clearMountRelationship(first, second) {
   for (const unit of [first, second]) {
     if (!unit) continue;
+    unit.mountedOn = null;
     unit.mountedUnitId = null;
     unit.mountId = null;
     unit.riderId = null;
@@ -155,6 +156,9 @@ function concealUnit(unit, source = "effect", options = {}) {
   if (typeof emitGameEvent === "function") {
     emitGameEvent("unitConcealed", { unit, source, playerId: unit.owner }, { source: options.source ?? unit });
   }
+  if (typeof animateUnitConceal === "function" && options.animate !== false) {
+    animateUnitConceal(unit);
+  }
   if (typeof addLog === "function" && options.silent !== true) addLog(`${unit.name} became concealed.`);
 
   if (options.checkDetection !== false) checkConcealedDetection({ reason: "became-concealed", render: false });
@@ -175,6 +179,9 @@ function revealUnit(unit, reason = "manual", options = {}) {
   }
   if (typeof addLog === "function" && options.silent !== true) addLog(`${unit.name} was revealed${reason ? ` (${reason})` : ""}.`);
   if (typeof renderGame === "function" && options.render !== false) renderGame();
+  if (typeof animateUnitReveal === "function" && options.animate !== false) {
+    animateUnitReveal(unit);
+  }
   return true;
 }
 

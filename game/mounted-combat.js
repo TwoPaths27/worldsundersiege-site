@@ -48,10 +48,15 @@
     return mount ? [character, mount] : [character];
   }
 
-  function chooseAIMountedDamageTarget(character, mount, damage) {
+  function chooseAIMountedDamageTarget(character, mount, damage, source = null) {
+    if (global.WUSAI?.chooseMountedDamageTarget) {
+      return global.WUSAI.chooseMountedDamageTarget(character, mount, damage, source);
+    }
     const amount = Math.max(0, Number(damage) || 0);
-    if (character.currentHP <= amount) return character;
-    if (mount.currentHP <= amount && character.currentHP > amount) return mount;
+    const characterHP = Number(character.currentHP ?? character.hp ?? 0);
+    const mountHP = Number(mount.currentHP ?? mount.hp ?? 0);
+    if (characterHP <= amount) return character;
+    if (mountHP <= amount && characterHP > amount) return mount;
     return character;
   }
 
@@ -60,7 +65,7 @@
     if (choices.length < 2) return choices[0] ?? mountedCharacter;
 
     const [character, mount] = choices;
-    const choosingPlayer = Number(source?.owner);
+    const choosingPlayer = Number(source?.controller ?? source?.owner);
 
     // Player 1 is the local player in the current hot-seat/AI interface.
     if (choosingPlayer === 1 && typeof global.confirm === "function") {
@@ -72,7 +77,7 @@
       return hitMount ? mount : character;
     }
 
-    return chooseAIMountedDamageTarget(character, mount, damage);
+    return chooseAIMountedDamageTarget(character, mount, damage, source);
   }
 
   function applyMountedCombatDamage(attacker, defender, canRetaliate) {
@@ -84,12 +89,12 @@
       : defender.currentAttack;
 
     const defenderDamageTarget = chooseMountedDamageTarget(attacker, defender, attackerDamage);
-    defenderDamageTarget.currentHP -= attackerDamage;
+    defenderDamageTarget.currentHP = Number(defenderDamageTarget.currentHP ?? defenderDamageTarget.hp ?? 0) - Math.max(0, Number(attackerDamage) || 0);
 
     let attackerDamageTarget = null;
     if (canRetaliate) {
       attackerDamageTarget = chooseMountedDamageTarget(defender, attacker, defenderDamage);
-      attackerDamageTarget.currentHP -= defenderDamage;
+      attackerDamageTarget.currentHP = Number(attackerDamageTarget.currentHP ?? attackerDamageTarget.hp ?? 0) - Math.max(0, Number(defenderDamage) || 0);
     }
 
     attacker.hasAttacked = true;

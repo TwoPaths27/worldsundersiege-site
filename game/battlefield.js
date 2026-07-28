@@ -2224,6 +2224,11 @@ const combatResult = applyUnitCombatDamage(
 const defenderDamageTarget = combatResult.defenderDamageTarget ?? defender;
 const attackerDamageTarget = combatResult.attackerDamageTarget ?? attacker;
 
+if (typeof animateCombatDamageTarget === "function") {
+  animateCombatDamageTarget(defenderDamageTarget);
+  if (canRetaliate && attackerDamageTarget) animateCombatDamageTarget(attackerDamageTarget);
+}
+
 addLog(
   `⚔ Player ${attacker.owner}'s ${attacker.name} dealt ${combatResult.attackerDamage ?? attacker.currentAttack} damage to ${defenderDamageTarget.name}.`
 );

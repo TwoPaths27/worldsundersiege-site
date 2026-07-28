@@ -76,7 +76,7 @@
     if (!isCharacterUnit(character) && options.allowNonCharacter !== true) return false;
     if (!(isAnimalUnit(mount) || isConstructUnit(mount)) && options.allowOtherMountType !== true) return false;
     if (!isMount(mount)) return false;
-    if (Number(character.owner) !== Number(mount.owner) && options.allowEnemyMount !== true) return false;
+    if (Number(character.controller ?? character.owner) !== Number(mount.controller ?? mount.owner) && options.allowEnemyMount !== true) return false;
     if (character.isConcealed || mount.isConcealed) return false;
     if (isMounted(character) || mount.riderId) return false;
     if (character.mountChangeUsed) return false;
@@ -115,6 +115,12 @@
     }
     if (typeof global.checkConcealedDetection === "function") {
       global.checkConcealedDetection({ reason: "mount" });
+    }
+    if (typeof global.renderGame === "function" && options.render !== false) {
+      global.renderGame();
+    }
+    if (typeof global.animateUnitMounted === "function" && options.animate !== false) {
+      global.animateUnitMounted(character, mount);
     }
     return true;
   }
@@ -156,6 +162,12 @@
     if (typeof global.checkConcealedDetection === "function") {
       global.checkConcealedDetection({ reason: "dismount" });
     }
+    if (typeof global.renderGame === "function" && options.render !== false) {
+      global.renderGame();
+    }
+    if (typeof global.animateUnitDismounted === "function" && options.animate !== false) {
+      global.animateUnitDismounted(character, mount);
+    }
     return true;
   }
 
@@ -178,7 +190,7 @@
 
   function resetMountChangesForPlayer(playerId) {
     for (const unit of global.GameState?.units ?? []) {
-      if (Number(unit.owner) === Number(playerId)) {
+      if (Number(unit.controller ?? unit.owner) === Number(playerId)) {
         initializeMountState(unit);
         unit.mountChangeUsed = false;
       }
