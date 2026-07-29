@@ -7526,3 +7526,43 @@ body.is-game-animating .selected-unit-actions button {
   55% { filter: brightness(1.75); transform: scale(1.06); }
   100% { filter: brightness(1); transform: scale(1); }
 }
+
+/* V19.9.6.6 — direct battlefield Mount prompt */
+.mount-hover-prompt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 30;
+  min-width: 92px;
+  padding: 9px 13px;
+  transform: translate(-50%, -50%) scale(.92);
+  border: 2px solid rgba(255, 237, 170, .96);
+  border-radius: 10px;
+  color: #fff8d8;
+  background: linear-gradient(145deg, rgba(126, 86, 20, .98), rgba(43, 27, 4, .98));
+  box-shadow: 0 8px 22px rgba(0,0,0,.72), 0 0 0 2px rgba(255,190,54,.18);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .09em;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s ease, transform .14s ease, filter .14s ease;
+}
+
+.battlefield-cell.cell-mount-target:hover .mount-hover-prompt,
+.battlefield-cell.cell-mount-target:focus-visible .mount-hover-prompt,
+.battlefield-cell.cell-mount-target:focus-within .mount-hover-prompt,
+.mount-hover-prompt:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.mount-hover-prompt:hover,
+.mount-hover-prompt:focus-visible {
+  filter: brightness(1.22);
+  outline: none;
+  box-shadow: 0 9px 25px rgba(0,0,0,.78), 0 0 18px rgba(255,184,45,.72);
+}

@@ -509,19 +509,19 @@ function createSelectedUnitControls(unit) {
     : [];
   const canDismountNow = mounted && typeof canDismount === "function" && canDismount(unit);
 
-  if (legalMounts.length || mounted) {
+  // Mounting is offered directly over each legal Mount on the battlefield.
+  // A mounted Character keeps the explicit DISMOUNT control here.
+  if (mounted) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "selected-unit-mount-control";
-    button.textContent = mounted ? "DISMOUNT" : "MOUNT";
-    button.disabled = mounted ? !canDismountNow : !legalMounts.length;
-    button.classList.toggle("is-active",
-      GameState.selectedUnitAction === (mounted ? "dismount" : "mount")
-    );
+    button.textContent = "DISMOUNT";
+    button.disabled = !canDismountNow;
+    button.classList.toggle("is-active", GameState.selectedUnitAction === "dismount");
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (!button.disabled) setSelectedUnitAction(mounted ? "dismount" : "mount");
+      if (!button.disabled) setSelectedUnitAction("dismount");
     });
     mountRow.appendChild(button);
     controls.appendChild(mountRow);
@@ -675,6 +675,15 @@ function createBattlefieldCell(x, y) {
     occupant &&
     GameState.selectedUnitAction === "mount" &&
     GameState.mountTargetIds?.has(occupant.id);
+  const isDirectMountCandidate =
+    occupant &&
+    selectedUnit &&
+    selectedUnit.id !== occupant.id &&
+    GameState.selectedUnitAction === "selected" &&
+    !GameState.gameOver &&
+    !GameState.isAnimating &&
+    typeof canMount === "function" &&
+    canMount(selectedUnit, occupant);
   const isDismountTarget =
     !occupant &&
     GameState.selectedUnitAction === "dismount" &&
@@ -710,9 +719,9 @@ function createBattlefieldCell(x, y) {
     });
   }
 
-  if (isMountTarget) {
+  if (isMountTarget || isDirectMountCandidate) {
     cell.classList.add("cell-mount-target");
-    cell.title = `Mount ${occupant.name}`;
+    cell.title = `${selectedUnit?.name ?? "Character"} can mount ${occupant.name}`;
   }
   if (isDismountTarget) {
     cell.classList.add("cell-dismount-target");
@@ -721,6 +730,51 @@ function createBattlefieldCell(x, y) {
 
   if (occupant) {
     cell.appendChild(createUnitToken(occupant));
+
+    if (isDirectMountCandidate) {
+      const mountPrompt = document.createElement("span");
+      mountPrompt.className = "mount-hover-prompt";
+      mountPrompt.textContent = "MOUNT?";
+      mountPrompt.setAttribute("role", "button");
+      mountPrompt.setAttribute("tabindex", "0");
+      mountPrompt.setAttribute(
+        "aria-label",
+        `Mount ${selectedUnit.name} on ${occupant.name}`
+      );
+
+      const confirmMount = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (GameState.gameOver || GameState.isAnimating) return;
+
+        const rider = getSelectedUnit();
+        const mount = GameState.units.find((unit) => unit.id === occupant.id);
+        if (!rider || !mount || typeof canMount !== "function" || !canMount(rider, mount)) {
+          renderGame();
+          return;
+        }
+
+        if (mountCharacter(rider, mount)) {
+          GameState.selectedUnitAction = "selected";
+          GameState.mountTargetIds = new Set();
+          GameState.reachableSpaces = new Map();
+          GameState.attackableUnitIds = new Set();
+          GameState.attackableStrongholdPlayerId = null;
+          addLog(`${rider.name} mounted ${mount.name}.`);
+          renderGame();
+        }
+      };
+
+      mountPrompt.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+      mountPrompt.addEventListener("click", confirmMount);
+      mountPrompt.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") confirmMount(event);
+      });
+      cell.appendChild(mountPrompt);
+    }
 
     if (selectedUnit?.id === occupant.id) {
       cell.classList.add("cell-selected");
