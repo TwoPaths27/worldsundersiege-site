@@ -1390,6 +1390,10 @@ async function beginResolveTopAction() {
   GameState.priority.resolving = true;
   GameState.priority.state = PRIORITY_STATE.RESOLVING;
   GameState.priority.active = false;
+  GameState.isAnimating = true;
+  if (typeof setInteractionLock === "function") {
+    setInteractionLock(true);
+  }
   clearPendingActionSelection();
 
   entry.status = "resolving";
@@ -1475,6 +1479,18 @@ async function beginResolveTopAction() {
     if (entry.type === "action") {
       const owner = GameState.players[entry.owner];
 
+      /*
+       * The game remains fully input-locked until the resolving Action has
+       * visibly travelled from the stack to its owner's Discard zone.
+       */
+      if (typeof animateActionCardToDiscard === "function") {
+        try {
+          await animateActionCardToDiscard(entry);
+        } catch (error) {
+          console.warn(`Discard animation skipped for ${cardName}.`, error);
+        }
+      }
+
       if (owner) {
         if (typeof discardCard === "function" && entry.card) {
           discardCard(
@@ -1537,6 +1553,16 @@ async function beginResolveTopAction() {
       }
 
       resumePendingEvent();
+    }
+
+    /*
+     * A remaining stack entry will immediately continue through its own
+     * priority/resolution flow. Otherwise control returns only now, after the
+     * Action card has reached Discard and all resolution presentation ended.
+     */
+    GameState.isAnimating = false;
+    if (typeof setInteractionLock === "function") {
+      setInteractionLock(false);
     }
 
     renderGame();

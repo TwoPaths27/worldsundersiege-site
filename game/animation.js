@@ -466,6 +466,76 @@ async function animateAttack(attackerToken, defenderToken, attacker, defender) {
  * V19.7 — Conceal, Mount, Construct, and Damage visual polish
  * =========================================================== */
 
+
+async function animateActionCardToDiscard(entry) {
+  const ownerPlayerId = Number(entry?.owner);
+  const discardZone = document.querySelector(
+    ownerPlayerId === 1 ? "#playerDiscardZone" : "#enemyDiscardZone"
+  );
+  const stackId = entry?.stackId;
+  const sourceCard = stackId
+    ? document.querySelector(`[data-action-stack-id="${CSS.escape(String(stackId))}"]`)
+    : null;
+
+  if (!sourceCard || !discardZone) {
+    await wait(220);
+    return;
+  }
+
+  const sourceRect = sourceCard.getBoundingClientRect();
+  const targetRect = discardZone.getBoundingClientRect();
+  const flyingCard = sourceCard.cloneNode(true);
+
+  flyingCard.classList.add("action-to-discard-card");
+  flyingCard.removeAttribute("id");
+  flyingCard.setAttribute("aria-hidden", "true");
+  flyingCard.style.position = "fixed";
+  flyingCard.style.left = `${sourceRect.left}px`;
+  flyingCard.style.top = `${sourceRect.top}px`;
+  flyingCard.style.width = `${sourceRect.width}px`;
+  flyingCard.style.height = `${sourceRect.height}px`;
+  flyingCard.style.margin = "0";
+  flyingCard.style.pointerEvents = "none";
+  flyingCard.style.zIndex = "12050";
+  document.body.appendChild(flyingCard);
+
+  const destinationX =
+    targetRect.left + targetRect.width / 2 - sourceRect.width / 2;
+  const destinationY =
+    targetRect.top + targetRect.height / 2 - sourceRect.height / 2;
+  const deltaX = destinationX - sourceRect.left;
+  const deltaY = destinationY - sourceRect.top;
+  const destinationScale = Math.max(0.28, Math.min(0.55,
+    targetRect.width / Math.max(sourceRect.width, 1),
+    targetRect.height / Math.max(sourceRect.height, 1)
+  ));
+
+  sourceCard.style.visibility = "hidden";
+
+  try {
+    const animation = flyingCard.animate(
+      [
+        { transform: "translate3d(0,0,0) scale(1) rotate(0deg)", opacity: 1 },
+        { transform: `translate3d(${deltaX * 0.45}px, ${deltaY * 0.35 - 36}px, 0) scale(.94) rotate(-3deg)`, opacity: 1, offset: .55 },
+        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${destinationScale}) rotate(2deg)`, opacity: .15 },
+      ],
+      { duration: 620, easing: "cubic-bezier(.2,.75,.2,1)", fill: "forwards" }
+    );
+    await animation.finished;
+  } catch (error) {
+    await wait(620);
+  } finally {
+    flyingCard.remove();
+    sourceCard.style.visibility = "";
+  }
+
+  discardZone.classList.add("discard-receive-flash");
+  await wait(180);
+  discardZone.classList.remove("discard-receive-flash");
+}
+
+window.animateActionCardToDiscard = animateActionCardToDiscard;
+
 function getUnitAnimationElement(unit) {
   const id = unit?.id ?? unit?.instanceId;
   if (!id || !elements?.battlefield) return null;

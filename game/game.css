@@ -7491,3 +7491,38 @@ body.deployment-choice-open { overflow: hidden; }
   background-repeat: no-repeat;
   background-size: cover;
 }
+
+
+/* V19.9.6.5 — resolution interaction lock */
+body.is-game-animating .game-shell,
+body.is-game-animating .battlefield-layout,
+body.is-game-animating .hand-dock,
+body.is-game-animating .turn-controls {
+  user-select: none;
+}
+
+body.is-game-animating .battlefield-cell,
+body.is-game-animating .unit-token,
+body.is-game-animating .hand-card,
+body.is-game-animating .army-zone-slot,
+body.is-game-animating .event-zone-slot,
+body.is-game-animating #endTurnButton,
+body.is-game-animating .hand-dock__toggle,
+body.is-game-animating .selected-unit-actions button {
+  pointer-events: none !important;
+}
+
+.action-to-discard-card {
+  transform-origin: center;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .72);
+}
+
+.discard-receive-flash {
+  animation: discard-receive-flash 180ms ease-out;
+}
+
+@keyframes discard-receive-flash {
+  0% { filter: brightness(1); transform: scale(1); }
+  55% { filter: brightness(1.75); transform: scale(1.06); }
+  100% { filter: brightness(1); transform: scale(1); }
+}
