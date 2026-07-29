@@ -732,11 +732,10 @@ function createBattlefieldCell(x, y) {
     cell.appendChild(createUnitToken(occupant));
 
     if (isDirectMountCandidate) {
-      const mountPrompt = document.createElement("span");
+      const mountPrompt = document.createElement("button");
+      mountPrompt.type = "button";
       mountPrompt.className = "mount-hover-prompt";
       mountPrompt.textContent = "MOUNT?";
-      mountPrompt.setAttribute("role", "button");
-      mountPrompt.setAttribute("tabindex", "0");
       mountPrompt.setAttribute(
         "aria-label",
         `Mount ${selectedUnit.name} on ${occupant.name}`
@@ -774,6 +773,16 @@ function createBattlefieldCell(x, y) {
         if (event.key === "Enter" || event.key === " ") confirmMount(event);
       });
       cell.appendChild(mountPrompt);
+
+      const showMountPrompt = () => cell.classList.add("is-mount-hovered");
+      const hideMountPrompt = (event) => {
+        if (event?.relatedTarget && cell.contains(event.relatedTarget)) return;
+        cell.classList.remove("is-mount-hovered");
+      };
+      cell.addEventListener("pointerenter", showMountPrompt);
+      cell.addEventListener("pointerleave", hideMountPrompt);
+      cell.addEventListener("focusin", showMountPrompt);
+      cell.addEventListener("focusout", hideMountPrompt);
     }
 
     if (selectedUnit?.id === occupant.id) {
@@ -882,7 +891,16 @@ function createBattlefieldCell(x, y) {
 
 }
 
-  cell.addEventListener("click", () => {
+  cell.addEventListener("click", (event) => {
+    // A highlighted legal Mount keeps the rider selected. Only the floating
+    // MOUNT? control commits the mount action.
+    if (isDirectMountCandidate) {
+      event.preventDefault();
+      event.stopPropagation();
+      cell.classList.add("is-mount-hovered");
+      cell.querySelector(".mount-hover-prompt")?.focus({ preventScroll: true });
+      return;
+    }
     handleBattlefieldClick(x, y);
   });
 
