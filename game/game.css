@@ -7624,3 +7624,22 @@ body.is-game-animating .selected-unit-actions button {
 .battlefield-cell.cell-mount-target > .mount-hover-prompt {
   z-index: 1000 !important;
 }
+
+
+/* V19.9.6.6b — Mount prompt cache-bust and guaranteed visibility */
+.battlefield-cell.cell-mount-target > .mount-hover-prompt {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.battlefield-cell.cell-mount-target:hover > .mount-hover-prompt,
+.battlefield-cell.cell-mount-target.is-mount-hovered > .mount-hover-prompt,
+.battlefield-cell.cell-mount-target:focus-within > .mount-hover-prompt {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
