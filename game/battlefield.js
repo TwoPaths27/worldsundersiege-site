@@ -654,6 +654,7 @@ function createBattlefieldCell(x, y) {
   );
 
   const occupant = getUnitAt(x, y);
+  const occupantRider = occupant && typeof getRider === "function" ? getRider(occupant) : null;
   const selectedUnit = getSelectedUnit();
   const coordinateKey = getCoordinateKey(x, y);
   const moveDistance = GameState.reachableSpaces.get(coordinateKey);
@@ -785,15 +786,18 @@ function createBattlefieldCell(x, y) {
       cell.addEventListener("focusout", hideMountPrompt);
     }
 
-    if (selectedUnit?.id === occupant.id) {
+    const selectedOccupant = selectedUnit?.id === occupant.id || selectedUnit?.id === occupantRider?.id;
+    if (selectedOccupant) {
       cell.classList.add("cell-selected");
 
       if (GameState.selectedUnitAction === "selected") {
-        cell.appendChild(createSelectedUnitControls(occupant));
+        // A mounted Character is the acting combat Unit. The Mount supplies
+        // movement, but its rider supplies ATK, RNG, abilities, and attack use.
+        cell.appendChild(createSelectedUnitControls(selectedUnit));
       }
     }
 
-    if (GameState.inspectedUnitId === occupant.id) {
+    if (GameState.inspectedUnitId === occupant.id || GameState.inspectedUnitId === occupantRider?.id) {
       cell.classList.add("cell-inspected");
     }
 
@@ -1058,23 +1062,49 @@ function createUnitToken(unit) {
   const rider = typeof getRider === "function" ? getRider(unit) : null;
   if (rider) {
     token.classList.add("has-rider");
-    const riderBadge = document.createElement("button");
-    riderBadge.type = "button";
-    riderBadge.className = "unit-rider-badge";
-    riderBadge.textContent = `⚔ ${rider.name}`;
-    riderBadge.title = `Select rider: ${rider.name}`;
-    riderBadge.setAttribute("aria-label", `Select rider ${rider.name}, mounted on ${unit.name}`);
-    riderBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
-    riderBadge.addEventListener("click", (event) => {
+
+    const riderOverlay = document.createElement("button");
+    riderOverlay.type = "button";
+    riderOverlay.className = "mounted-rider-overlay";
+    riderOverlay.title = `${rider.name} — mounted on ${unit.name}`;
+    riderOverlay.setAttribute("aria-label", `Select ${rider.name}, mounted on ${unit.name}`);
+    const riderImage = rider.tileImage || rider.cardImage || "";
+    if (riderImage) riderOverlay.style.backgroundImage = `url("${riderImage}")`;
+
+    const riderName = document.createElement("span");
+    riderName.className = "mounted-rider-overlay__name";
+    riderName.textContent = rider.name;
+    riderOverlay.appendChild(riderName);
+
+    riderOverlay.addEventListener("pointerdown", (event) => event.stopPropagation());
+    riderOverlay.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       selectUnit(rider.id);
     });
-    riderBadge.addEventListener("mouseenter", (event) => {
+    riderOverlay.addEventListener("mouseenter", (event) => {
       event.stopPropagation();
       renderCardPreview(rider);
     });
-    token.appendChild(riderBadge);
+    token.appendChild(riderOverlay);
+
+    const mountBadge = document.createElement("button");
+    mountBadge.type = "button";
+    mountBadge.className = "mounted-mount-badge";
+    mountBadge.textContent = `Mount: ${unit.name}`;
+    mountBadge.title = `Select Mount: ${unit.name}`;
+    mountBadge.setAttribute("aria-label", `Select Mount ${unit.name}`);
+    mountBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
+    mountBadge.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      selectUnit(unit.id);
+    });
+    mountBadge.addEventListener("mouseenter", (event) => {
+      event.stopPropagation();
+      renderCardPreview(unit);
+    });
+    token.appendChild(mountBadge);
   }
 
   token.addEventListener("mouseenter", () => {
@@ -1098,9 +1128,17 @@ function handleBattlefieldClick(x, y) {
     return;
   }
 
-  const clickedUnit = getUnitAt(x, y);
+  let clickedUnit = getUnitAt(x, y);
   const selectedUnit = getSelectedUnit();
   const selectedCard = getSelectedCard();
+
+  // A mounted Character is visually and interactively on top of its Mount.
+  // Clicking a friendly mounted pair selects the rider by default so the
+  // Character can attack and use abilities while the Mount provides Speed.
+  if (clickedUnit && clickedUnit.owner === GameState.activePlayer && typeof getRider === "function") {
+    const mountedRider = getRider(clickedUnit);
+    if (mountedRider) clickedUnit = mountedRider;
+  }
 
   if (
     typeof isChoosingTriggeredTarget === "function" &&
