@@ -71,6 +71,7 @@ function createUnit({
   databaseId = null,
   isUnique = undefined,
   keywords = null,
+  characteristics = null,
 }) {
   return {
     id,
@@ -108,6 +109,11 @@ function createUnit({
     databaseId,
     isUnique,
     keywords: Array.isArray(keywords) ? [...keywords] : keywords ? [keywords] : [],
+    characteristics: Array.isArray(characteristics)
+      ? [...characteristics]
+      : characteristics
+        ? [characteristics]
+        : [],
 
     mountedOn: null,
     riderId: null,
@@ -206,6 +212,7 @@ function createUnitFromDatabase(cardId, unitOptions) {
     tileImage: getDatabaseTilePath(entry),
     effectText: entry.effectText ?? "",
     databaseId: entry.id,
+    characteristics: entry.characteristics ?? [],
   });
 }
 

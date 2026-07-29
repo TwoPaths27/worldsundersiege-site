@@ -1545,6 +1545,9 @@ async function recruitSelectedCard(x, y) {
       databaseId: card.databaseId,
       isUnique: card.isUnique,
       keywords: Array.isArray(card.keywords) ? [...card.keywords] : [],
+      characteristics: Array.isArray(card.characteristics)
+        ? [...card.characteristics]
+        : [],
     });
 
     normalizeCard(unit);

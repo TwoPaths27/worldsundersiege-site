@@ -34,15 +34,21 @@
     return unit?.riderId ? unitById(unit.riderId) : null;
   }
 
-  function hasMountKeyword(unit) {
+  function hasMountCharacteristic(unit) {
     if (!unit) return false;
-    if (typeof global.hasKeyword === "function") return global.hasKeyword(unit, "Mount");
-    const keywords = Array.isArray(unit.keywords) ? unit.keywords : [];
-    return keywords.some((keyword) => String(keyword).toLowerCase() === "mount");
+    if (typeof global.hasCharacteristic === "function") {
+      return global.hasCharacteristic(unit, "Mount");
+    }
+    const characteristics = Array.isArray(unit.characteristics)
+      ? unit.characteristics
+      : [];
+    return characteristics.some(
+      (characteristic) => String(characteristic).trim().toLowerCase() === "mount"
+    );
   }
 
   function isMount(unit) {
-    return Boolean(unit && hasMountKeyword(unit));
+    return Boolean(unit && hasMountCharacteristic(unit));
   }
 
   function isCharacterUnit(unit) {

@@ -97,6 +97,7 @@ function normalizeCard(card) {
   card.types = getCardTypes(card);
   if (!card.type && card.types.length) card.type = card.types[0];
   card.traits = normalizeStringCollection(card.traits ?? card.trait);
+  card.characteristics = normalizeStringCollection(card.characteristics);
 
   const explicit = card.capabilities && typeof card.capabilities === "object"
     ? card.capabilities
@@ -138,6 +139,18 @@ function getTraits(card) {
 
 function hasTrait(card, trait) {
   return getTraits(card).includes(trait);
+}
+
+function getCharacteristics(card) {
+  return normalizeStringCollection(card?.characteristics);
+}
+
+function hasCharacteristic(card, characteristic) {
+  const requested = String(characteristic ?? "").trim().toLowerCase();
+  if (!requested) return false;
+  return getCharacteristics(card).some(
+    (value) => value.toLowerCase() === requested
+  );
 }
 
 function addTrait(card, trait) {
