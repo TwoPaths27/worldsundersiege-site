@@ -7474,3 +7474,20 @@ body.deployment-choice-open { overflow: hidden; }
 }
 .concealed-reveal-control:hover { filter: brightness(1.18); transform: translateY(-50%) scale(1.03); }
 @media (max-width: 700px) { .deployment-choice-actions { grid-template-columns: 1fr; } .deployment-choice-button--cancel { grid-column: auto; } }
+
+
+/* V19.9.6.4f — card-back piles and draw presentation */
+#playerDeckZone, #enemyDeckZone {
+  background-image:
+    linear-gradient(rgba(7,10,16,.22), rgba(7,10,16,.48)),
+    var(--wus-card-back-image, linear-gradient(145deg, #2c3444, #0e1219));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  text-shadow: 0 1px 3px #000;
+}
+.draw-card-animation--back {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
