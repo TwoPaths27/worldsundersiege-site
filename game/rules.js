@@ -159,9 +159,20 @@ function destroyUnit(unit, options = {}) {
   const owner = GameState.players[unit.owner] ?? null;
 
   emitGameEvent("unitLeavingPlay", { unit, ownerId: unit.owner, cause, source }, { source });
-  if (owner) owner.discardCount = (owner.discardCount ?? 0) + 1;
 
   GameState.units = GameState.units.filter((candidate) => candidate.id !== unit.id);
+
+  // Public zones are authoritative arrays, not standalone counters. Keep the
+  // destroyed card itself so the Discard browser and visible top card work.
+  if (owner && typeof addToZone === "function") {
+    addToZone(unit, ZoneTypes.DISCARD, unit.owner);
+  } else if (owner) {
+    owner.discard ??= [];
+    if (!owner.discard.some((card) => card === unit || card?.id === unit.id)) {
+      owner.discard.push(unit);
+    }
+    owner.discardCount = owner.discard.length;
+  }
   if (GameState.selectedUnitId === unit.id) GameState.selectedUnitId = null;
 
   emitGameEvent("unitDestroyed", { unit, ownerId: unit.owner, cause, source }, { source });
@@ -297,7 +308,15 @@ function destroyItem(item, options = {}) {
   item.attachedToId = null;
   item.attachedTo = null;
   const owner = GameState.players[item.owner];
-  if (owner) owner.discardCount = (owner.discardCount ?? 0) + 1;
+  if (owner && typeof addToZone === "function") {
+    addToZone(item, ZoneTypes.DISCARD, item.owner);
+  } else if (owner) {
+    owner.discard ??= [];
+    if (!owner.discard.some((card) => card === item || card?.id === item.id)) {
+      owner.discard.push(item);
+    }
+    owner.discardCount = owner.discard.length;
+  }
   if (host && typeof getCurrentMaxHP === "function") host.currentHP = Math.min(host.currentHP, getCurrentMaxHP(host));
   emitGameEvent("itemDestroyed", { item, host, cause: options.cause ?? "destroyed" }, { source: options.source ?? item });
   return true;

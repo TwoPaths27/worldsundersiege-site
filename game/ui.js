@@ -359,6 +359,30 @@ function inspectDeckPile(playerId) {
   elements.cardPreview.append(heading, count, note);
 }
 
+function getPublicZoneTopCard(player, zoneName) {
+  const cards = Array.isArray(player?.[zoneName]) ? player[zoneName] : [];
+  return cards.length ? cards[cards.length - 1] : null;
+}
+
+function renderPublicZonePile(zoneElement, card, count, label) {
+  if (!zoneElement) return;
+  zoneElement.classList.toggle("has-public-top-card", Boolean(card));
+  zoneElement.classList.toggle("is-empty", count === 0);
+  zoneElement.style.removeProperty("--public-zone-card-image");
+  zoneElement.removeAttribute("data-top-card-name");
+
+  const image = card?.cardImage ?? card?.tileImage ?? card?.image ?? null;
+  if (image) {
+    const safeImage = String(image).replace(/["\\]/g, "\\$&");
+    zoneElement.style.setProperty("--public-zone-card-image", `url("${safeImage}")`);
+  }
+  if (card) zoneElement.dataset.topCardName = card.name ?? "Unknown card";
+  zoneElement.setAttribute(
+    "aria-label",
+    `${label}, ${count} ${count === 1 ? "card" : "cards"}${card ? `; top card ${card.name ?? "Unknown card"}` : ""}`
+  );
+}
+
 function renderZoneCounts() {
   for (const playerId of [1, 2]) {
     if (typeof syncZoneCounts === "function") syncZoneCounts(playerId);
@@ -376,4 +400,11 @@ function renderZoneCounts() {
   elements.enemyDeckZone.classList.toggle("is-empty", p2.deck.length === 0);
   elements.playerDeckZone.setAttribute("aria-label", `Player 1 Deck, ${p1.deck.length} cards remaining`);
   elements.enemyDeckZone.setAttribute("aria-label", `Player 2 Deck, ${p2.deck.length} cards remaining`);
+
+  renderPublicZonePile(elements.playerDiscardZone, getPublicZoneTopCard(p1, "discard"), p1.discard.length, "Player 1 Discard");
+  renderPublicZonePile(elements.enemyDiscardZone, getPublicZoneTopCard(p2, "discard"), p2.discard.length, "Player 2 Discard");
+  renderPublicZonePile(elements.playerBanishZone, getPublicZoneTopCard(p1, "banish"), p1.banish.length, "Player 1 Banish");
+  renderPublicZonePile(elements.enemyBanishZone, getPublicZoneTopCard(p2, "banish"), p2.banish.length, "Player 2 Banish");
+
+  if (typeof refreshPublicZoneBrowser === "function") refreshPublicZoneBrowser();
 }

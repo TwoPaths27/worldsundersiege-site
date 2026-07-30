@@ -975,6 +975,8 @@ function createUnitToken(unit) {
 
   token.dataset.unitId = unit.id;
   token.className = "unit-token";
+  token.classList.toggle("unit-token--friendly", unit.owner === GameState.activePlayer);
+  token.classList.toggle("unit-token--enemy", unit.owner !== GameState.activePlayer);
   if (typeof initializeConcealState === "function") initializeConcealState(unit);
   const viewerId = GameState.activePlayer;
   const visibleToViewer = typeof isVisibleToPlayer !== "function" || isVisibleToPlayer(unit, viewerId);

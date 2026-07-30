@@ -1492,15 +1492,19 @@ async function beginResolveTopAction() {
       }
 
       if (owner) {
-        if (typeof discardCard === "function" && entry.card) {
-          discardCard(
-            entry.card,
-            ZoneTypes.STACK,
-            entry.owner,
-            "action-resolved"
-          );
-        } else {
-          owner.discardCount = (owner.discardCount ?? 0) + 1;
+        if (entry.card && typeof addToZone === "function") {
+          // Stack entries wrap cards, so moving the raw card from the Stack
+          // array fails. Add the resolved card directly to its public pile.
+          addToZone(entry.card, ZoneTypes.DISCARD, entry.owner);
+          if (typeof recordZoneMove === "function") {
+            recordZoneMove(entry.card, ZoneTypes.STACK, ZoneTypes.DISCARD, entry.owner, "action-resolved");
+          }
+        } else if (entry.card) {
+          owner.discard ??= [];
+          if (!owner.discard.some((card) => card === entry.card || card?.id === entry.card.id)) {
+            owner.discard.push(entry.card);
+          }
+          owner.discardCount = owner.discard.length;
         }
 
         addLog(`${cardName} moves to the discard pile.`);

@@ -7888,3 +7888,54 @@ body.is-game-animating .selected-unit-actions button {
     --wus-pile-vertical-offset: calc(var(--battlefield-cell-size) * 0.24);
   }
 }
+
+
+/* V19.9.6.14 — Public Discard/Banish top cards and enemy red glow */
+.game-zone.game-zone--pile {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.game-zone.game-zone--pile.has-public-top-card::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(26, 29, 35, .48), rgba(8, 10, 14, .68)),
+    var(--public-zone-card-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: grayscale(1) brightness(.66) contrast(.94);
+  opacity: .96;
+}
+
+.game-zone.game-zone--pile.has-public-top-card > strong,
+.game-zone.game-zone--pile.has-public-top-card > span {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,.98), 0 0 6px rgba(0,0,0,.92);
+}
+
+.game-zone.game-zone--pile.has-public-top-card {
+  border-color: rgba(177, 185, 198, .72);
+  box-shadow: inset 0 0 18px rgba(0,0,0,.58), 0 3px 10px rgba(0,0,0,.34);
+}
+
+/* Enemy pieces use a clearly red ownership glow instead of the old gold cue. */
+.unit-token.unit-token--enemy {
+  border-color: rgba(255, 86, 86, .9) !important;
+  box-shadow: 0 0 10px rgba(255, 42, 42, .56), inset 0 0 8px rgba(130, 0, 0, .34);
+}
+
+.unit-token.unit-token--enemy:hover,
+.unit-token.unit-token--enemy.is-inspected-unit {
+  box-shadow: 0 0 17px rgba(255, 42, 42, .9), inset 0 0 12px rgba(170, 0, 0, .5);
+}
+
+.unit-token.unit-token--enemy.is-attack-target {
+  border-color: #ff3f3f !important;
+  box-shadow: 0 0 22px rgba(255, 20, 20, .98), inset 0 0 14px rgba(180, 0, 0, .66);
+}
