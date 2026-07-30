@@ -1138,7 +1138,7 @@
   },
   {
     "id": "BOA-044",
-    "name": "Rockoff",
+    "name": "Rokoff",
     "set": "Battle of Ages",
     "rarity": "Uncommon",
     "type": "Character",
@@ -1155,11 +1155,11 @@
     "types": [
       "Character"
     ],
-    "image": "cards/BOA-044 Rockoff.jpg",
+    "image": "cards/BOA-044 Rokoff.jpg?v=20260730",
     "isSecret": false,
     "gameplayId": "BOA-044",
     "copyLimit": 3,
-    "effectText": "Whenever Rockoff is revealed, choose and reveal Target players hand. Discard one card from that players hand."
+    "effectText": "Whenever Rokoff is revealed, choose and reveal Target players hand. Discard one card from that players hand."
   },
   {
     "id": "BOA-045",
@@ -1213,7 +1213,7 @@
   },
   {
     "id": "BOA-047",
-    "name": "The Monk",
+    "name": "The Abbot",
     "set": "Battle of Ages",
     "rarity": "Common",
     "type": "Character",
@@ -1230,11 +1230,11 @@
     "types": [
       "Character"
     ],
-    "image": "cards/BOA-047 The Monk.jpg",
+    "image": "cards/BOA-047 The Abbot.jpg?v=20260730",
     "isSecret": false,
     "gameplayId": "BOA-047",
     "copyLimit": 3,
-    "effectText": "Opposing Characters in the Monks Range have their effects Negated."
+    "effectText": "Opposing Characters in The Abbot's Range have their effects Negated."
   },
   {
     "id": "BOA-048",
