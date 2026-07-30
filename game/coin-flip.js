@@ -31,7 +31,7 @@
     });
   }
 
-  const COIN_SOUND_URL = new URL("/sound/coin-flip.mp3", window.location.origin).href;
+  const COIN_SOUND_URL = new URL("../sound/coin-flip.mp3", document.baseURI).href;
 
   const COIN_LOGO_PATHS = [
     "../logo.png",
@@ -62,7 +62,7 @@
       audio.volume = 1;
       audio.src = COIN_SOUND_URL;
       audio.addEventListener("error", () => {
-        console.error(`[Coin Flip] Could not load ${COIN_SOUND_URL}. The file must be deployed at the website root in /sound/coin-flip.mp3.`);
+        console.error(`[Coin Flip] Could not load ${COIN_SOUND_URL}. The file must exist in the main-branch sound folder at ../sound/coin-flip.mp3 relative to the game page.`);
       }, { once: true });
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === "function") {

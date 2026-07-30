@@ -7844,7 +7844,7 @@ body.is-game-animating .selected-unit-actions button {
   .coin-flip-modal__result { transition: none; }
 }
 
-/* V19.9.6.11 — keep side zones clear of the battlefield ---------------- */
+/* V19.9.6.12 — increase side-zone clearance from the battlefield -------- */
 /*
  * Push each player's Army row farther toward its outside edge.
  * Move the player's pile cluster up/right and mirror that move for Player 2.
@@ -7852,9 +7852,9 @@ body.is-game-animating .selected-unit-actions button {
  * the arena instead of becoming fixed at only one screen resolution.
  */
 :root {
-  --wus-army-outward-offset: calc(var(--battlefield-cell-size) * 0.72);
-  --wus-pile-horizontal-offset: calc(var(--battlefield-cell-size) * 0.48);
-  --wus-pile-vertical-offset: calc(var(--battlefield-cell-size) * 0.38);
+  --wus-army-outward-offset: calc(var(--battlefield-cell-size) * 1.12);
+  --wus-pile-horizontal-offset: calc(var(--battlefield-cell-size) * 0.82);
+  --wus-pile-vertical-offset: calc(var(--battlefield-cell-size) * 0.52);
 }
 
 .army-zones--player {
