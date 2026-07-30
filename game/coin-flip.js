@@ -31,11 +31,7 @@
     });
   }
 
-  const COIN_SOUND_PATHS = [
-    "../sound/coin-flip.mp3",
-    "/sound/coin-flip.mp3",
-    "./sound/coin-flip.mp3"
-  ];
+  const COIN_SOUND_URL = new URL("/sound/coin-flip.mp3", window.location.origin).href;
 
   const COIN_LOGO_PATHS = [
     "../logo.png",
@@ -60,36 +56,27 @@
   }
 
   function playCoinFlipSound() {
-    let pathIndex = 0;
-    let audio = null;
-
-    const tryNextPath = () => {
-      if (pathIndex >= COIN_SOUND_PATHS.length) {
-        console.warn("[Coin Flip] No coin-flip sound path could be loaded.");
-        return;
+    try {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.volume = 1;
+      audio.src = COIN_SOUND_URL;
+      audio.addEventListener("error", () => {
+        console.error(`[Coin Flip] Could not load ${COIN_SOUND_URL}. The file must be deployed at the website root in /sound/coin-flip.mp3.`);
+      }, { once: true });
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(error => {
+          if (error?.name !== "NotAllowedError") {
+            console.warn("[Coin Flip] Sound could not play:", error);
+          }
+        });
       }
-
-      try {
-        audio = new Audio(COIN_SOUND_PATHS[pathIndex++]);
-        audio.preload = "auto";
-        audio.volume = 1;
-        audio.addEventListener("error", tryNextPath, { once: true });
-        const playPromise = audio.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch(error => {
-            if (error?.name !== "NotAllowedError") {
-              console.warn("[Coin Flip] Sound could not play:", error);
-            }
-          });
-        }
-      } catch (error) {
-        console.warn("[Coin Flip] Sound path failed:", error);
-        tryNextPath();
-      }
-    };
-
-    tryNextPath();
-    return audio;
+      return audio;
+    } catch (error) {
+      console.warn("[Coin Flip] Sound setup failed:", error);
+      return null;
+    }
   }
 
   async function animateCoin(landed) {

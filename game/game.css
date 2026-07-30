@@ -7843,3 +7843,48 @@ body.is-game-animating .selected-unit-actions button {
 @media (prefers-reduced-motion: reduce) {
   .coin-flip-modal__result { transition: none; }
 }
+
+/* V19.9.6.11 — keep side zones clear of the battlefield ---------------- */
+/*
+ * Push each player's Army row farther toward its outside edge.
+ * Move the player's pile cluster up/right and mirror that move for Player 2.
+ * These offsets are based on the battlefield cell size so they scale with
+ * the arena instead of becoming fixed at only one screen resolution.
+ */
+:root {
+  --wus-army-outward-offset: calc(var(--battlefield-cell-size) * 0.72);
+  --wus-pile-horizontal-offset: calc(var(--battlefield-cell-size) * 0.48);
+  --wus-pile-vertical-offset: calc(var(--battlefield-cell-size) * 0.38);
+}
+
+.army-zones--player {
+  transform: translateX(calc(-1 * var(--wus-army-outward-offset)));
+}
+
+.army-zones--enemy {
+  transform: translateX(var(--wus-army-outward-offset));
+}
+
+.zone-group--player-piles {
+  transform: translate(
+    var(--wus-pile-horizontal-offset),
+    calc(-1 * var(--wus-pile-vertical-offset))
+  );
+}
+
+.zone-group--enemy-piles {
+  transform: translate(
+    calc(-1 * var(--wus-pile-horizontal-offset)),
+    var(--wus-pile-vertical-offset)
+  );
+}
+
+/* Preserve the separation on narrower screens without pushing controls
+ * outside the scrollable stage more than necessary. */
+@media (max-width: 1280px) {
+  :root {
+    --wus-army-outward-offset: calc(var(--battlefield-cell-size) * 0.46);
+    --wus-pile-horizontal-offset: calc(var(--battlefield-cell-size) * 0.3);
+    --wus-pile-vertical-offset: calc(var(--battlefield-cell-size) * 0.24);
+  }
+}
