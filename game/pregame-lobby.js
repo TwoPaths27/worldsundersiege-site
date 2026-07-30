@@ -30,7 +30,7 @@
     if (!cardId) return null;
     return typeof getCardDatabaseEntry === "function"
       ? getCardDatabaseEntry(cardId)
-      : (global.WUS_CARD_DATABASE || []).find(card => card.id === cardId || card.gameplayId === cardId) || null;
+      : global.WUSCardDatabase?.getById(cardId) || null;
   }
 
   function cardName(cardId, fallback = "None") {

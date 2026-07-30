@@ -953,7 +953,7 @@ function auditCurrentActionCards() {
     typeof GameState !== "undefined" ? GameState.players : null,
     typeof GameState !== "undefined" ? GameState.actionStack : null,
     typeof CardDatabase !== "undefined" ? CardDatabase : null,
-    typeof CARD_DATABASE !== "undefined" ? CARD_DATABASE : null,
+    window.WUSCardDatabase?.cards ?? window.WUS_CARD_DATABASE ?? null,
   ].filter(Boolean);
 
   const audit = auditActionAbilityRegistrations(sources);

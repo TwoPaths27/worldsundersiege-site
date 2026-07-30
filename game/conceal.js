@@ -2,14 +2,35 @@
 
 /* Worlds Under Siege — v18.9 Conceal engine (Pass 2). */
 
+function hasConcealIdentity(card, identity) {
+  if (!card || !identity) return false;
+  const requested = String(identity).trim().toLowerCase();
+  if (!requested) return false;
+
+  if (typeof hasType === "function" && hasType(card, identity)) return true;
+  if (typeof hasCharacteristic === "function" && hasCharacteristic(card, identity)) return true;
+
+  const values = [
+    card.type,
+    card.cardType,
+    ...(Array.isArray(card.types) ? card.types : []),
+    ...(Array.isArray(card.characteristics) ? card.characteristics : []),
+  ];
+
+  return values.some((value) => String(value ?? "").trim().toLowerCase() === requested);
+}
+
 function isNaturallyConcealable(card) {
   if (!card) return false;
-  return Boolean(
-    (typeof isCharacter === "function" && isCharacter(card)) ||
-    (typeof isAnimal === "function" && isAnimal(card)) ||
-    card.type === "Character" || card.cardType === "Character" || card.types?.includes?.("Character") ||
-    card.type === "Animal" || card.cardType === "Animal" || card.types?.includes?.("Animal")
-  );
+
+  /*
+   * Restrictive identities take precedence over permissive identities.
+   * A card that is both Army and Animal still follows the Army rule and
+   * therefore cannot enter play concealed or become concealed later.
+   */
+  if (hasConcealIdentity(card, "Army")) return false;
+
+  return hasConcealIdentity(card, "Character") || hasConcealIdentity(card, "Animal");
 }
 
 function canPlayConcealed(card) {

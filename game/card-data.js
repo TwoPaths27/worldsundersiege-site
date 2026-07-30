@@ -127,14 +127,10 @@ function createUnit({
   };
 }
 
-const CARD_DATABASE = Array.isArray(window.WUS_CARD_DATABASE)
-  ? window.WUS_CARD_DATABASE
-  : [];
-
 function getCardDatabaseEntry(cardId) {
-  return CARD_DATABASE.find(
-    (entry) => entry.id === cardId || entry.gameplayId === cardId
-  ) ?? null;
+  return window.WUSCardDatabase?.getById(cardId)
+    ?? window.getCardById?.(cardId)
+    ?? null;
 }
 
 function normalizeGameAssetPath(path) {
