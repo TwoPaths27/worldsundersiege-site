@@ -361,41 +361,5 @@ function createPlayerTwoStartingDeck() {
 }
 
 function createStartingUnits() {
-  return [
-    getCardDatabaseEntry("BOA-001")
-      ? createUnitFromDatabase("BOA-001", {
-          id: "player-1-king-arthur",
-          owner: 1,
-          x: 3,
-          y: 5,
-        })
-      : createUnit({
-          id: "player-1-king-arthur",
-          name: "King Arthur",
-          owner: 1,
-          x: 3,
-          y: 5,
-          attack: 6,
-          hp: 6,
-          range: 1,
-          speed: 2,
-          cost: 5,
-          cardImage: "../cards/BOA-001 King Arthur.jpg",
-          tileImage: "../tile/BOA-001 King Arthur.jpg",
-          effectText: "Other Units you control gain +2 Attack and +1 Speed.",
-          databaseId: "BOA-001",
-        }),
-    createUnit({
-      id: "player-2-guard",
-      name: "Guard",
-      owner: 2,
-      x: 3,
-      y: 0,
-      attack: 2,
-      hp: 7,
-      range: 1,
-      speed: 2,
-      cost: 2,
-    }),
-  ];
+  return [];
 }
