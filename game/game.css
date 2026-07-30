@@ -7689,3 +7689,150 @@ body.is-game-animating .selected-unit-actions button {
   font-weight: 800;
   cursor: pointer;
 }
+
+/* V19.9.6.7 — cinematic logo coin flip -------------------------------- */
+.coin-flip-modal__coin-scene {
+  position: relative;
+  width: 180px;
+  height: 190px;
+  margin: 4px auto 10px;
+  display: grid;
+  place-items: center;
+  perspective: 900px;
+}
+.coin-flip-modal__coin-stage {
+  position: relative;
+  z-index: 2;
+  width: 138px;
+  height: 138px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.coin-flip-modal__coin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.coin-flip-modal__coin::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 7px ridge #e5bb56;
+  border-radius: 50%;
+  transform: translateZ(0);
+  box-shadow: inset 0 0 0 3px rgba(91, 48, 5, .65), 0 0 18px rgba(240, 191, 74, .25);
+}
+.coin-flip-modal__coin-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 4px solid #f5d984;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  background: radial-gradient(circle at 32% 24%, #fff3ae 0, #dba534 49%, #714006 100%);
+  box-shadow: inset 0 0 18px rgba(55, 25, 0, .7);
+}
+.coin-flip-modal__coin-face img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.55));
+  user-select: none;
+}
+.coin-flip-modal__coin-face--tails {
+  transform: rotateY(180deg);
+  background: radial-gradient(circle at 32% 24%, #dce8f1 0, #768999 48%, #1f2b35 100%);
+  border-color: #d8e2e8;
+}
+.coin-flip-modal__coin-face--tails img {
+  opacity: .48;
+  filter: grayscale(1) brightness(1.35) drop-shadow(0 3px 5px rgba(0,0,0,.6));
+}
+.coin-flip-modal__coin-face--tails span {
+  position: absolute;
+  bottom: 20px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: .18em;
+  text-shadow: 0 2px 5px #000;
+}
+.coin-flip-modal__coin-shadow {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 12px;
+  width: 115px;
+  height: 22px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.62);
+  filter: blur(8px);
+  opacity: .46;
+}
+.coin-flip-modal__coin-stage.is-landed .coin-flip-modal__coin {
+  filter: drop-shadow(0 0 15px rgba(255, 211, 103, .72));
+}
+.coin-flip-modal__result {
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.coin-flip-modal__result.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.coin-flip-modal__actions[hidden] { display: none; }
+
+/* V19.9.6.7 — larger, consistently sized side zones ------------------- */
+:root {
+  --wus-side-zone-width: calc(var(--battlefield-cell-size) * 1.3);
+  --wus-side-zone-height: calc(var(--battlefield-cell-size) * 1.65);
+}
+.game-zone--event,
+.game-zone--pile,
+.game-zone--army {
+  width: var(--wus-side-zone-width);
+  height: var(--wus-side-zone-height);
+  min-width: var(--wus-side-zone-width);
+  min-height: var(--wus-side-zone-height);
+}
+.zone-group {
+  grid-template-columns: repeat(2, var(--wus-side-zone-width));
+  grid-template-rows: repeat(2, var(--wus-side-zone-height));
+  width: max-content;
+  height: max-content;
+}
+.army-zones {
+  grid-template-columns: repeat(3, var(--wus-side-zone-width));
+  width: max-content;
+  height: var(--wus-side-zone-height);
+}
+.zone-group--enemy-piles #enemyDiscardZone,
+.zone-group--player-piles #playerDiscardZone {
+  grid-column: 1;
+  grid-row: 1;
+}
+.zone-group--enemy-piles #enemyBanishZone,
+.zone-group--player-piles #playerBanishZone {
+  grid-column: 2;
+  grid-row: 1;
+}
+.zone-group--enemy-piles #enemyDeckZone,
+.zone-group--player-piles #playerDeckZone {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-flip-modal__result { transition: none; }
+}

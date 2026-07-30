@@ -10,7 +10,7 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=19.9.6.6d">
+  <link rel="stylesheet" href="./game.css?v=19.9.6.7">
 </head>
 <body>
   <main class="game-layout">
@@ -540,7 +540,20 @@
     <section class="coin-flip-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="coinFlipTitle">
       <p class="coin-flip-modal__eyebrow">Match Setup</p>
       <h2 id="coinFlipTitle">Coin Flip</h2>
-      <div class="coin-flip-modal__coin" aria-hidden="true">WUS</div>
+      <div class="coin-flip-modal__coin-scene" aria-hidden="true">
+        <div class="coin-flip-modal__coin-stage">
+          <div id="coinFlipCoin" class="coin-flip-modal__coin">
+            <div class="coin-flip-modal__coin-face coin-flip-modal__coin-face--heads">
+              <img src="./logo.png" alt="" draggable="false">
+            </div>
+            <div class="coin-flip-modal__coin-face coin-flip-modal__coin-face--tails">
+              <img src="./logo.png" alt="" draggable="false">
+              <span>TAILS</span>
+            </div>
+          </div>
+        </div>
+        <div class="coin-flip-modal__coin-shadow"></div>
+      </div>
       <p id="coinFlipPrompt"></p>
       <div class="coin-flip-modal__actions">
         <button type="button" data-coin-call="heads">Heads</button>
@@ -591,7 +604,7 @@
 <script src="./game-state.js?v=15"></script>
 <script src="./deck-loader.js?v=19.9.6.4d"></script>
 <script src="./pregame-lobby.js?v=19.9.6.4d"></script>
-<script src="./coin-flip.js?v=19.9.6.3"></script>
+<script src="./coin-flip.js?v=19.9.6.7"></script>
 <script src="./opening-hand.js?v=19.9.6.3"></script>
 <script src="./construct-range.js?v=19.7"></script>
 <script src="./conceal.js?v=19.7"></script>
@@ -602,7 +615,7 @@
 <script src="./zone-effects.js?v=19.9.6"></script>
 <script src="./deck-ui.js?v=19.9.6.4g"></script>
 <script src="./zone-browser.js?v=19.9.3"></script>
-<script src="./army-zone.js?v=19.9.4"></script>
+<script src="./army-zone.js?v=19.9.6.7"></script>
 <script src="./costs.js?v=13"></script>
 <script src="./targeting.js?v=13"></script>
 <script src="./permanent.js?v=17.1"></script>

@@ -11,7 +11,7 @@
   }
 
   function inspectArmy(playerId, army) {
-    if (!army || !typeof elements !== "undefined" && elements.cardPreview) return false;
+    if (!army || typeof elements === "undefined" || !elements.cardPreview) return false;
     const previewCard = {
       ...army,
       name: army.armyType ?? army.name,
@@ -81,12 +81,16 @@
 
   function bindArmyZoneEvents() {
     document.querySelectorAll(".game-zone--army").forEach((slot) => {
-      slot.addEventListener("click", () => {
+      const previewArmy = () => {
         const playerId = Number(slot.dataset.owner);
         const index = Number(slot.dataset.armyIndex) - 1;
         const army = GameState.players[playerId]?.armyZone?.[index];
         if (army) inspectArmy(playerId, army);
-      });
+      };
+
+      slot.addEventListener("mouseenter", previewArmy);
+      slot.addEventListener("focus", previewArmy);
+      slot.addEventListener("click", previewArmy);
     });
   }
 
