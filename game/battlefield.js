@@ -641,6 +641,23 @@ function createSelectedUnitControl({
   return control;
 }
 
+function getBattlefieldAnimationToken(unit) {
+  if (!unit || !elements?.battlefield) return null;
+
+  const directToken = elements.battlefield.querySelector(
+    `[data-unit-id="${CSS.escape(unit.id)}"]`
+  );
+  if (directToken) return directToken;
+
+  // Mounted Characters are rendered as an overlay inside the Mount token.
+  // Animate the complete mounted pair so attacks look identical to ordinary
+  // Unit attacks and the rider does not appear detached from the Mount.
+  const riderOverlay = elements.battlefield.querySelector(
+    `[data-rider-id="${CSS.escape(unit.id)}"]`
+  );
+  return riderOverlay?.closest(".unit-token") ?? null;
+}
+
 function createBattlefieldCell(x, y) {
   const cell = document.createElement("button");
 
@@ -1066,6 +1083,7 @@ function createUnitToken(unit) {
     const riderOverlay = document.createElement("button");
     riderOverlay.type = "button";
     riderOverlay.className = "mounted-rider-overlay";
+    riderOverlay.dataset.riderId = rider.id;
     riderOverlay.title = `${rider.name} — mounted on ${unit.name}`;
     riderOverlay.setAttribute("aria-label", `Select ${rider.name}, mounted on ${unit.name}`);
     const riderImage = rider.tileImage || rider.cardImage || "";
@@ -2146,9 +2164,7 @@ async function resolveStrongholdAttack(attacker, targetPlayerId, constructOperat
   const targetStronghold = targetPlayerId === 1
     ? elements.playerStronghold
     : elements.enemyStronghold;
-  const attackerToken = elements.battlefield.querySelector(
-    `[data-unit-id="${CSS.escape(attacker.id)}"]`
-  );
+  const attackerToken = getBattlefieldAnimationToken(attacker);
 
   GameState.isAnimating = true;
   setInteractionLock(true);
@@ -2275,12 +2291,8 @@ async function resolveUnitAttack(attacker, defender, constructOperator = null) {
     return false;
   }
 
-  const attackerToken = elements.battlefield.querySelector(
-    `[data-unit-id="${CSS.escape(attacker.id)}"]`
-  );
-  const defenderToken = elements.battlefield.querySelector(
-    `[data-unit-id="${CSS.escape(defender.id)}"]`
-  );
+  const attackerToken = getBattlefieldAnimationToken(attacker);
+  const defenderToken = getBattlefieldAnimationToken(defender);
 
   GameState.isAnimating = true;
   setInteractionLock(true);
@@ -2328,9 +2340,7 @@ const { defenderDestroyed, attackerDestroyed } = combatResult;
 // Resolve the chosen target of the attacker's damage.
 if (defenderDestroyed) {
   playOneShot(gameplayAudio.death);
-  const destroyedToken = elements.battlefield.querySelector(
-    `[data-unit-id="${CSS.escape(defenderDamageTarget.id)}"]`
-  ) ?? defenderToken;
+  const destroyedToken = getBattlefieldAnimationToken(defenderDamageTarget) ?? defenderToken;
   await animateUnitToDiscard(destroyedToken, defenderDamageTarget.owner);
   destroyUnit(defenderDamageTarget);
   addLog(`💀 Player ${defenderDamageTarget.owner}'s ${defenderDamageTarget.name} was destroyed.`);
@@ -2341,9 +2351,7 @@ if (defenderDestroyed) {
 // Resolve the chosen target of retaliation separately, allowing both targets to die.
 if (attackerDestroyed) {
   playOneShot(gameplayAudio.death);
-  const destroyedToken = elements.battlefield.querySelector(
-    `[data-unit-id="${CSS.escape(attackerDamageTarget.id)}"]`
-  ) ?? attackerToken;
+  const destroyedToken = getBattlefieldAnimationToken(attackerDamageTarget) ?? attackerToken;
   await animateUnitToDiscard(destroyedToken, attackerDamageTarget.owner);
   destroyUnit(attackerDamageTarget);
   addLog(`💀 Player ${attackerDamageTarget.owner}'s ${attackerDamageTarget.name} was destroyed by the counterattack.`);

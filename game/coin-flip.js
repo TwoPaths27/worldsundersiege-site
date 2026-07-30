@@ -31,20 +31,65 @@
     });
   }
 
+  const COIN_SOUND_PATHS = [
+    "../sound/coin-flip.mp3",
+    "/sound/coin-flip.mp3",
+    "./sound/coin-flip.mp3"
+  ];
+
+  const COIN_LOGO_PATHS = [
+    "../logo.png",
+    "/logo.png",
+    "./logo.png"
+  ];
+
+  function configureCoinLogos() {
+    document.querySelectorAll(".coin-flip-modal__coin-face img").forEach(image => {
+      let pathIndex = 0;
+      const tryNextPath = () => {
+        if (pathIndex >= COIN_LOGO_PATHS.length) {
+          console.warn("[Coin Flip] No logo image path could be loaded.");
+          image.removeEventListener("error", tryNextPath);
+          return;
+        }
+        image.src = COIN_LOGO_PATHS[pathIndex++];
+      };
+      image.addEventListener("error", tryNextPath);
+      tryNextPath();
+    });
+  }
+
   function playCoinFlipSound() {
-    try {
-      const audio = new Audio("./sound/coin-flip.mp3");
-      audio.preload = "auto";
-      audio.volume = 1;
-      const playPromise = audio.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(error => console.warn("[Coin Flip] Sound could not play:", error));
+    let pathIndex = 0;
+    let audio = null;
+
+    const tryNextPath = () => {
+      if (pathIndex >= COIN_SOUND_PATHS.length) {
+        console.warn("[Coin Flip] No coin-flip sound path could be loaded.");
+        return;
       }
-      return audio;
-    } catch (error) {
-      console.warn("[Coin Flip] Sound could not be created:", error);
-      return null;
-    }
+
+      try {
+        audio = new Audio(COIN_SOUND_PATHS[pathIndex++]);
+        audio.preload = "auto";
+        audio.volume = 1;
+        audio.addEventListener("error", tryNextPath, { once: true });
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(error => {
+            if (error?.name !== "NotAllowedError") {
+              console.warn("[Coin Flip] Sound could not play:", error);
+            }
+          });
+        }
+      } catch (error) {
+        console.warn("[Coin Flip] Sound path failed:", error);
+        tryNextPath();
+      }
+    };
+
+    tryNextPath();
+    return audio;
   }
 
   async function animateCoin(landed) {
@@ -127,6 +172,7 @@
     const caller = GameState.players[callerId];
     const opponentId = callerId === 1 ? 2 : 1;
 
+    configureCoinLogos();
     modal.hidden = false;
     document.body.classList.add("prematch-locked");
     prompt.textContent = `${caller.name} was randomly chosen to call the coin. Choose Heads or Tails.`;
