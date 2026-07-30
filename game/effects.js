@@ -179,6 +179,36 @@ function getModifiedStats(unit) {
     }
   }
 
+  /* King Arthur — Chosen King.
+   * This is derived directly from the current battlefield so it immediately
+   * appears/disappears when Arthur is revealed, concealed, destroyed, or changes
+   * controller. "Other" is enforced by instance identity. Units are Characters,
+   * Animals, and Armies; a card may satisfy more than one of those identities.
+   */
+  const identitiesOf = (value) => new Set([
+    value?.type, value?.cardType,
+    ...(Array.isArray(value?.types) ? value.types : []),
+    ...(Array.isArray(value?.characteristics) ? value.characteristics : []),
+  ].filter(Boolean).map((entry) => String(entry).toLowerCase()));
+  const targetIdentities = identitiesOf(unit);
+  const targetIsUnit = ["character", "animal", "army"].some((type) => targetIdentities.has(type));
+  if (targetIsUnit) {
+    const targetController = Number(unit.controller ?? unit.owner);
+    for (const source of GameState.units ?? []) {
+      if (!source || source.isConcealed || source.zone && source.zone !== "battlefield") continue;
+      if (source === unit || (source.id != null && source.id === unit.id)) continue;
+      if (Number(source.controller ?? source.owner) !== targetController) continue;
+      const sourceIds = [source.databaseId, source.gameplayId, source.variantOf, source.sourceCard?.id]
+        .filter(Boolean).map((id) => String(id).toUpperCase());
+      const isArthur = source.name === "King Arthur" || sourceIds.some((id) =>
+        id === "BOA-001" || id === "BOA-226" || id === "SD1-001"
+      );
+      if (!isArthur) continue;
+      context.attack += 2;
+      context.speed += 1;
+    }
+  }
+
   for (const status of unit.statuses ?? []) {
     if (status.active === false) continue;
 

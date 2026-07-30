@@ -33,6 +33,8 @@
     "image": "cards/BOA-001 King Arthur.jpg",
     "isSecret": false,
     "gameplayId": "BOA-001",
+    "sharedCardId": "KING_ARTHUR",
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.32,"duckBackgroundMusic":true},
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."
   },
@@ -5648,6 +5650,8 @@
     "image": "cards/BOA-226 King Arthur.jpg",
     "isSecret": true,
     "gameplayId": "BOA-001",
+    "sharedCardId": "KING_ARTHUR",
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.32,"duckBackgroundMusic":true},
     "variantOf": "BOA-001",
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."
@@ -5780,6 +5784,11 @@
     card.traits = strings(card.traits ?? card.trait);
     card.keywords = strings(card.keywords); // legacy compatibility only
     card.cost = Number(card.cost ?? 0);
+    if (card.types.some((type) => String(type).toLowerCase() === "army")) {
+      card.cost = 0;
+      card.energyCost = 0;
+      card.previewHideCost = true;
+    }
     card.atk = Number(card.atk ?? card.attack ?? 0);
     card.attack = card.atk;
     card.hp = Number(card.hp ?? card.health ?? 0);

@@ -139,4 +139,85 @@ function primeEndGameAudio() {
   });
 }
 
+
+
+/* Premium reveal presentation -------------------------------------------- */
+const kingArthurRevealAudio = {
+  voice: createGameAudio("../sounds/King Arthur.mp3", 1.0),
+  music: createGameAudio("../sounds/King Arthur 2.mp3", 0.32),
+};
+let premiumRevealPlaybackToken = 0;
+
+function isKingArthurCard(card) {
+  if (!card) return false;
+  const identities = [card.databaseId, card.gameplayId, card.id, card.variantOf]
+    .filter(Boolean)
+    .map((value) => String(value).toUpperCase());
+  return card.name === "King Arthur" || identities.some((id) =>
+    id === "BOA-001" || id === "BOA-226" || id === "SD1-001"
+  );
+}
+
+function fadeAudioVolume(audio, targetVolume, duration = 500) {
+  if (!audio) return Promise.resolve();
+  const startVolume = Number(audio.volume) || 0;
+  const target = Math.max(0, Math.min(1, Number(targetVolume) || 0));
+  const startedAt = performance.now();
+  return new Promise((resolve) => {
+    const step = (now) => {
+      const progress = Math.min(1, (now - startedAt) / Math.max(1, duration));
+      audio.volume = startVolume + (target - startVolume) * progress;
+      if (progress < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+function waitForAudioToFinish(audio) {
+  if (!audio) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finish = () => {
+      audio.removeEventListener("ended", finish);
+      audio.removeEventListener("error", finish);
+      resolve();
+    };
+    audio.addEventListener("ended", finish, { once: true });
+    audio.addEventListener("error", finish, { once: true });
+    // Missing metadata/files must never leave ambience permanently ducked.
+    window.setTimeout(finish, 30000);
+  });
+}
+
+async function playKingArthurRevealPresentation(unit) {
+  if (!isKingArthurCard(unit)) return;
+  const token = ++premiumRevealPlaybackToken;
+  const normalAmbienceVolume = 0.25;
+
+  await fadeAudioVolume(ambienceAudio, 0.07, 350);
+  if (token !== premiumRevealPlaybackToken) return;
+
+  const voice = kingArthurRevealAudio.voice;
+  const music = kingArthurRevealAudio.music;
+  voice.pause(); music.pause();
+  voice.currentTime = 0; music.currentTime = 0;
+  voice.volume = 1.0;
+  music.volume = 0.32;
+
+  await playGameAudioGroup(voice, music);
+  await Promise.allSettled([waitForAudioToFinish(voice), waitForAudioToFinish(music)]);
+
+  if (token === premiumRevealPlaybackToken) {
+    await fadeAudioVolume(ambienceAudio, normalAmbienceVolume, 900);
+  }
+}
+
+if (typeof onGameEvent === "function") {
+  onGameEvent("unitRevealed", (event) => {
+    const unit = event?.payload?.unit;
+    if (isKingArthurCard(unit)) playKingArthurRevealPresentation(unit);
+  }, { priority: -10 });
+}
+
+
 document.addEventListener("pointerdown", startAmbience, { once: true });

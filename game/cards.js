@@ -102,7 +102,7 @@ function createHandCard(card, player) {
   const legalDuringPriority =
     !GameState.priority.active || (isAction(card) && hasCounterKeyword(card));
   const isPlayable =
-    (isEvent(card) || card.cost <= player.energy) &&
+    (isEvent(card) || isArmy(card) || card.cost <= player.energy) &&
     hasPriority &&
     legalDuringPriority &&
     legalActionTiming &&
@@ -113,8 +113,8 @@ function createHandCard(card, player) {
   cardButton.classList.toggle("is-playable", isPlayable);
   cardButton.classList.toggle("is-unplayable", !isPlayable);
   cardButton.setAttribute("aria-pressed", String(isSelected));
-  cardButton.setAttribute("aria-label", `${card.name}, cost ${card.cost}, ${isPlayable ? "playable" : `needs ${card.cost - player.energy} more Energy`}`);
-  cardButton.title = isPlayable ? `${card.name} can be played for ${card.cost} Energy` : `${card.name} requires ${card.cost} Energy; you have ${player.energy}`;
+  cardButton.setAttribute("aria-label", isArmy(card) ? `${card.name}, Army, free to deploy` : `${card.name}, cost ${card.cost}, ${isPlayable ? "playable" : `needs ${card.cost - player.energy} more Energy`}`);
+  cardButton.title = isArmy(card) ? `${card.name} deploys to the Army Zone without Energy` : (isPlayable ? `${card.name} can be played for ${card.cost} Energy` : `${card.name} requires ${card.cost} Energy; you have ${player.energy}`);
   if (card.cardImage) {
     cardButton.classList.add("hand-card--art");
     cardButton.style.backgroundImage=`linear-gradient(to top, rgba(0,0,0,.76), rgba(0,0,0,.03) 64%), url("${card.cardImage}")`;
@@ -122,12 +122,13 @@ function createHandCard(card, player) {
     cardButton.style.backgroundRepeat="no-repeat";
     cardButton.style.backgroundSize="cover";
   }
-  const cost=document.createElement("span"); cost.className="hand-card__cost"; cost.textContent=String(card.cost);
+  const cost=document.createElement("span"); cost.className="hand-card__cost"; cost.textContent=String(card.cost); cost.hidden=isArmy(card);
   const name=document.createElement("strong"); name.className="hand-card__name"; name.textContent=card.name;
   const stats=document.createElement("span"); stats.className="hand-card__stats";
   if(isAction(card)){cardButton.classList.add("hand-card--action"); stats.textContent=hasCounterKeyword(card)?"ACTION · COUNTER":"ACTION · SORCERY";}
   else if(isEvent(card)){cardButton.classList.add("hand-card--event"); stats.textContent="EVENT · FREE";}
   else if(isItem(card)){stats.textContent="ITEM";}
+  else if(isArmy(card)){cardButton.classList.add("hand-card--army"); stats.textContent="ARMY · FREE";}
   else{stats.textContent=`ATK ${card.attack} · HP ${card.hp} · RNG ${card.range} · SPD ${card.speed}`;}
   cardButton.append(cost,stats,name);
   cardButton.addEventListener("click",()=>selectCard(card.id));
@@ -872,6 +873,20 @@ function selectCard(cardId) {
 
   if (isEvent(card)) {
     playEventCard(card, playerId);
+    return;
+  }
+
+  if (isArmy(card)) {
+    const deployed = typeof deployArmyCard === "function"
+      ? deployArmyCard(card, playerId, { from: ZoneTypes.HAND, reason: "played-army", amount: 1 })
+      : false;
+    if (!deployed) {
+      rejectSelectedCard(`${card.name} could not be deployed to the Army Zone.`);
+      return;
+    }
+    clearSelectedCardInteraction();
+    addLog(`${player.name} deployed ${card.name} to the Army Zone without paying Energy.`);
+    renderGame();
     return;
   }
 
