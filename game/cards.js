@@ -83,7 +83,65 @@ function renderHand() {
       createHandCard(card, player)
     );
   }
+
+  requestAnimationFrame(layoutHandCards);
 }
+
+let handResizeObserver = null;
+
+function layoutHandCards() {
+  const hand = elements?.hand;
+  if (!hand) return;
+
+  const cards = [...hand.querySelectorAll(".hand-card")];
+  if (!cards.length) {
+    hand.classList.remove("is-dynamic-layout", "is-compressed", "is-tightly-compressed");
+    hand.style.removeProperty("--hand-layout-height");
+    return;
+  }
+
+  hand.classList.add("is-dynamic-layout");
+
+  const styles = getComputedStyle(hand);
+  const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+  const paddingRight = parseFloat(styles.paddingRight) || 0;
+  const availableWidth = Math.max(0, hand.clientWidth - paddingLeft - paddingRight);
+  const cardWidth = cards[0].offsetWidth || 92;
+  const cardHeight = cards[0].offsetHeight || 128;
+  const normalStep = Math.max(1, cardWidth - 18);
+  const count = cards.length;
+  const fittedStep = count > 1
+    ? Math.max(0, Math.min(normalStep, (availableWidth - cardWidth) / (count - 1)))
+    : 0;
+  const occupiedWidth = count > 1 ? cardWidth + fittedStep * (count - 1) : cardWidth;
+  const startX = paddingLeft + Math.max(0, (availableWidth - occupiedWidth) / 2);
+  const compression = normalStep > 0 ? 1 - fittedStep / normalStep : 0;
+  const maxAngle = Math.min(9, Math.max(0, compression * 10));
+  const maxArc = Math.min(10, Math.max(0, compression * 12));
+  const center = (count - 1) / 2;
+  const denominator = Math.max(1, center);
+
+  hand.classList.toggle("is-compressed", compression > 0.08);
+  hand.classList.toggle("is-tightly-compressed", compression > 0.55);
+  hand.style.setProperty("--hand-layout-height", `${cardHeight + 18}px`);
+
+  cards.forEach((card, index) => {
+    const normalized = (index - center) / denominator;
+    const arc = Math.abs(normalized) * maxArc;
+    card.style.setProperty("--hand-x", `${startX + index * fittedStep}px`);
+    card.style.setProperty("--hand-y", `${arc}px`);
+    card.style.setProperty("--hand-rotate", `${normalized * maxAngle}deg`);
+    card.style.setProperty("--hand-z", String(index + 1));
+  });
+
+  if (!handResizeObserver && typeof ResizeObserver === "function") {
+    handResizeObserver = new ResizeObserver(() => requestAnimationFrame(layoutHandCards));
+    handResizeObserver.observe(hand);
+    if (elements.handPanel) handResizeObserver.observe(elements.handPanel);
+  }
+}
+
+window.addEventListener("resize", () => requestAnimationFrame(layoutHandCards), { passive: true });
 
 
 function createHandCard(card, player) {

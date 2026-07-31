@@ -160,6 +160,68 @@ function createModifierContext(unit) {
   };
 }
 
+
+const KING_ARTHUR_IDS = new Set(["BOA-001", "BOA-226", "SD1-001"]);
+
+function getIdentitySet(value) {
+  return new Set([
+    value?.type,
+    value?.cardType,
+    ...(Array.isArray(value?.types) ? value.types : []),
+    ...(Array.isArray(value?.traits) ? value.traits : []),
+    ...(Array.isArray(value?.characteristics) ? value.characteristics : []),
+  ].filter(Boolean).map((entry) => String(entry).trim().toLowerCase()));
+}
+
+function getControllerId(value) {
+  return Number(value?.controller ?? value?.owner);
+}
+
+function isFaceUpBattlefieldPermanent(value) {
+  if (!value || value.isConcealed) return false;
+  return !value.zone || String(value.zone).toLowerCase() === "battlefield";
+}
+
+function isKingArthur(value) {
+  if (!value) return false;
+  const ids = [
+    value.databaseId,
+    value.gameplayId,
+    value.variantOf,
+    value.sourceCard?.databaseId,
+    value.sourceCard?.gameplayId,
+  ].filter(Boolean).map((id) => String(id).toUpperCase());
+  return value.name === "King Arthur" || ids.some((id) => KING_ARTHUR_IDS.has(id));
+}
+
+const BattlefieldAuraDefinitions = Object.freeze([
+  {
+    id: "king-arthur-chosen-king",
+    sourceMatches: isKingArthur,
+    appliesTo(target, source) {
+      if (!target || !source || target.isConcealed || target === source || target.id === source.id) return false;
+      if (getControllerId(target) !== getControllerId(source)) return false;
+      const identities = getIdentitySet(target);
+      return identities.has("character") || identities.has("animal") || identities.has("army");
+    },
+    modify(context) {
+      context.attack += 2;
+      context.speed += 1;
+    },
+  },
+]);
+
+function getActiveBattlefieldAuras() {
+  const active = [];
+  for (const source of GameState.units ?? []) {
+    if (!isFaceUpBattlefieldPermanent(source)) continue;
+    for (const definition of BattlefieldAuraDefinitions) {
+      if (definition.sourceMatches(source)) active.push({ ...definition, source });
+    }
+  }
+  return active;
+}
+
 function getModifiedStats(unit) {
   ensureEffectState();
   const context = createModifierContext(unit);
@@ -179,33 +241,13 @@ function getModifiedStats(unit) {
     }
   }
 
-  /* King Arthur — Chosen King.
-   * This is derived directly from the current battlefield so it immediately
-   * appears/disappears when Arthur is revealed, concealed, destroyed, or changes
-   * controller. "Other" is enforced by instance identity. Units are Characters,
-   * Animals, and Armies; a card may satisfy more than one of those identities.
-   */
-  const identitiesOf = (value) => new Set([
-    value?.type, value?.cardType,
-    ...(Array.isArray(value?.types) ? value.types : []),
-    ...(Array.isArray(value?.characteristics) ? value.characteristics : []),
-  ].filter(Boolean).map((entry) => String(entry).toLowerCase()));
-  const targetIdentities = identitiesOf(unit);
-  const targetIsUnit = ["character", "animal", "army"].some((type) => targetIdentities.has(type));
-  if (targetIsUnit) {
-    const targetController = Number(unit.controller ?? unit.owner);
-    for (const source of GameState.units ?? []) {
-      if (!source || source.isConcealed || source.zone && source.zone !== "battlefield") continue;
-      if (source === unit || (source.id != null && source.id === unit.id)) continue;
-      if (Number(source.controller ?? source.owner) !== targetController) continue;
-      const sourceIds = [source.databaseId, source.gameplayId, source.variantOf, source.sourceCard?.id]
-        .filter(Boolean).map((id) => String(id).toUpperCase());
-      const isArthur = source.name === "King Arthur" || sourceIds.some((id) =>
-        id === "BOA-001" || id === "BOA-226" || id === "SD1-001"
-      );
-      if (!isArthur) continue;
-      context.attack += 2;
-      context.speed += 1;
+  /* Dynamic battlefield auras ------------------------------------------- */
+  for (const aura of getActiveBattlefieldAuras()) {
+    if (!aura.appliesTo(unit, aura.source)) continue;
+    try {
+      aura.modify(context, unit, aura.source);
+    } catch (error) {
+      console.error(`Battlefield aura "${aura.id}" failed.`, error);
     }
   }
 
@@ -234,6 +276,28 @@ function getModifiedStats(unit) {
   context.speed = Math.max(0, Number(context.speed) || 0);
 
   return context;
+}
+
+
+function recalculateAllUnitStats() {
+  for (const unit of GameState.units ?? []) {
+    normalizeUnitBaseStats(unit);
+    const previousSpeed = Number(unit.currentSpeed ?? unit.baseSpeed ?? 0) || 0;
+    const previousMaxHP = Number(unit.maxHP ?? unit.baseHP ?? unit.printedHP ?? 0) || 0;
+    const damage = Math.max(0, previousMaxHP - (Number(unit.currentHP) || 0));
+    const stats = getModifiedStats(unit);
+
+    unit.currentAttack = stats.attack;
+    unit.currentRange = stats.range;
+    unit.currentSpeed = stats.speed;
+    unit.maxHP = stats.maxHP;
+
+    if (unit.currentHP != null) unit.currentHP = Math.max(0, stats.maxHP - damage);
+    if (unit.remainingSpeed != null && previousSpeed !== stats.speed) {
+      unit.remainingSpeed = Math.max(0, Number(unit.remainingSpeed) + (stats.speed - previousSpeed));
+    }
+  }
+  return GameState.units ?? [];
 }
 
 function getCurrentAttack(unit) {
@@ -411,6 +475,16 @@ function resetEffectsEngine() {
   }
 }
 
+
+if (typeof onGameEvent === "function") {
+  for (const eventType of [
+    "unitEnteredPlay", "unitRevealed", "unitConcealed", "unitLeavingPlay",
+    "unitDestroyed", "unitLeftPlay", "unitControlChanged", "unitMounted", "unitDismounted",
+  ]) {
+    onGameEvent(eventType, () => recalculateAllUnitStats(), { priority: -50 });
+  }
+}
+
 ensureEffectState();
 
 window.ModifierLayers = ModifierLayers;
@@ -420,6 +494,8 @@ window.createContinuousEffect = createContinuousEffect;
 window.addContinuousEffect = addContinuousEffect;
 window.removeContinuousEffect = removeContinuousEffect;
 window.getModifiedStats = getModifiedStats;
+window.recalculateAllUnitStats = recalculateAllUnitStats;
+window.getActiveBattlefieldAuras = getActiveBattlefieldAuras;
 window.getCurrentAttack = getCurrentAttack;
 window.getCurrentMaxHP = getCurrentMaxHP;
 window.getCurrentHealth = getCurrentHealth;

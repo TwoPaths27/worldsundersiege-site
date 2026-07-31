@@ -201,6 +201,7 @@ function requestEndStep() {
 }
 
 function renderGame() {
+  if (typeof recalculateAllUnitStats === "function") recalculateAllUnitStats();
   renderStatusBar();
   renderBattlefield();
   renderSelectedUnitPanel();

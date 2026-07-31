@@ -77,6 +77,7 @@ function createUnit({
     id,
     name,
     owner,
+    controller: owner,
     x,
     y,
 

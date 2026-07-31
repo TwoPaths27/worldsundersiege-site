@@ -7939,3 +7939,311 @@ body.is-game-animating .selected-unit-actions button {
   border-color: #ff3f3f !important;
   box-shadow: 0 0 22px rgba(255, 20, 20, .98), inset 0 0 14px rgba(180, 0, 0, .66);
 }
+
+/* V19.9.7.5 — Adaptive hand fan ----------------------------------------- */
+/* Cards retain their normal spacing while there is room. As the hand grows,
+ * JavaScript reduces the step between cards, adds a subtle fan, and keeps the
+ * first and last card inside the hand panel at every supported width. */
+.hand-fan.is-dynamic-layout {
+  position: relative;
+  display: block;
+  min-height: var(--hand-layout-height, 146px);
+  overflow-x: hidden;
+  overflow-y: visible;
+  isolation: isolate;
+}
+
+.hand-fan.is-dynamic-layout .hand-card {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  z-index: var(--hand-z, 1);
+  transform:
+    translate3d(var(--hand-x, 0px), calc(-1 * var(--hand-y, 0px)), 0)
+    rotate(var(--hand-rotate, 0deg));
+  will-change: transform;
+  transition:
+    transform 180ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.hand-fan.is-dynamic-layout .hand-card:first-child {
+  margin-left: 0;
+}
+
+.hand-fan.is-dynamic-layout .hand-card:hover,
+.hand-fan.is-dynamic-layout .hand-card:focus-visible,
+.hand-fan.is-dynamic-layout .hand-card.is-selected {
+  z-index: 200;
+  margin: 0;
+  transform:
+    translate3d(var(--hand-x, 0px), calc(-30px - var(--hand-y, 0px)), 0)
+    rotate(0deg)
+    scale(1.35);
+}
+
+.hand-fan.is-compressed .hand-card {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.48);
+}
+
+.hand-fan.is-tightly-compressed .hand-card__name {
+  left: 4px;
+  right: 4px;
+  font-size: 9px;
+}
+
+@media (max-width: 760px) {
+  .hand-fan.is-dynamic-layout .hand-card:hover,
+  .hand-fan.is-dynamic-layout .hand-card:focus-visible,
+  .hand-fan.is-dynamic-layout .hand-card.is-selected {
+    transform:
+      translate3d(var(--hand-x, 0px), calc(-18px - var(--hand-y, 0px)), 0)
+      rotate(0deg)
+      scale(1.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-fan.is-dynamic-layout .hand-card {
+    transition: none;
+  }
+}
+
+/* V19.9.7.6 — Touch-first mobile presentation layer. Desktop rules above remain unchanged. */
+.mobile-game-toolbar,
+.mobile-expand-card,
+.mobile-card-modal { display: none; }
+
+@media (max-width: 900px), (pointer: coarse) {
+  body.mobile-mode {
+    margin: 0;
+    overflow: hidden;
+    background: #05080d;
+    overscroll-behavior: none;
+  }
+
+  body.mobile-mode .game-layout {
+    display: block;
+    width: 100vw;
+    height: 100dvh;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  body.mobile-mode .game-layout > .side-panel {
+    position: fixed;
+    z-index: 210;
+    left: 0;
+    right: auto;
+    top: 54px;
+    bottom: 92px;
+    width: min(88vw, 360px);
+    max-width: none;
+    padding: 10px;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    pointer-events: none;
+    background: rgba(5, 10, 17, .97);
+    border-right: 1px solid rgba(255,255,255,.18);
+    box-shadow: 18px 0 45px rgba(0,0,0,.55);
+    overflow: auto;
+  }
+
+  body.mobile-mode .game-layout > .side-panel:first-of-type:has(.chat-panel.mobile-chat-open) {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  body.mobile-mode .game-layout > .side-panel:first-of-type > .panel-card:not(.chat-panel),
+  body.mobile-mode .game-layout > .side-panel:first-of-type > .priority-dock,
+  body.mobile-mode .game-layout > .side-panel:last-of-type,
+  body.mobile-mode .match-history-panel,
+  body.mobile-mode #gameLog {
+    display: none !important;
+  }
+
+  body.mobile-mode .chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+  body.mobile-mode .chat-messages { flex: 1; min-height: 0; overflow-y: auto; }
+
+  body.mobile-mode .battlefield-column {
+    position: fixed;
+    inset: 0 0 76px 0;
+    width: 100vw;
+    height: auto;
+    overflow: hidden;
+    touch-action: none;
+    background: radial-gradient(circle at center, #182334 0, #080c12 72%);
+  }
+
+  body.mobile-mode .battlefield-stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    transform-origin: 0 0;
+    transform: translate3d(var(--mobile-camera-x, 0), var(--mobile-camera-y, 0), 0) scale(var(--mobile-camera-scale, 1));
+    will-change: transform;
+    max-width: none;
+    flex: none;
+  }
+  body.mobile-mode .battlefield-stage.mobile-camera-animate { transition: transform .26s ease; }
+
+  body.mobile-mode .mobile-game-toolbar {
+    position: fixed;
+    display: flex;
+    z-index: 260;
+    left: 10px;
+    top: max(8px, env(safe-area-inset-top));
+    gap: 8px;
+    pointer-events: auto;
+  }
+  body.mobile-mode .mobile-toolbar-button {
+    position: relative;
+    min-width: 48px;
+    min-height: 44px;
+    border: 1px solid rgba(255,255,255,.24);
+    border-radius: 12px;
+    background: rgba(10,17,27,.92);
+    color: #fff;
+    padding: 8px 12px;
+    font-weight: 800;
+    box-shadow: 0 8px 22px rgba(0,0,0,.4);
+  }
+  body.mobile-mode .mobile-chat-badge {
+    position: absolute;
+    right: -7px;
+    top: -7px;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #d92e3c;
+    color: white;
+    border: 2px solid #080c12;
+    font-size: 11px;
+  }
+  body.mobile-mode .mobile-chat-badge[hidden] { display: none; }
+
+  body.mobile-mode .mobile-expand-card {
+    position: fixed;
+    z-index: 245;
+    display: block;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(255,218,120,.9);
+    border-radius: 999px;
+    background: rgba(12,17,25,.94);
+    color: #ffe4a3;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 900;
+    box-shadow: 0 0 18px rgba(232,185,79,.55), 0 8px 20px rgba(0,0,0,.5);
+  }
+  body.mobile-mode .mobile-expand-card[hidden] { display: none; }
+
+  body.mobile-mode .mobile-card-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: grid;
+    place-items: center;
+    padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  }
+  body.mobile-mode .mobile-card-modal[hidden] { display: none; }
+  body.mobile-mode .mobile-card-modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.86); backdrop-filter: blur(5px); }
+  body.mobile-mode .mobile-card-modal__dialog {
+    position: relative;
+    width: min(92vw, 430px);
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    background: #0b111b;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 28px 70px rgba(0,0,0,.7);
+  }
+  body.mobile-mode .mobile-card-modal__dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  body.mobile-mode .mobile-card-modal__dialog h2 { margin: 0; font-size: 19px; }
+  body.mobile-mode #mobileCardModalClose { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: #202b3a; color: #fff; font-size: 26px; }
+  body.mobile-mode #mobileCardModalImage { display: block; width: 100%; min-height: 0; object-fit: contain; border-radius: 10px; margin-top: 8px; }
+
+  body.mobile-mode .hand-dock {
+    position: fixed;
+    z-index: 230;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-width: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  body.mobile-mode .hand-panel { max-height: 48dvh; }
+  body.mobile-mode .hand-panel__header { padding: 6px 12px; }
+  body.mobile-mode .hand-panel__header h2 { font-size: 14px; }
+  body.mobile-mode .hand-fan {
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    padding-inline: 48px;
+  }
+  body.mobile-mode .hand-card { scroll-snap-align: center; }
+
+  body.mobile-mode .exit-game-button {
+    top: max(8px, env(safe-area-inset-top));
+    right: 10px;
+    bottom: auto;
+    z-index: 260;
+    min-height: 44px;
+  }
+
+  body.mobile-mode .unit-token,
+  body.mobile-mode .battlefield__cell,
+  body.mobile-mode .game-zone,
+  body.mobile-mode .stronghold {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.mobile-mode .unit-token::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: 12px;
+  }
+
+  body.mobile-mode .public-zone-modal__dialog,
+  body.mobile-mode .deployment-choice-dialog,
+  body.mobile-mode .coin-flip-modal__dialog,
+  body.mobile-mode .mulligan-modal__dialog {
+    width: min(94vw, 620px);
+    max-height: 92dvh;
+    overflow: auto;
+  }
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  body.mobile-mode .battlefield-column::after {
+    content: "Pinch to zoom • Drag to move";
+    position: fixed;
+    z-index: 205;
+    left: 50%;
+    top: 12px;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,.62);
+    font-size: 11px;
+    pointer-events: none;
+  }
+}
