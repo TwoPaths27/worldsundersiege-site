@@ -476,7 +476,75 @@ function resetEffectsEngine() {
 }
 
 
+const LANCELOT_IDS = new Set(["BOA-003"]);
+
+function isSirLancelot(value) {
+  if (!value) return false;
+  const ids = [
+    value.databaseId, value.gameplayId, value.variantOf, value.sharedCardId,
+    value.sourceCard?.databaseId, value.sourceCard?.gameplayId,
+  ].filter(Boolean).map((id) => String(id).toUpperCase());
+  return value.name === "Sir Lancelot" || value.name === "Lancelot" ||
+    ids.some((id) => LANCELOT_IDS.has(id));
+}
+
+function getCurrentTurnIdentity() {
+  return `${Number(GameState.turn) || 0}:${Number(GameState.activePlayer) || 0}`;
+}
+
+function isLancelotRevealTurnActive(unit) {
+  return Boolean(unit && isSirLancelot(unit) &&
+    unit.lancelotRevealTurnIdentity === getCurrentTurnIdentity());
+}
+
+function applyLancelotRevealEffect(unit) {
+  if (!isSirLancelot(unit)) return false;
+
+  const turnIdentity = getCurrentTurnIdentity();
+  if (unit.lancelotRevealTurnIdentity === turnIdentity) return false;
+
+  unit.lancelotRevealTurnIdentity = turnIdentity;
+  const effectId = `lancelot-reveal-speed:${unit.id}:${turnIdentity}`;
+
+  addContinuousEffect({
+    id: effectId,
+    source: unit,
+    controller: unit.controller ?? unit.owner,
+    target: unit.id,
+    layer: ModifierLayers.BUFF,
+    duration: "untilEndOfTurn",
+    expiresForPlayer: GameState.activePlayer,
+    modifier(stats) {
+      stats.speed += 3;
+    },
+    metadata: {
+      kind: "lancelot-reveal-speed",
+      amount: 3,
+      turnIdentity,
+    },
+  });
+
+  recalculateAllUnitStats();
+  if (typeof addLog === "function") {
+    addLog(`${unit.name} gains +3 SPD until the end of the turn and can only attack Units and Constructs this turn.`);
+  }
+  return true;
+}
+
 if (typeof onGameEvent === "function") {
+  onGameEvent("unitRevealed", (event) => {
+    applyLancelotRevealEffect(event?.payload?.unit);
+  }, { priority: 25 });
+
+  onGameEvent("turnEnded", (event) => {
+    const endedPlayer = Number(event?.payload?.playerId);
+    for (const unit of GameState.units ?? []) {
+      if (isSirLancelot(unit) && Number(unit.lancelotRevealTurnIdentity?.split?.(":")?.[1]) === endedPlayer) {
+        unit.lancelotRevealTurnIdentity = null;
+      }
+    }
+  }, { priority: -60 });
+
   for (const eventType of [
     "unitEnteredPlay", "unitRevealed", "unitConcealed", "unitLeavingPlay",
     "unitDestroyed", "unitLeftPlay", "unitControlChanged", "unitMounted", "unitDismounted",
@@ -507,3 +575,6 @@ window.addStatus = addStatus;
 window.removeStatus = removeStatus;
 window.updateContinuousEffects = updateContinuousEffects;
 window.resetEffectsEngine = resetEffectsEngine;
+window.isSirLancelot = isSirLancelot;
+window.isLancelotRevealTurnActive = isLancelotRevealTurnActive;
+window.applyLancelotRevealEffect = applyLancelotRevealEffect;

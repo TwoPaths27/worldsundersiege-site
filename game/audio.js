@@ -150,6 +150,10 @@ const merlinRevealAudio = {
   voice: createGameAudio("../sounds/Merlin.mp3", 1.0),
   music: createGameAudio("../sounds/Merlin 2.mp3", 0.5),
 };
+const lancelotRevealAudio = {
+  voice: createGameAudio("../sounds/Lancelot.mp3", 1.0),
+  music: createGameAudio("../sounds/Lancelot 2.mp3", 0.6),
+};
 let premiumRevealPlaybackToken = 0;
 
 function isKingArthurCard(card) {
@@ -168,6 +172,15 @@ function isMerlinCard(card) {
     .filter(Boolean)
     .map((value) => String(value).toUpperCase());
   return card.name === "Merlin" || identities.includes("BOA-002") || identities.includes("MERLIN");
+}
+
+function isLancelotCard(card) {
+  if (!card) return false;
+  const identities = [card.databaseId, card.gameplayId, card.id, card.variantOf, card.sharedCardId]
+    .filter(Boolean)
+    .map((value) => String(value).toUpperCase());
+  return card.name === "Sir Lancelot" || card.name === "Lancelot" ||
+    identities.includes("BOA-003") || identities.includes("LANCELOT");
 }
 
 function fadeAudioVolume(audio, targetVolume, duration = 500) {
@@ -239,11 +252,20 @@ async function playMerlinRevealPresentation(unit) {
   });
 }
 
+async function playLancelotRevealPresentation(unit) {
+  if (!isLancelotCard(unit)) return;
+  return playPremiumRevealAudioPair(lancelotRevealAudio, {
+    voiceVolume: 1.0,
+    musicVolume: 0.6,
+  });
+}
+
 if (typeof onGameEvent === "function") {
   onGameEvent("unitRevealed", (event) => {
     const unit = event?.payload?.unit;
     if (isKingArthurCard(unit)) playKingArthurRevealPresentation(unit);
     else if (isMerlinCard(unit)) playMerlinRevealPresentation(unit);
+    else if (isLancelotCard(unit)) playLancelotRevealPresentation(unit);
   }, { priority: -10 });
 }
 

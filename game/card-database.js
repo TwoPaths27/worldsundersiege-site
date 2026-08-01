@@ -89,6 +89,7 @@
     "isSecret": false,
     "gameplayId": "BOA-003",
     "copyLimit": 3,
+    "recruitAudio": {"voice":"../sounds/Lancelot.mp3","music":"../sounds/Lancelot 2.mp3","voiceVolume":1,"musicVolume":0.6,"duckBackgroundMusic":true},
     "effectText": "Whenever Sir Lancelot is revealed, he gains +3 Speed until the end of the turn. He can only attack Units and Constructs during that turn."
   },
   {

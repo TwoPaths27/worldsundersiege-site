@@ -99,6 +99,12 @@ function findAttackableStronghold(unit, { ignoreAttackSpent = false } = {}) {
     return null;
   }
 
+  // During the turn Sir Lancelot is revealed, Charge Into Battle permits
+  // attacks only against Units and Constructs, never a Stronghold.
+  if (typeof isLancelotRevealTurnActive === "function" && isLancelotRevealTurnActive(unit)) {
+    return null;
+  }
+
   const enemyPlayerId = unit.owner === 1 ? 2 : 1;
   const strongholdY = enemyPlayerId === 2 ? -1 : BOARD_ROWS;
 
