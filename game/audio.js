@@ -146,6 +146,10 @@ const kingArthurRevealAudio = {
   voice: createGameAudio("../sounds/King Arthur.mp3", 1.0),
   music: createGameAudio("../sounds/King Arthur 2.mp3", 0.6),
 };
+const merlinRevealAudio = {
+  voice: createGameAudio("../sounds/Merlin.mp3", 1.0),
+  music: createGameAudio("../sounds/Merlin 2.mp3", 0.5),
+};
 let premiumRevealPlaybackToken = 0;
 
 function isKingArthurCard(card) {
@@ -156,6 +160,14 @@ function isKingArthurCard(card) {
   return card.name === "King Arthur" || identities.some((id) =>
     id === "BOA-001" || id === "BOA-226" || id === "SD1-001"
   );
+}
+
+function isMerlinCard(card) {
+  if (!card) return false;
+  const identities = [card.databaseId, card.gameplayId, card.id, card.variantOf, card.sharedCardId]
+    .filter(Boolean)
+    .map((value) => String(value).toUpperCase());
+  return card.name === "Merlin" || identities.includes("BOA-002") || identities.includes("MERLIN");
 }
 
 function fadeAudioVolume(audio, targetVolume, duration = 500) {
@@ -189,20 +201,19 @@ function waitForAudioToFinish(audio) {
   });
 }
 
-async function playKingArthurRevealPresentation(unit) {
-  if (!isKingArthurCard(unit)) return;
+async function playPremiumRevealAudioPair(audioPair, { voiceVolume = 1, musicVolume = 0.5 } = {}) {
   const token = ++premiumRevealPlaybackToken;
   const normalAmbienceVolume = 0.25;
 
   await fadeAudioVolume(ambienceAudio, 0.07, 350);
   if (token !== premiumRevealPlaybackToken) return;
 
-  const voice = kingArthurRevealAudio.voice;
-  const music = kingArthurRevealAudio.music;
+  const voice = audioPair.voice;
+  const music = audioPair.music;
   voice.pause(); music.pause();
   voice.currentTime = 0; music.currentTime = 0;
-  voice.volume = 1.0;
-  music.volume = 0.32;
+  voice.volume = voiceVolume;
+  music.volume = musicVolume;
 
   await playGameAudioGroup(voice, music);
   await Promise.allSettled([waitForAudioToFinish(voice), waitForAudioToFinish(music)]);
@@ -212,10 +223,27 @@ async function playKingArthurRevealPresentation(unit) {
   }
 }
 
+async function playKingArthurRevealPresentation(unit) {
+  if (!isKingArthurCard(unit)) return;
+  return playPremiumRevealAudioPair(kingArthurRevealAudio, {
+    voiceVolume: 1.0,
+    musicVolume: 0.6,
+  });
+}
+
+async function playMerlinRevealPresentation(unit) {
+  if (!isMerlinCard(unit)) return;
+  return playPremiumRevealAudioPair(merlinRevealAudio, {
+    voiceVolume: 1.0,
+    musicVolume: 0.5,
+  });
+}
+
 if (typeof onGameEvent === "function") {
   onGameEvent("unitRevealed", (event) => {
     const unit = event?.payload?.unit;
     if (isKingArthurCard(unit)) playKingArthurRevealPresentation(unit);
+    else if (isMerlinCard(unit)) playMerlinRevealPresentation(unit);
   }, { priority: -10 });
 }
 

@@ -150,6 +150,36 @@ function layoutHandCards() {
 window.addEventListener("resize", () => requestAnimationFrame(layoutHandCards), { passive: true });
 
 
+
+/* Merlin — Magical Prowess ----------------------------------------------- */
+function isMerlinUnit(unit) {
+  if (!unit) return false;
+  const identities = [unit.databaseId, unit.gameplayId, unit.variantOf, unit.sharedCardId]
+    .filter(Boolean)
+    .map((value) => String(value).toUpperCase());
+  return unit.name === "Merlin" || identities.includes("BOA-002");
+}
+
+function getCurrentActionTurnKey() {
+  return `${GameState.turn}:${GameState.activePlayer}`;
+}
+
+function canMerlinMakeActionFree(user, playerId) {
+  if (!isMerlinUnit(user)) return false;
+  if (Number(playerId) !== Number(GameState.activePlayer)) return false;
+  if (Number(user.controller ?? user.owner) !== Number(playerId)) return false;
+  return user.merlinFreeActionTurnKey !== getCurrentActionTurnKey();
+}
+
+function getActionEnergyCost(card, user, playerId) {
+  const printedCost = Math.max(0, Number(card?.cost) || 0);
+  return canMerlinMakeActionFree(user, playerId) ? 0 : printedCost;
+}
+
+function hasAvailableMerlinFreeAction(playerId) {
+  return GameState.units.some((unit) => canMerlinMakeActionFree(unit, playerId));
+}
+
 function createHandCard(card, player) {
   const playerId = getInteractionPlayerId();
   const cardButton = document.createElement("button");
@@ -166,7 +196,7 @@ function createHandCard(card, player) {
   const legalDuringPriority =
     !GameState.priority.active || (isAction(card) && hasCounterKeyword(card));
   const isPlayable =
-    (isEvent(card) || isArmy(card) || card.cost <= player.energy) &&
+    (isEvent(card) || isArmy(card) || card.cost <= player.energy || (isAction(card) && hasAvailableMerlinFreeAction(playerId))) &&
     hasPriority &&
     legalDuringPriority &&
     legalActionTiming &&
@@ -319,7 +349,6 @@ function getPlayableActionOption(card, playerId) {
     !player ||
     !card ||
     !isAction(card) ||
-    player.energy < card.cost ||
     !getAbility(card)
   ) {
     return null;
@@ -350,8 +379,9 @@ function getPlayableActionOption(card, playerId) {
 
   for (const user of users) {
     const userContext = getActionPlayabilityContext(card, playerId, { user });
+    const actionCost = getActionEnergyCost(card, user, playerId);
 
-    if (!canPlayAbility(card, userContext)) {
+    if (player.energy < actionCost || !canPlayAbility(card, userContext)) {
       continue;
     }
 
@@ -712,9 +742,11 @@ function commitSelectedAction(targetId = null) {
     return false;
   }
 
-  if (!isEvent(card) && player.energy < card.cost) {
+  const actionEnergyCost = getActionEnergyCost(card, user, playerId);
+
+  if (!isEvent(card) && player.energy < actionEnergyCost) {
     addLog(
-      `${card.name} costs ${card.cost} Energy.`
+      `${card.name} costs ${actionEnergyCost} Energy.`
     );
     renderGame();
     return false;
@@ -739,7 +771,7 @@ function commitSelectedAction(targetId = null) {
   /*
    * All validation is complete. State mutation begins here.
    */
-  player.energy -= card.cost;
+  player.energy -= actionEnergyCost;
   player.hand.splice(cardIndex, 1);
   card.zone = ZoneTypes.STACK;
 
@@ -755,7 +787,8 @@ function commitSelectedAction(targetId = null) {
   stackEntry.zone = ZoneTypes.STACK;
   stackEntry.costsPaid = {
     resource: "energy",
-    amount: card.cost,
+    amount: actionEnergyCost,
+    printedAmount: card.cost,
     paidAt: Date.now(),
   };
 
@@ -767,6 +800,11 @@ function commitSelectedAction(targetId = null) {
     announce: false,
     openPriority: false,
   });
+
+  if (actionEnergyCost === 0 && canMerlinMakeActionFree(user, playerId)) {
+    user.merlinFreeActionTurnKey = getCurrentActionTurnKey();
+    addLog(`${user.name}'s Magical Prowess makes ${card.name} cost 0 Energy.`);
+  }
 
   emitGameEvent(
     "cardPlayed",

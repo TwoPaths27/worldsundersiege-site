@@ -60,6 +60,8 @@
     "image": "cards/BOA-002 Merlin.jpg",
     "isSecret": false,
     "gameplayId": "BOA-002",
+    "sharedCardId": "MERLIN",
+    "recruitAudio": {"voice":"../sounds/Merlin.mp3","music":"../sounds/Merlin 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "copyLimit": 3,
     "effectText": "The first Action Merlin becomes the User of during your turns cost 0 to play."
   },
