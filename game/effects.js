@@ -525,6 +525,16 @@ function applyLancelotRevealEffect(unit) {
   });
 
   recalculateAllUnitStats();
+
+  /*
+   * Keep the movement pool in sync immediately. Some battlefield code reads
+   * remainingSpeed directly before the next full render, so relying only on
+   * currentSpeed made the +3 bonus appear missing even though the modifier
+   * existed in the continuous-effect list.
+   */
+  const movementSpent = Math.max(0, Number(unit.movementSpent ?? 0) || 0);
+  unit.remainingSpeed = Math.max(0, Number(unit.currentSpeed ?? unit.baseSpeed ?? 0) - movementSpent);
+
   if (typeof addLog === "function") {
     addLog(`${unit.name} gains +3 SPD until the end of the turn and can only attack Units and Constructs this turn.`);
   }
@@ -532,6 +542,16 @@ function applyLancelotRevealEffect(unit) {
 }
 
 if (typeof onGameEvent === "function") {
+  /*
+   * Playing a Unit face-up is a reveal for card-rule purposes. Listen to both
+   * facts so Lancelot receives the bonus whether he is recruited face-up or
+   * turned face-up from Conceal. The turn-identity guard prevents duplicates.
+   */
+  onGameEvent("unitEnteredPlay", (event) => {
+    const unit = event?.payload?.unit;
+    if (unit && !unit.isConcealed) applyLancelotRevealEffect(unit);
+  }, { priority: 30 });
+
   onGameEvent("unitRevealed", (event) => {
     applyLancelotRevealEffect(event?.payload?.unit);
   }, { priority: 25 });
