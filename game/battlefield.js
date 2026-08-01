@@ -298,7 +298,44 @@ function renderBattlefield() {
     }
   }
 }
-function setSelectedUnitAction(action) {
+
+function showBattlefieldChoiceModal(title, message, { yesLabel = "Yes", noLabel = "No" } = {}) {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "battlefield-choice-modal";
+    modal.innerHTML = `
+      <div class="battlefield-choice-modal__backdrop"></div>
+      <section class="battlefield-choice-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="battlefield-choice-title">
+        <p class="battlefield-choice-modal__eyebrow">Battlefield Action</p>
+        <h2 id="battlefield-choice-title"></h2>
+        <p class="battlefield-choice-modal__message"></p>
+        <div class="battlefield-choice-modal__actions"></div>
+      </section>`;
+    modal.querySelector("h2").textContent = title;
+    modal.querySelector(".battlefield-choice-modal__message").textContent = message;
+    const actions = modal.querySelector(".battlefield-choice-modal__actions");
+    const no = document.createElement("button");
+    const yes = document.createElement("button");
+    no.type = yes.type = "button";
+    no.className = "battlefield-choice-modal__button battlefield-choice-modal__button--cancel";
+    yes.className = "battlefield-choice-modal__button battlefield-choice-modal__button--confirm";
+    no.textContent = noLabel;
+    yes.textContent = yesLabel;
+    const finish = (value) => {
+      modal.remove();
+      document.body.classList.remove("modal-open");
+      resolve(value);
+    };
+    no.addEventListener("click", () => finish(false));
+    yes.addEventListener("click", () => finish(true));
+    modal.querySelector(".battlefield-choice-modal__backdrop").addEventListener("click", () => finish(false));
+    document.body.appendChild(modal);
+    document.body.classList.add("modal-open");
+    yes.focus();
+  });
+}
+
+async function setSelectedUnitAction(action) {
   const unit = getSelectedUnit();
 
   if (
@@ -365,15 +402,29 @@ function setSelectedUnitAction(action) {
     if (typeof canDismount !== "function" || !canDismount(unit)) return;
     const mount = typeof getMount === "function" ? getMount(unit) : null;
     if (!mount) return;
+    const confirmed = await showBattlefieldChoiceModal(
+      "Dismount",
+      `Are you sure you want to dismount ${unit.name} from ${mount.name}?`,
+      { yesLabel: "Yes", noLabel: "No" }
+    );
+    if (!confirmed) return;
     const spaces = new Map();
-    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-      const x = mount.x + dx;
-      const y = mount.y + dy;
-      if (x < 0 || x >= BOARD_COLUMNS || y < 0 || y >= BOARD_ROWS) continue;
-      if (!getUnitAt(x, y)) spaces.set(getCoordinateKey(x, y), 1);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        if (dx === 0 && dy === 0) continue;
+        const x = mount.x + dx;
+        const y = mount.y + dy;
+        if (x < 0 || x >= BOARD_COLUMNS || y < 0 || y >= BOARD_ROWS) continue;
+        if (!getUnitAt(x, y)) spaces.set(getCoordinateKey(x, y), 1);
+      }
     }
     if (!spaces.size) {
       addLog(`${unit.name} has no legal space to dismount.`);
+      await showBattlefieldChoiceModal(
+        "No Open Space",
+        `${unit.name} has no open adjacent space to dismount into.`,
+        { yesLabel: "OK", noLabel: "Close" }
+      );
       return;
     }
     GameState.selectedUnitAction = "dismount";
@@ -381,7 +432,7 @@ function setSelectedUnitAction(action) {
     GameState.reachableSpaces = new Map();
     GameState.attackableUnitIds = new Set();
     GameState.attackableStrongholdPlayerId = null;
-    addLog(`Choose an adjacent space for ${unit.name} to dismount.`);
+    addLog(`Choose any adjacent space for ${unit.name} to dismount.`);
   }
 
   clearAttackHoverState();
@@ -1209,7 +1260,9 @@ function createUnitToken(unit) {
         renderCardPreview(item);
       });
       const previewItem = (event) => {
+        event?.preventDefault?.();
         event?.stopPropagation?.();
+        GameState.cardPreviewOverride = item;
         renderCardPreview(item);
       };
       itemBadge.addEventListener("pointerenter", previewItem);
@@ -1219,9 +1272,13 @@ function createUnitToken(unit) {
       itemBadge.addEventListener("focus", previewItem);
       itemBadge.addEventListener("mouseleave", (event) => {
         if (event.relatedTarget && itemRail.contains(event.relatedTarget)) return;
+        GameState.cardPreviewOverride = null;
         renderCardPreview(unit);
       });
-      itemBadge.addEventListener("blur", () => renderCardPreview(unit));
+      itemBadge.addEventListener("blur", () => {
+        GameState.cardPreviewOverride = null;
+        renderCardPreview(unit);
+      });
       itemRail.appendChild(itemBadge);
     });
 
@@ -1229,6 +1286,10 @@ function createUnitToken(unit) {
   }
 
   token.addEventListener("mouseenter", () => {
+    if (GameState.cardPreviewOverride) {
+      renderCardPreview(GameState.cardPreviewOverride);
+      return;
+    }
     renderCardPreview(visibleToViewer ? unit : {
       name: "Concealed Unit", cardImage: null, printedCost: unit.concealedCost ?? unit.currentCost ?? 0,
       printedAttack: "?", printedHP: "?", printedRange: 0, printedSpeed: 1, effectText: "Identity hidden from the opponent."
@@ -2666,7 +2727,7 @@ function createCardArtPreview(imageSource, altText) {
 }
 
 function renderCardPreview(unit = null) {
-  const previewUnit = unit ?? getSelectedUnit() ?? getInspectedUnit();
+  const previewUnit = unit ?? GameState.cardPreviewOverride ?? getSelectedUnit() ?? getInspectedUnit();
 
   elements.cardPreview.replaceChildren();
 
@@ -2861,9 +2922,27 @@ function showCardEffectActivation(source, options = {}) {
   if (!token) return false;
 
   token.classList.remove("is-effect-activating");
-  // Force reflow so repeated activations replay the animation.
+  token.querySelectorAll(".effect-firework-particle").forEach((particle) => particle.remove());
   void token.offsetWidth;
   token.classList.add("is-effect-activating");
-  window.setTimeout(() => token.classList.remove("is-effect-activating"), Number(options.duration ?? 1050));
+
+  const particleCount = Number(options.particleCount ?? 18);
+  for (let index = 0; index < particleCount; index += 1) {
+    const particle = document.createElement("span");
+    particle.className = "effect-firework-particle";
+    const angle = (Math.PI * 2 * index) / particleCount + (Math.random() * 0.22 - 0.11);
+    const distance = 34 + Math.random() * 48;
+    particle.style.setProperty("--fx-x", `${Math.cos(angle) * distance}px`);
+    particle.style.setProperty("--fx-y", `${Math.sin(angle) * distance}px`);
+    particle.style.setProperty("--fx-delay", `${Math.random() * 110}ms`);
+    particle.style.setProperty("--fx-size", `${3 + Math.random() * 5}px`);
+    token.appendChild(particle);
+  }
+
+  const duration = Number(options.duration ?? 1250);
+  window.setTimeout(() => {
+    token.classList.remove("is-effect-activating");
+    token.querySelectorAll(".effect-firework-particle").forEach((particle) => particle.remove());
+  }, duration);
   return true;
 }

@@ -69,9 +69,11 @@
     return unit.type === "Construct" || unit.cardType === "Construct" || unit.types?.includes?.("Construct");
   }
 
-  function orthogonallyAdjacent(first, second) {
+  function adjacent(first, second) {
     if (!first || !second) return false;
-    return Math.abs(Number(first.x) - Number(second.x)) + Math.abs(Number(first.y) - Number(second.y)) === 1;
+    const dx = Math.abs(Number(first.x) - Number(second.x));
+    const dy = Math.abs(Number(first.y) - Number(second.y));
+    return Math.max(dx, dy) === 1;
   }
 
   function canMount(character, mount, options = {}) {
@@ -86,7 +88,7 @@
     if (character.isConcealed || mount.isConcealed) return false;
     if (isMounted(character) || mount.riderId) return false;
     if (character.mountChangeUsed) return false;
-    if (!orthogonallyAdjacent(character, mount) && options.ignoreAdjacency !== true) return false;
+    if (!adjacent(character, mount) && options.ignoreAdjacency !== true) return false;
     return true;
   }
 
@@ -138,8 +140,9 @@
     if (!mount) return false;
     if (!targetSquare) return true;
 
-    const distance = Math.abs(Number(targetSquare.x) - Number(mount.x)) + Math.abs(Number(targetSquare.y) - Number(mount.y));
-    if (distance !== 1) return false;
+    const dx = Math.abs(Number(targetSquare.x) - Number(mount.x));
+    const dy = Math.abs(Number(targetSquare.y) - Number(mount.y));
+    if (Math.max(dx, dy) !== 1) return false;
     if (typeof global.getUnitAt === "function" && global.getUnitAt(targetSquare.x, targetSquare.y)) return false;
     return true;
   }

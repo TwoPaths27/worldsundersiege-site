@@ -68,12 +68,13 @@
 
   function getAdjacentOpenSpaces(unit) {
     if (!unit) return [];
-    const candidates = [
-      { x: Number(unit.x) + 1, y: Number(unit.y) },
-      { x: Number(unit.x) - 1, y: Number(unit.y) },
-      { x: Number(unit.x), y: Number(unit.y) + 1 },
-      { x: Number(unit.x), y: Number(unit.y) - 1 },
-    ];
+    const candidates = [];
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        if (dx === 0 && dy === 0) continue;
+        candidates.push({ x: Number(unit.x) + dx, y: Number(unit.y) + dy });
+      }
+    }
     return candidates.filter(({ x, y }) => {
       const columns = typeof BOARD_COLUMNS === "number" ? BOARD_COLUMNS : 7;
       const rows = typeof BOARD_ROWS === "number" ? BOARD_ROWS : 6;
@@ -280,6 +281,7 @@
 
   async function resolveYvainReveal(unit) {
     if (!isSirYvain(unit) || !isFaceUpInPlay(unit)) return false;
+    global.presentEffectActivation?.(unit, { eventType: "sirYvainReveal", fireworks: true });
     const playerId = controllerOf(unit);
     const player = global.ensurePlayerZones?.(playerId) ?? getGameState().players?.[playerId];
     if (!player) return false;
