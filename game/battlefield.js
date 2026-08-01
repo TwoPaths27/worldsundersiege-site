@@ -391,6 +391,14 @@ function setSelectedUnitAction(action) {
 function createSelectedUnitControls(unit) {
   const controls = document.createElement("div");
 
+  // Selection can become stale during destruction animations. Never let a
+  // missing Unit abort the entire battlefield render.
+  if (!unit) {
+    controls.className = "selected-unit-controls";
+    controls.hidden = true;
+    return controls;
+  }
+
   controls.className = "selected-unit-controls";
   controls.setAttribute(
     "aria-label",
@@ -803,7 +811,10 @@ function createBattlefieldCell(x, y) {
       cell.addEventListener("focusout", hideMountPrompt);
     }
 
-    const selectedOccupant = selectedUnit?.id === occupant.id || selectedUnit?.id === occupantRider?.id;
+    const selectedOccupant = Boolean(
+      selectedUnit &&
+      (selectedUnit.id === occupant.id || selectedUnit.id === occupantRider?.id)
+    );
     if (selectedOccupant) {
       cell.classList.add("cell-selected");
 

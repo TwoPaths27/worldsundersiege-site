@@ -34,7 +34,7 @@
     "isSecret": false,
     "gameplayId": "BOA-001",
     "sharedCardId": "KING_ARTHUR",
-    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.32,"duckBackgroundMusic":true},
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."
   },
@@ -5651,7 +5651,7 @@
     "isSecret": true,
     "gameplayId": "BOA-001",
     "sharedCardId": "KING_ARTHUR",
-    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.32,"duckBackgroundMusic":true},
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "variantOf": "BOA-001",
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."

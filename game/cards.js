@@ -129,7 +129,7 @@ function layoutHandCards() {
 
   hand.classList.toggle("is-compressed", compression > 0.08);
   hand.classList.toggle("is-tightly-compressed", compression > 0.55);
-  hand.style.setProperty("--hand-layout-height", `${cardHeight + 18}px`);
+  hand.style.setProperty("--hand-layout-height", `${cardHeight + 86}px`);
 
   cards.forEach((card, index) => {
     const normalized = (index - center) / denominator;
