@@ -594,6 +594,45 @@ function animateCombatDamageTarget(unit) {
   runTransientClass(getUnitAnimationElement(unit), "combat-damage-chosen", 620);
 }
 
+
+async function animateItemEquip(sourceCard, host) {
+  const hostElement = getUnitAnimationElement(host);
+  if (!sourceCard || !hostElement) {
+    await wait(180);
+    return;
+  }
+  const sourceRect = sourceCard.getBoundingClientRect();
+  const hostRect = hostElement.getBoundingClientRect();
+  const flying = sourceCard.cloneNode(true);
+  flying.classList.remove("is-selected", "is-playable", "is-unplayable");
+  flying.classList.add("item-equip-flying-card");
+  flying.setAttribute("aria-hidden", "true");
+  Object.assign(flying.style, {
+    left: `${sourceRect.left}px`, top: `${sourceRect.top}px`,
+    width: `${sourceRect.width}px`, height: `${sourceRect.height}px`,
+  });
+  document.body.appendChild(flying);
+  sourceCard.style.visibility = "hidden";
+  const tx = hostRect.left + hostRect.width / 2 - sourceRect.left - sourceRect.width / 2;
+  const ty = hostRect.top + hostRect.height / 2 - sourceRect.top - sourceRect.height / 2;
+  try {
+    const flight = flying.animate([
+      { transform: "translate3d(0,0,0) scale(1) rotate(0deg)", opacity: 1 },
+      { transform: `translate3d(${tx * .72}px,${ty * .58 - 36}px,0) scale(.82) rotate(-5deg)`, opacity: 1, offset: .62 },
+      { transform: `translate3d(${tx}px,${ty}px,0) scale(.28) rotate(8deg)`, opacity: .2 },
+    ], { duration: 620, easing: "cubic-bezier(.18,.82,.18,1)", fill: "forwards" });
+    await flight.finished;
+  } catch (_) { await wait(620); }
+  hostElement.classList.remove("is-item-equipping");
+  void hostElement.offsetWidth;
+  hostElement.classList.add("is-item-equipping");
+  await wait(360);
+  hostElement.classList.remove("is-item-equipping");
+  flying.remove();
+  sourceCard.style.visibility = "";
+}
+window.animateItemEquip = animateItemEquip;
+
 window.getUnitAnimationElement = getUnitAnimationElement;
 window.animateUnitReveal = animateUnitReveal;
 window.animateUnitConceal = animateUnitConceal;

@@ -1154,6 +1154,47 @@ function showMountedAttackTargetChoice(attacker, mount) {
   });
 }
 
+
+function showMountedDamageAssignmentChoice(source, mountedCharacter, damage, heading = "Assign Combat Damage") {
+  const mount = typeof getMount === "function" ? getMount(mountedCharacter) : null;
+  if (!mount) return Promise.resolve(mountedCharacter);
+  GameState.isChoosingMountedAttackTarget = true;
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "mounted-target-choice";
+    overlay.innerHTML = `
+      <div class="mounted-target-choice__backdrop"></div>
+      <section class="mounted-target-choice__dialog" role="dialog" aria-modal="true">
+        <h2>${heading}</h2>
+        <p>${source.name} will deal ${Math.max(0, Number(damage) || 0)} damage. Choose whether the Character or Mount takes it.</p>
+        <div class="mounted-target-choice__options"></div>
+      </section>`;
+    const options = overlay.querySelector(".mounted-target-choice__options");
+    let done = false;
+    const stop = (e) => { e?.preventDefault(); e?.stopPropagation(); e?.stopImmediatePropagation?.(); };
+    const finish = (unit, e) => {
+      if (done) return;
+      done = true; stop(e);
+      GameState.suppressBattlefieldClickUntil = Date.now() + 650;
+      resolve(unit);
+      setTimeout(() => { overlay.remove(); GameState.isChoosingMountedAttackTarget = false; }, 300);
+    };
+    const add = (unit, label) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "mounted-target-choice__option";
+      const art = unit.cardImage || unit.tileImage || "";
+      b.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
+      b.addEventListener("pointerdown", stop, true);
+      b.addEventListener("click", (e) => finish(unit, e), true);
+      options.appendChild(b);
+    };
+    add(mountedCharacter, "Character"); add(mount, "Mount");
+    overlay.querySelector(".mounted-target-choice__backdrop").addEventListener("pointerdown", stop, true);
+    document.body.appendChild(overlay);
+    options.querySelector("button")?.focus();
+  });
+}
+window.showMountedDamageAssignmentChoice = showMountedDamageAssignmentChoice;
+
 function createUnitToken(unit) {
   const token = document.createElement("div");
 
@@ -1410,7 +1451,8 @@ function createUnitToken(unit) {
 function handleBattlefieldClick(x, y) {
   clearAttackHoverState();
 
-  if (GameState.gameOver || GameState.isAnimating || GameState.isChoosingMountedAttackTarget) {
+  if (GameState.gameOver || GameState.isAnimating || GameState.isChoosingMountedAttackTarget ||
+      Date.now() < Number(GameState.suppressBattlefieldClickUntil ?? 0)) {
     return;
   }
 
@@ -1527,14 +1569,18 @@ function handleBattlefieldClick(x, y) {
       if (rider) {
         showMountedAttackTargetChoice(selectedUnit, clickedUnit).then(async (chosenTarget) => {
           if (!chosenTarget) {
-            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 280);
+            GameState.suppressBattlefieldClickUntil = Date.now() + 500;
+            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 320);
             return;
           }
-          GameState.preferredMountedDamageTargetId = chosenTarget.id;
+          GameState.mountedDamageTargetQueue ??= [];
+          GameState.mountedDamageTargetQueue.push(chosenTarget.id);
+          GameState.suppressBattlefieldClickUntil = Date.now() + 700;
           try {
             await attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
           } finally {
-            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 280);
+            GameState.suppressBattlefieldClickUntil = Date.now() + 450;
+            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 360);
           }
         });
         return;
@@ -1725,6 +1771,18 @@ async function equipSelectedItem(host) {
   }
   const cardIndex = player.hand.findIndex((card) => card.id === item.id);
   if (cardIndex < 0) return false;
+
+  const sourceCardElement = elements.hand?.querySelector?.(`[data-card-id="${CSS.escape(String(item.id))}"]`) ?? null;
+  GameState.isAnimating = true;
+  setInteractionLock(true);
+  try {
+    if (typeof animateItemEquip === "function") {
+      await animateItemEquip(sourceCardElement, host);
+    }
+  } finally {
+    GameState.isAnimating = false;
+    setInteractionLock(false);
+  }
 
   player.energy -= item.cost;
   player.hand.splice(cardIndex, 1);
@@ -2623,6 +2681,16 @@ if (canRetaliate) {
   await animateAttack(defenderToken, attackerToken, defender, attacker);
 }
 
+// If the attacker is mounted and the defender will retaliate, the defending
+// player chooses whether return damage hits the Character or the Mount.
+if (canRetaliate && attacker?.mountedOn && typeof showMountedDamageAssignmentChoice === "function") {
+  const returnTarget = await showMountedDamageAssignmentChoice(defender, attacker, defender.currentAttack, "Assign Return Damage");
+  if (returnTarget) {
+    GameState.mountedDamageTargetQueue ??= [];
+    GameState.mountedDamageTargetQueue.push(returnTarget.id);
+  }
+}
+
 // Apply all combat damage before checking whether either unit died.
 const combatResult = applyUnitCombatDamage(
   attacker,
@@ -3074,6 +3142,15 @@ function showCardEffectActivation(source, options = {}) {
     ? options.targets.map((target) => typeof target === "object" ? target?.id : target).filter(Boolean)
     : [];
   const sourceRect = token.getBoundingClientRect();
+  if (options.reveal) {
+    const skyBeam = document.createElement("span");
+    skyBeam.className = "effect-reveal-sky-beam";
+    skyBeam.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+    skyBeam.style.top = `${Math.max(0, sourceRect.top - 170)}px`;
+    skyBeam.style.height = `${Math.max(190, 170 + sourceRect.height / 2)}px`;
+    document.body.appendChild(skyBeam);
+    window.setTimeout(() => skyBeam.remove(), 1250);
+  }
   targetIds.forEach((targetId, index) => {
     const targetToken = elements?.battlefield?.querySelector?.(`.unit-token[data-unit-id="${CSS.escape(String(targetId))}"]`);
     if (!targetToken) return;

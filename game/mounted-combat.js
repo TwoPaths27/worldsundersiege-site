@@ -65,7 +65,9 @@
     if (choices.length < 2) return choices[0] ?? mountedCharacter;
 
     const [character, mount] = choices;
-    const preferredId = global.GameState?.preferredMountedDamageTargetId;
+    const queue = global.GameState?.mountedDamageTargetQueue;
+    const queuedId = Array.isArray(queue) && queue.length ? queue.shift() : null;
+    const preferredId = queuedId ?? global.GameState?.preferredMountedDamageTargetId;
     if (preferredId) {
       global.GameState.preferredMountedDamageTargetId = null;
       const preferred = choices.find((choice) => idOf(choice) === preferredId);
