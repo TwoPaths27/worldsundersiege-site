@@ -15,6 +15,13 @@
     SAGREMORE: "BOA-010",
   });
 
+
+  function getGameState() {
+    if (global && global.GameState) return global.GameState;
+    if (typeof GameState !== "undefined") return GameState;
+    return null;
+  }
+
   function identitiesOf(value) {
     return [
       value?.databaseId,
@@ -88,7 +95,7 @@
 
   function createEffectUnitFromCard(card, playerId, x, y, idPrefix) {
     const unit = global.createUnit({
-      id: `${idPrefix}-${global.GameState.nextUnitId}`,
+      id: `${idPrefix}-${getGameState().nextUnitId}`,
       name: card.name,
       owner: playerId,
       x,
@@ -125,14 +132,14 @@
       ? global.enterPermanent(unit, {
           controller: playerId,
           owner: playerId,
-          battlefieldPermanents: global.GameState.units,
+          battlefieldPermanents: getGameState().units,
           cause: "card-effect",
         })
       : unit;
     if (!entered) return null;
 
-    global.GameState.nextUnitId += 1;
-    global.GameState.units.push(unit);
+    getGameState().nextUnitId += 1;
+    getGameState().units.push(unit);
     if (typeof global.enterPermanent !== "function") global.registerTriggersForSource?.(unit);
     global.emitGameEvent?.("unitEnteredPlay", { unit, card, playerId, x, y, reason: "card-effect" }, { source: unit });
     global.emitGameEvent?.("unitSummoned", { unit, card, playerId, x, y, reason: "card-effect" }, { source: unit });
@@ -143,7 +150,7 @@
   function resolveYvainReveal(unit) {
     if (!isSirYvain(unit) || !isFaceUpInPlay(unit)) return false;
     const playerId = controllerOf(unit);
-    const player = global.ensurePlayerZones?.(playerId) ?? global.GameState.players?.[playerId];
+    const player = global.ensurePlayerZones?.(playerId) ?? getGameState().players?.[playerId];
     if (!player) return false;
 
     const lions = (player.deck ?? []).filter((card) =>
@@ -188,7 +195,7 @@
   function healOtherFriendlyUnitsWhenLucanDies(lucan) {
     const controller = controllerOf(lucan);
     let healed = 0;
-    for (const unit of global.GameState.units ?? []) {
+    for (const unit of getGameState().units ?? []) {
       if (!unit || unit.id === lucan.id || controllerOf(unit) !== controller) continue;
       if (typeof global.isUnit === "function" && !global.isUnit(unit)) continue;
       const maximum = typeof global.getCurrentMaxHP === "function"
@@ -207,7 +214,7 @@
   function resolveBedivereReveal(unit) {
     if (!isSirBedivere(unit) || !isFaceUpInPlay(unit)) return false;
     const playerId = controllerOf(unit);
-    const player = global.ensurePlayerZones?.(playerId) ?? global.GameState.players?.[playerId];
+    const player = global.ensurePlayerZones?.(playerId) ?? getGameState().players?.[playerId];
     const items = (player?.discard ?? []).filter((card) => typeof global.isItem === "function" && global.isItem(card));
     if (!items.length) {
       global.addLog?.(`${unit.name} found no Item in the Discard Pile.`);
@@ -231,7 +238,7 @@
   function resolveKayEndTurn(kay, playerId) {
     if (!isFaceUpInPlay(kay) || controllerOf(kay) !== Number(playerId)) return 0;
     const range = typeof global.getCurrentRange === "function" ? global.getCurrentRange(kay) : Number(kay.currentRange ?? kay.range ?? 0);
-    const targets = (global.GameState.units ?? []).filter((target) =>
+    const targets = (getGameState().units ?? []).filter((target) =>
       target && target.id !== kay.id && isBattlefieldUnitOrConstruct(target) &&
       distanceBetween(kay, target) > 0 && distanceBetween(kay, target) <= range
     );
@@ -248,23 +255,26 @@
     if (!isSirSagremore(sagremore) || !isFaceUpInPlay(sagremore) || sagremore.hasAttacked) return [];
     const range = typeof global.getCurrentRange === "function" ? global.getCurrentRange(sagremore) : Number(sagremore.currentRange ?? sagremore.range ?? 0);
     const controller = controllerOf(sagremore);
-    return (global.GameState.units ?? []).filter((target) =>
+    return (getGameState().units ?? []).filter((target) =>
       target && controllerOf(target) !== controller && isBattlefieldUnitOrConstruct(target) &&
       !target.isConcealed && distanceBetween(sagremore, target) > 0 && distanceBetween(sagremore, target) <= range &&
       (typeof global.isUnitProtected !== "function" || !global.isUnitProtected(sagremore, target))
     );
   }
 
-  function enforceSagremoreAttackRequirement(playerId = global.GameState.activePlayer) {
-    const offenders = (global.GameState.units ?? []).filter((unit) =>
+  function enforceSagremoreAttackRequirement(playerId) {
+    const state = getGameState();
+    if (!state) return true;
+    if (playerId == null) playerId = state.activePlayer;
+    const offenders = (state.units ?? []).filter((unit) =>
       controllerOf(unit) === Number(playerId) && getSagremoreRequiredTargets(unit).length > 0
     );
     if (!offenders.length) return true;
     const names = offenders.map((unit) => unit.name).join(", ");
     global.addLog?.(`${names} must attack an opposing Unit or Construct in range before the turn can end.`);
-    global.GameState.selectedUnitId = offenders[0].id;
-    global.GameState.selectedUnitAction = "attack";
-    global.GameState.attackableUnitIds = new Set(getSagremoreRequiredTargets(offenders[0]).map((target) => target.id));
+    state.selectedUnitId = offenders[0].id;
+    state.selectedUnitAction = "attack";
+    state.attackableUnitIds = new Set(getSagremoreRequiredTargets(offenders[0]).map((target) => target.id));
     global.renderGame?.();
     return false;
   }
@@ -273,7 +283,7 @@
     if (!isSirSagremore(unit)) return false;
     const identity = typeof global.getCurrentTurnIdentity === "function"
       ? global.getCurrentTurnIdentity()
-      : `${Number(global.GameState.turn) || 0}:${Number(global.GameState.activePlayer) || 0}`;
+      : `${Number(getGameState().turn) || 0}:${Number(getGameState().activePlayer) || 0}`;
     if (unit.sagremoreRevealTurnIdentity === identity) return false;
     unit.sagremoreRevealTurnIdentity = identity;
     global.addContinuousEffect?.({
@@ -284,7 +294,7 @@
       target: unit.id,
       layer: global.ModifierLayers?.BUFF ?? 40,
       duration: "untilEndOfTurn",
-      expiresForPlayer: global.GameState.activePlayer,
+      expiresForPlayer: getGameState().activePlayer,
       modifier(stats) { stats.speed += 1; },
       metadata: { kind: "sagremore-reveal-speed", amount: 1, identity },
     });
@@ -310,13 +320,13 @@
 
     global.onGameEvent("turnEnding", (event) => {
       const playerId = Number(event?.payload?.playerId);
-      const kays = (global.GameState.units ?? []).filter((unit) => isSirKay(unit) && controllerOf(unit) === playerId);
+      const kays = (getGameState().units ?? []).filter((unit) => isSirKay(unit) && controllerOf(unit) === playerId);
       for (const kay of kays) resolveKayEndTurn(kay, playerId);
     }, { priority: 30 });
 
     global.onGameEvent("turnEnded", (event) => {
       const endedPlayer = Number(event?.payload?.playerId);
-      for (const unit of global.GameState.units ?? []) {
+      for (const unit of getGameState().units ?? []) {
         if (isSirSagremore(unit) && String(unit.sagremoreRevealTurnIdentity ?? "").endsWith(`:${endedPlayer}`)) {
           unit.sagremoreRevealTurnIdentity = null;
         }
