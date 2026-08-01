@@ -65,6 +65,12 @@
     if (choices.length < 2) return choices[0] ?? mountedCharacter;
 
     const [character, mount] = choices;
+    const preferredId = global.GameState?.preferredMountedDamageTargetId;
+    if (preferredId) {
+      global.GameState.preferredMountedDamageTargetId = null;
+      const preferred = choices.find((choice) => idOf(choice) === preferredId);
+      if (preferred) return preferred;
+    }
     const choosingPlayer = Number(source?.controller ?? source?.owner);
 
     // Player 1 is the local player in the current hot-seat/AI interface.

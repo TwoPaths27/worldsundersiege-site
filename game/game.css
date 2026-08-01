@@ -8332,3 +8332,20 @@ body.is-game-animating .selected-unit-actions button {
   72% { opacity: .95; transform: translate(calc(-50% + var(--fx-x)), calc(-50% + var(--fx-y))) scale(.9); }
   100% { opacity: 0; transform: translate(calc(-50% + var(--fx-x)), calc(-50% + var(--fx-y) + 16px)) scale(.15); }
 }
+
+/* V19.9.7.9d mounted target choice and compact placement prompt */
+.mounted-target-choice { position: fixed; inset: 0; z-index: 12000; display: grid; place-items: center; }
+.mounted-target-choice__backdrop { position: absolute; inset: 0; background: rgba(3,8,18,.72); backdrop-filter: blur(3px); }
+.mounted-target-choice__dialog { position: relative; width: min(620px, 92vw); padding: 22px; border: 2px solid #d9ad52; border-radius: 16px; background: linear-gradient(180deg,#17243b,#0a1220); color: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.72),0 0 28px rgba(230,184,83,.32); text-align: center; }
+.mounted-target-choice__dialog h2 { margin: 0 0 8px; color: #f3d58b; }
+.mounted-target-choice__options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+.mounted-target-choice__option { min-height: 220px; padding: 10px; border: 2px solid rgba(255,255,255,.22); border-radius: 12px; background: rgba(255,255,255,.06); color: white; cursor: pointer; display: grid; grid-template-rows: 1fr auto auto; gap: 6px; }
+.mounted-target-choice__option:hover,.mounted-target-choice__option:focus-visible { border-color: #f0c35d; box-shadow: 0 0 24px rgba(240,195,93,.52); transform: translateY(-2px); }
+.mounted-target-choice__option img { width: 100%; height: 160px; object-fit: contain; }
+.mounted-target-choice__option strong { color: #f3d58b; font-size: 16px; }
+.mounted-target-choice__cancel { min-width: 120px; padding: 10px 16px; border-radius: 8px; border: 1px solid #8d98aa; background: #263247; color: white; cursor: pointer; }
+.knight-placement-notice { justify-content: flex-start !important; align-items: flex-end !important; padding: 82px 18px 0 0 !important; }
+.knight-placement-notice .knight-effect-modal__dialog { width: min(300px, 42vw) !important; padding: 12px 14px !important; border-radius: 10px !important; }
+.knight-placement-notice .knight-effect-modal__dialog h2 { font-size: 17px; margin-bottom: 4px; }
+.knight-placement-notice .knight-effect-modal__dialog p { font-size: 13px; margin: 4px 0 8px; }
+@media (max-width: 760px) { .mounted-target-choice__options { grid-template-columns: 1fr; } .mounted-target-choice__option { min-height: 150px; } .mounted-target-choice__option img { height: 100px; } .knight-placement-notice { align-items: center !important; padding: 70px 8px 0 !important; } .knight-placement-notice .knight-effect-modal__dialog { width: min(300px, 88vw) !important; } }

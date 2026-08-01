@@ -1082,6 +1082,56 @@ function isUnitExhausted(unit) {
   return !canMove && !canAttack;
 }
 
+function getEquippedItemPreviewCard(item) {
+  if (!item) return null;
+  const source = item.sourceCard ?? item.card ?? null;
+  const databaseCard = typeof getCardById === "function"
+    ? getCardById(item.databaseId ?? item.gameplayId ?? item.cardId ?? item.id)
+    : null;
+  const preview = { ...(databaseCard ?? {}), ...(source ?? {}), ...item };
+  preview.cardImage ??= source?.cardImage ?? databaseCard?.cardImage ?? item.image ?? item.artwork ?? null;
+  preview.printedCost ??= item.printedCost ?? item.cost ?? 0;
+  preview.printedAttack ??= item.printedAttack ?? item.attack ?? item.atk ?? 0;
+  preview.printedHP ??= item.printedHP ?? item.hp ?? item.health ?? 0;
+  preview.printedRange ??= item.printedRange ?? item.range ?? 0;
+  preview.printedSpeed ??= item.printedSpeed ?? item.speed ?? item.spd ?? 0;
+  preview.effectText ??= item.effectText ?? item.rulesText ?? item.text ?? "";
+  return preview;
+}
+
+function showMountedAttackTargetChoice(attacker, mount) {
+  const rider = typeof getRider === "function" ? getRider(mount) : null;
+  if (!rider) return Promise.resolve(mount);
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "mounted-target-choice";
+    overlay.innerHTML = `
+      <div class="mounted-target-choice__backdrop"></div>
+      <section class="mounted-target-choice__dialog" role="dialog" aria-modal="true" aria-label="Choose attack target">
+        <h2>Choose Attack Target</h2>
+        <p>${attacker.name} is attacking a mounted pair. Choose which card takes the combat damage.</p>
+        <div class="mounted-target-choice__options"></div>
+        <button type="button" class="mounted-target-choice__cancel">Cancel</button>
+      </section>`;
+    const options = overlay.querySelector(".mounted-target-choice__options");
+    const make = (unit, label) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "mounted-target-choice__option";
+      const art = unit.cardImage || unit.tileImage || "";
+      button.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
+      button.addEventListener("click", () => finish(unit));
+      return button;
+    };
+    options.append(make(rider, "Character"), make(mount, "Mount"));
+    const finish = (choice) => { overlay.remove(); resolve(choice); };
+    overlay.querySelector(".mounted-target-choice__cancel").addEventListener("click", () => finish(null));
+    overlay.querySelector(".mounted-target-choice__backdrop").addEventListener("click", () => finish(null));
+    document.body.appendChild(overlay);
+    options.querySelector("button")?.focus();
+  });
+}
+
 function createUnitToken(unit) {
   const token = document.createElement("div");
 
@@ -1269,25 +1319,30 @@ function createUnitToken(unit) {
     const itemRail = document.createElement("div");
     itemRail.className = "equipped-item-rail";
     itemRail.setAttribute("aria-label", `${attachedItems.length} equipped Item${attachedItems.length === 1 ? "" : "s"}`);
+    ["pointerenter", "pointermove", "mouseover", "mouseenter"].forEach((type) => {
+      itemRail.addEventListener(type, (event) => event.stopPropagation(), true);
+    });
 
     attachedItems.forEach((item, index) => {
       const itemBadge = document.createElement("button");
       itemBadge.type = "button";
       itemBadge.className = "equipped-item-badge";
       itemBadge.textContent = attachedItems.length === 1 ? "ITEM" : `ITEM ${index + 1}`;
+      const previewCard = getEquippedItemPreviewCard(item);
       itemBadge.title = item.name;
       itemBadge.setAttribute("aria-label", `Inspect equipped Item ${item.name}`);
-      itemBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
+      itemBadge.addEventListener("pointerdown", (event) => event.stopPropagation(), true);
       itemBadge.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        renderCardPreview(item);
+        GameState.cardPreviewOverride = previewCard;
+        renderCardPreview(previewCard);
       });
       const previewItem = (event) => {
         event?.preventDefault?.();
         event?.stopPropagation?.();
-        GameState.cardPreviewOverride = item;
-        renderCardPreview(item);
+        GameState.cardPreviewOverride = previewCard;
+        renderCardPreview(previewCard);
       };
       itemBadge.addEventListener("pointerenter", previewItem);
       itemBadge.addEventListener("pointermove", previewItem);
@@ -1446,6 +1501,15 @@ function handleBattlefieldClick(x, y) {
       GameState.attackableUnitIds.has(clickedUnit.id);
 
     if (isValidAttack) {
+      const rider = typeof getRider === "function" ? getRider(clickedUnit) : null;
+      if (rider) {
+        showMountedAttackTargetChoice(selectedUnit, clickedUnit).then((chosenTarget) => {
+          if (!chosenTarget) return;
+          GameState.preferredMountedDamageTargetId = chosenTarget.id;
+          attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
+        });
+        return;
+      }
       attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
       return;
     }
