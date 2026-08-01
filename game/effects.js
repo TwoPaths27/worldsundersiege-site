@@ -508,6 +508,7 @@ function applyLancelotRevealEffect(unit) {
 
   addContinuousEffect({
     id: effectId,
+    active: true,
     source: unit,
     controller: unit.controller ?? unit.owner,
     target: unit.id,
