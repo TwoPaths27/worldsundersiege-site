@@ -10,28 +10,9 @@
 
   <title>Worlds Under Siege — Battle</title>
 
-  <link rel="stylesheet" href="./game.css?v=19.9.7.6">
+  <link rel="stylesheet" href="./game.css?v=19.9.7.5a">
 </head>
 <body>
-
-  <nav class="mobile-game-toolbar" aria-label="Mobile game controls">
-    <button id="mobileChatToggle" class="mobile-toolbar-button" type="button" aria-expanded="false" aria-controls="chatMessages">
-      <span aria-hidden="true">💬</span><span class="visually-hidden">Toggle chat</span>
-      <span id="mobileChatBadge" class="mobile-chat-badge" hidden>0</span>
-    </button>
-    <button id="mobileResetView" class="mobile-toolbar-button" type="button">Center Board</button>
-  </nav>
-
-  <button id="mobileExpandCard" class="mobile-expand-card" type="button" hidden>Expand</button>
-
-  <div id="mobileCardModal" class="mobile-card-modal" hidden>
-    <div class="mobile-card-modal__backdrop" data-mobile-card-close></div>
-    <section class="mobile-card-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mobileCardModalTitle">
-      <header><h2 id="mobileCardModalTitle">Card</h2><button id="mobileCardModalClose" type="button" aria-label="Close card">×</button></header>
-      <img id="mobileCardModalImage" alt="Expanded card artwork">
-    </section>
-  </div>
-
   <main class="game-layout">
     <aside class="side-panel">
       <section class="panel-card">
@@ -652,9 +633,8 @@
 <script src="./rules-cleanup.js?v=19.8"></script>
 <script src="./ai-strategy.js?v=19.6"></script>
 <script src="./battlefield.js?v=19.9.6.14"></script>
-<script src="./cards.js?v=19.9.7.5"></script>
+<script src="./cards.js?v=19.9.7.5a"></script>
 <script src="./match.js?v=19.9.2"></script>
 <script src="./game.js?v=19.9.6.4c"></script>
-<script src="./mobile-ui.js?v=19.9.7.6"></script>
 </body>
 </html>

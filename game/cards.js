@@ -106,9 +106,15 @@ function layoutHandCards() {
   const paddingLeft = parseFloat(styles.paddingLeft) || 0;
   const paddingRight = parseFloat(styles.paddingRight) || 0;
   const availableWidth = Math.max(0, hand.clientWidth - paddingLeft - paddingRight);
-  const cardWidth = cards[0].offsetWidth || 92;
-  const cardHeight = cards[0].offsetHeight || 128;
-  const normalStep = Math.max(1, cardWidth - 18);
+  // Use the declared visual card size rather than offsetWidth. Some inherited
+  // layout rules can make the button's layout box wider than the visible card,
+  // which previously produced large empty gaps between cards.
+  const cardStyles = getComputedStyle(cards[0]);
+  const declaredCardWidth = parseFloat(cardStyles.width) || 92;
+  const declaredCardHeight = parseFloat(cardStyles.height) || 128;
+  const cardWidth = Math.max(72, Math.min(110, declaredCardWidth));
+  const cardHeight = Math.max(100, Math.min(150, declaredCardHeight));
+  const normalStep = Math.max(1, Math.min(76, cardWidth - 18));
   const count = cards.length;
   const fittedStep = count > 1
     ? Math.max(0, Math.min(normalStep, (availableWidth - cardWidth) / (count - 1)))
