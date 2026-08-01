@@ -255,6 +255,7 @@ function canAttachItemToHost(item, host, context = {}) {
   if (host?.isConcealed) return false;
   if (!itemCanAttachTo(item, host, { game: GameState, ...context })) return false;
   const rule = getItemAttachmentRule(item);
+  if (typeof isCharacter === "function" && isCharacter(host)) return true;
   return getAttachedItems(host).length < rule.maxPerHost;
 }
 

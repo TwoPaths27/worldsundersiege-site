@@ -212,7 +212,8 @@ function getItemAttachmentRule(item) {
     : {};
   return {
     controllerOnly: rule.controllerOnly !== false,
-    maxPerHost: Math.max(1, Number(rule.maxPerHost ?? 1)),
+    // Characters may carry any number of Items unless a specific Item explicitly sets a limit.
+    maxPerHost: rule.maxPerHost == null ? Number.POSITIVE_INFINITY : Math.max(1, Number(rule.maxPerHost)),
     requiresTypes: normalizeStringCollection(rule.requiresTypes),
     requiresTraits: normalizeStringCollection(rule.requiresTraits),
     excludesTypes: normalizeStringCollection(rule.excludesTypes),

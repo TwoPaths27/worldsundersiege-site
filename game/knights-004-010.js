@@ -83,6 +83,130 @@
     });
   }
 
+  function createKnightModalBase({ title, message = "", wide = false } = {}) {
+    const modal = document.createElement("div");
+    modal.className = "knight-effect-modal";
+    modal.innerHTML = `
+      <div class="knight-effect-modal__backdrop"></div>
+      <section class="knight-effect-modal__dialog${wide ? " knight-effect-modal__dialog--wide" : ""}" role="dialog" aria-modal="true">
+        <p class="knight-effect-modal__eyebrow">Card Effect</p>
+        <h2></h2>
+        <p class="knight-effect-modal__message"></p>
+        <div class="knight-effect-modal__body"></div>
+        <div class="knight-effect-modal__actions"></div>
+      </section>`;
+    modal.querySelector("h2").textContent = title;
+    modal.querySelector(".knight-effect-modal__message").textContent = message;
+    document.body.appendChild(modal);
+    document.body.classList.add("modal-open");
+    return modal;
+  }
+
+  function closeKnightModal(modal) {
+    modal?.remove();
+    if (!document.querySelector(".knight-effect-modal")) document.body.classList.remove("modal-open");
+  }
+
+  function createKnightButton(label, kind = "confirm") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `knight-effect-modal__button knight-effect-modal__button--${kind}`;
+    button.textContent = label;
+    return button;
+  }
+
+  function showKnightChoiceModal(title, message, { yesLabel = "Yes", noLabel = "No" } = {}) {
+    return new Promise((resolve) => {
+      const modal = createKnightModalBase({ title, message });
+      const actions = modal.querySelector(".knight-effect-modal__actions");
+      const no = createKnightButton(noLabel, "cancel");
+      const yes = createKnightButton(yesLabel, "confirm");
+      const finish = (value) => { closeKnightModal(modal); resolve(value); };
+      no.addEventListener("click", () => finish(false));
+      yes.addEventListener("click", () => finish(true));
+      actions.append(no, yes);
+      yes.focus();
+    });
+  }
+
+  function showKnightMessageModal(title, message) {
+    return new Promise((resolve) => {
+      const modal = createKnightModalBase({ title, message });
+      const ok = createKnightButton("OK", "confirm");
+      ok.addEventListener("click", () => { closeKnightModal(modal); resolve(true); });
+      modal.querySelector(".knight-effect-modal__actions").appendChild(ok);
+      ok.focus();
+    });
+  }
+
+  function animateDeckSearch(playerId) {
+    const element = document.querySelector(Number(playerId) === 1 ? "#playerDeckZone" : "#enemyDeckZone");
+    if (!element) return;
+    element.classList.remove("is-search-shuffling");
+    void element.offsetWidth;
+    element.classList.add("is-search-shuffling");
+    window.setTimeout(() => element.classList.remove("is-search-shuffling"), 1100);
+  }
+
+  function chooseLionFromDeck(player, unit) {
+    return new Promise((resolve) => {
+      const cards = [...(player.deck ?? [])].sort((a, b) => String(a?.name ?? "").localeCompare(String(b?.name ?? "")));
+      const modal = createKnightModalBase({
+        title: "Search Your Deck",
+        message: `Choose an Animal named Lion for ${unit.name}.`,
+        wide: true,
+      });
+      const body = modal.querySelector(".knight-effect-modal__body");
+      body.classList.add("knight-deck-search");
+      const list = document.createElement("div");
+      list.className = "knight-deck-search__cards";
+      let selected = null;
+
+      cards.forEach((card) => {
+        const isLion = String(card?.name ?? "").trim().toLowerCase() === "lion" &&
+          (typeof global.isAnimal !== "function" || global.isAnimal(card));
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "knight-deck-search__card";
+        button.disabled = !isLion;
+        button.dataset.cardId = card.id ?? card.databaseId ?? "";
+        if (card.cardImage) {
+          const image = document.createElement("img");
+          image.src = card.cardImage;
+          image.alt = card.name;
+          button.appendChild(image);
+        }
+        const name = document.createElement("span");
+        name.textContent = card.name;
+        button.appendChild(name);
+        button.addEventListener("mouseenter", () => global.renderCardPreview?.(card));
+        button.addEventListener("focus", () => global.renderCardPreview?.(card));
+        button.addEventListener("click", () => {
+          selected = card;
+          list.querySelectorAll(".is-selected").forEach((node) => node.classList.remove("is-selected"));
+          button.classList.add("is-selected");
+          confirm.disabled = false;
+        });
+        list.appendChild(button);
+      });
+
+      body.appendChild(list);
+      const actions = modal.querySelector(".knight-effect-modal__actions");
+      const cancel = createKnightButton("Cancel", "cancel");
+      const confirm = createKnightButton("Select Lion", "confirm");
+      confirm.disabled = true;
+      cancel.addEventListener("click", () => { closeKnightModal(modal); resolve(null); });
+      confirm.addEventListener("click", async () => {
+        if (!selected) return;
+        const sure = await showKnightChoiceModal("Confirm Lion", `Put ${selected.name} into play adjacent to ${unit.name}, then Mount ${unit.name} to it?`, { yesLabel: "Yes", noLabel: "No" });
+        if (!sure) return;
+        closeKnightModal(modal);
+        resolve(selected);
+      });
+      actions.append(cancel, confirm);
+    });
+  }
+
   function chooseOneByPrompt(cards, title) {
     if (!cards.length) return null;
     if (cards.length === 1) return cards[0];
@@ -147,35 +271,46 @@
     return unit;
   }
 
-  function resolveYvainReveal(unit) {
+  async function resolveYvainReveal(unit) {
     if (!isSirYvain(unit) || !isFaceUpInPlay(unit)) return false;
     const playerId = controllerOf(unit);
     const player = global.ensurePlayerZones?.(playerId) ?? getGameState().players?.[playerId];
     if (!player) return false;
+
+    const spaces = getAdjacentOpenSpaces(unit);
+    if (!spaces.length) {
+      await showKnightMessageModal("No Open Space", `${unit.name} has no open adjacent space for Lion.`);
+      return false;
+    }
+
+    const useEffect = await showKnightChoiceModal(
+      "Sir Yvain — Reveal",
+      "Search your Deck for one Animal named ‘Lion’, put it into play adjacent to Sir Yvain, then Mount Sir Yvain to it?",
+      { yesLabel: "Search Deck", noLabel: "No" }
+    );
+    if (!useEffect) return false;
 
     const lions = (player.deck ?? []).filter((card) =>
       String(card?.name ?? "").trim().toLowerCase() === "lion" &&
       (typeof global.isAnimal !== "function" || global.isAnimal(card))
     );
     if (!lions.length) {
+      animateDeckSearch(playerId);
+      global.shuffleDeck?.(playerId);
+      await new Promise((resolve) => window.setTimeout(resolve, 800));
+      await showKnightMessageModal("No Lion Found", "No Lion was found in your Deck.");
       global.addLog?.(`${unit.name} found no Animal named Lion in the Deck.`);
       return false;
     }
 
-    const spaces = getAdjacentOpenSpaces(unit);
-    if (!spaces.length) {
-      global.addLog?.(`${unit.name} has no open adjacent space for Lion.`);
-      return false;
-    }
+    const lionCard = await chooseLionFromDeck(player, unit);
+    if (!lionCard) return false;
 
-    const useEffect = global.confirm?.(`${unit.name}: Search your Deck for Lion and mount it?`) !== false;
-    if (!useEffect) return false;
-
-    const lionCard = lions[0];
     const destination = spaces[0];
     const removed = global.removeFromZone?.(lionCard, global.ZoneTypes.DECK, playerId);
     if (!removed) return false;
     global.shuffleDeck?.(playerId);
+    animateDeckSearch(playerId);
 
     const lion = createEffectUnitFromCard(removed, playerId, destination.x, destination.y, `player-${playerId}-yvain-lion`);
     if (!lion) {
@@ -271,7 +406,9 @@
     );
     if (!offenders.length) return true;
     const names = offenders.map((unit) => unit.name).join(", ");
-    global.addLog?.(`${names} must attack an opposing Unit or Construct in range before the turn can end.`);
+    const warning = `${names} must attack an opposing Unit or Construct in range before the turn can end.`;
+    global.addLog?.(warning);
+    showKnightMessageModal("Sir Sagremore Must Attack", warning);
     state.selectedUnitId = offenders[0].id;
     state.selectedUnitAction = "attack";
     state.attackableUnitIds = new Set(getSagremoreRequiredTargets(offenders[0]).map((target) => target.id));
@@ -348,5 +485,7 @@
     getSagremoreRequiredTargets,
     enforceSagremoreAttackRequirement,
     applySagremoreRevealSpeed,
+    showKnightMessageModal,
+    showKnightChoiceModal,
   });
 })(window);

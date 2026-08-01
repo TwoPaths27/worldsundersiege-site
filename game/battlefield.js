@@ -1006,6 +1006,9 @@ function createUnitToken(unit) {
     GameState.inspectedUnitId === unit.id
   );
   token.classList.toggle("has-attacked", unit.hasAttacked);
+  const attachedItems = typeof getAttachedItems === "function" ? getAttachedItems(unit) : [];
+  token.classList.toggle("has-equipped-items", attachedItems.length > 0);
+  token.style.setProperty("--equipped-item-count", String(attachedItems.length));
 
   const {
     canMove,
@@ -1136,6 +1139,38 @@ function createUnitToken(unit) {
       renderCardPreview(unit);
     });
     token.appendChild(mountBadge);
+  }
+
+
+  if (attachedItems.length && GameState.selectedUnitId === unit.id) {
+    const itemRail = document.createElement("div");
+    itemRail.className = "equipped-item-rail";
+    itemRail.setAttribute("aria-label", `${attachedItems.length} equipped Item${attachedItems.length === 1 ? "" : "s"}`);
+
+    attachedItems.forEach((item, index) => {
+      const itemBadge = document.createElement("button");
+      itemBadge.type = "button";
+      itemBadge.className = "equipped-item-badge";
+      itemBadge.textContent = attachedItems.length === 1 ? "ITEM" : `ITEM ${index + 1}`;
+      itemBadge.title = item.name;
+      itemBadge.setAttribute("aria-label", `Inspect equipped Item ${item.name}`);
+      itemBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
+      itemBadge.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        renderCardPreview(item);
+      });
+      itemBadge.addEventListener("mouseenter", (event) => {
+        event.stopPropagation();
+        renderCardPreview(item);
+      });
+      itemBadge.addEventListener("focus", () => renderCardPreview(item));
+      itemBadge.addEventListener("mouseleave", () => renderCardPreview(unit));
+      itemBadge.addEventListener("blur", () => renderCardPreview(unit));
+      itemRail.appendChild(itemBadge);
+    });
+
+    token.appendChild(itemRail);
   }
 
   token.addEventListener("mouseenter", () => {
@@ -1457,6 +1492,7 @@ async function equipSelectedItem(host) {
 
   cancelInteraction();
   emitGameEvent("cardPlayed", { card: item, playerId, target: host }, { source: item });
+  playOneShot(gameplayAudio.equipItem);
   addLog(`🛡 ${player.name} equipped ${item.name} to ${host.name}.`);
   addLog(`🔋 −${item.cost} Energy.`);
   renderGame();
@@ -1761,6 +1797,9 @@ function moveSelectedUnit(destinationX, destinationY) {
   if (selectedUnit && typeof getSagremoreRequiredTargets === "function" &&
       getSagremoreRequiredTargets(selectedUnit).length > 0) {
     addLog(`${selectedUnit.name} must attack an opposing Unit or Construct already in range.`);
+    if (typeof showKnightMessageModal === "function") {
+      showKnightMessageModal("Sir Sagremore Must Attack", `${selectedUnit.name} must attack an opposing Unit or Construct already in range.`);
+    }
     GameState.selectedUnitAction = "attack";
     GameState.reachableSpaces = new Map();
     GameState.attackableUnitIds = new Set(getSagremoreRequiredTargets(selectedUnit).map((target) => target.id));

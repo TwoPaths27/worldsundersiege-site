@@ -24,6 +24,7 @@ const gameplayAudio = {
   attack: createGameAudio("../sounds/attack.mp3", GAMEPLAY_SFX_VOLUME),
   death: createGameAudio("../sounds/death.mp3", GAMEPLAY_SFX_VOLUME),
   strongholdHit: createGameAudio("../sounds/stronghold-hit.mp3", GAMEPLAY_SFX_VOLUME),
+  equipItem: createGameAudio("../sounds/Equip Item.mp3", 1.0),
 };
 
 const ambienceAudio = createGameAudio("../sounds/ambience.mp3", 0.25);
