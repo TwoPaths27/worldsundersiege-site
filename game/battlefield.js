@@ -769,6 +769,12 @@ function createBattlefieldCell(x, y) {
 
   const occupant = getUnitAt(x, y);
   const occupantRider = occupant && typeof getRider === "function" ? getRider(occupant) : null;
+  const occupantItems = occupant && typeof getAttachedItems === "function" ? getAttachedItems(occupant) : [];
+  const riderItems = occupantRider && typeof getAttachedItems === "function" ? getAttachedItems(occupantRider) : [];
+  if (occupantItems.length > 0 || riderItems.length > 0) {
+    cell.classList.add("cell-has-equipped-items");
+    cell.style.setProperty("--equipped-item-count", String(occupantItems.length + riderItems.length));
+  }
   const selectedUnit = getSelectedUnit();
   const coordinateKey = getCoordinateKey(x, y);
   const moveDistance = GameState.reachableSpaces.get(coordinateKey);
@@ -1209,6 +1215,15 @@ function createUnitToken(unit) {
     riderOverlay.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      const selectedCard = getSelectedCard();
+      if (selectedCard && isItem(selectedCard)) {
+        if (canAttachItemToHost(selectedCard, rider, { playerId: getInteractionPlayerId() })) {
+          equipSelectedItem(rider);
+        } else {
+          cancelInteraction(`Item cannot be equipped to ${rider.name}.`);
+        }
+        return;
+      }
       selectUnit(rider.id);
     });
     riderOverlay.addEventListener("mouseenter", (event) => {
@@ -1230,6 +1245,15 @@ function createUnitToken(unit) {
     mountPanel.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      const selectedCard = getSelectedCard();
+      if (selectedCard && isItem(selectedCard)) {
+        if (canAttachItemToHost(selectedCard, unit, { playerId: getInteractionPlayerId() })) {
+          equipSelectedItem(unit);
+        } else {
+          cancelInteraction(`Item cannot be equipped to ${unit.name}.`);
+        }
+        return;
+      }
       selectUnit(unit.id);
     });
     mountPanel.addEventListener("mouseenter", (event) => {
