@@ -226,6 +226,10 @@ function renderGame() {
 }
 
 function endTurn() {
+  if (typeof enforceSagremoreAttackRequirement === "function" &&
+      !enforceSagremoreAttackRequirement(GameState.activePlayer)) {
+    return false;
+  }
   return requestEndStep();
 }
 

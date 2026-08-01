@@ -1757,6 +1757,17 @@ function moveSelectedUnit(destinationX, destinationY) {
     return;
   }
 
+  /* Sir Sagremore cannot move away from a mandatory attack. */
+  if (selectedUnit && typeof getSagremoreRequiredTargets === "function" &&
+      getSagremoreRequiredTargets(selectedUnit).length > 0) {
+    addLog(`${selectedUnit.name} must attack an opposing Unit or Construct already in range.`);
+    GameState.selectedUnitAction = "attack";
+    GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = new Set(getSagremoreRequiredTargets(selectedUnit).map((target) => target.id));
+    renderGame();
+    return false;
+  }
+
   const destinationKey = getCoordinateKey(destinationX, destinationY);
   const movementCost = GameState.reachableSpaces.get(destinationKey);
 

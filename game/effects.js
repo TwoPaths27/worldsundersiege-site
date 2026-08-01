@@ -209,6 +209,37 @@ const BattlefieldAuraDefinitions = Object.freeze([
       context.speed += 1;
     },
   },
+  {
+    id: "sir-galahad-other-units",
+    sourceMatches(source) {
+      return typeof window.isSirGalahad === "function" && window.isSirGalahad(source);
+    },
+    appliesTo(target, source) {
+      return Boolean(target && source && target.id === source.id);
+    },
+    modify(context, target, source) {
+      const controller = getControllerId(source);
+      const battlefieldCount = (GameState.units ?? []).filter((unit) =>
+        unit && unit.id !== source.id && getControllerId(unit) === controller &&
+        (typeof isUnit !== "function" || isUnit(unit))
+      ).length;
+      const armyCount = (GameState.players?.[controller]?.armyZone ?? []).length;
+      context.attack += battlefieldCount + armyCount;
+    },
+  },
+  {
+    id: "sir-gawain-hand-strength",
+    sourceMatches(source) {
+      return typeof window.isSirGawain === "function" && window.isSirGawain(source);
+    },
+    appliesTo(target, source) {
+      return Boolean(target && source && target.id === source.id);
+    },
+    modify(context, target, source) {
+      const controller = getControllerId(source);
+      context.attack += (GameState.players?.[controller]?.hand ?? []).length;
+    },
+  },
 ]);
 
 function getActiveBattlefieldAuras() {
