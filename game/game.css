@@ -8013,15 +8013,25 @@ body.is-game-animating .selected-unit-actions button {
 }
 
 
-/* V19.9.7.5b — Hand hover clearance hotfix */
+/* V19.9.7.5d — Hand hover clearance without bottom overflow */
 .hand-dock,
 .hand-panel,
 .hand-fan.is-dynamic-layout {
   overflow: visible;
 }
 
+/* Keep the fan inside the fixed hand dock. The earlier 214px minimum pushed
+ * cards below the viewport on shorter screens. Hovered cards escape upward
+ * through visible overflow instead of increasing the layout height. */
 .hand-fan.is-dynamic-layout {
-  min-height: var(--hand-layout-height, 214px);
+  min-height: 0;
+  height: calc(100% - 22px);
+  padding-top: 38px;
+  padding-bottom: 6px;
+}
+
+.hand-fan.is-dynamic-layout .hand-card {
+  bottom: 6px;
 }
 
 /* Keep enlarged cards above the hand header and neighboring HUD elements. */

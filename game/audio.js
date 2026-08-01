@@ -144,7 +144,7 @@ function primeEndGameAudio() {
 /* Premium reveal presentation -------------------------------------------- */
 const kingArthurRevealAudio = {
   voice: createGameAudio("../sounds/King Arthur.mp3", 1.0),
-  music: createGameAudio("../sounds/King Arthur 2.mp3", 0.5),
+  music: createGameAudio("../sounds/King Arthur 2.mp3", 0.6),
 };
 let premiumRevealPlaybackToken = 0;
 
