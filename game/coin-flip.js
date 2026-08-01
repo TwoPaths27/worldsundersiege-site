@@ -61,6 +61,24 @@
       audio.preload = "auto";
       audio.volume = 1;
       audio.src = COIN_SOUND_URL;
+
+      // HTMLMediaElement volume caps at 1. Use a small Web Audio gain boost
+      // so the flip is about 25% louder without changing the source file.
+      try {
+        const AudioContextClass = global.AudioContext || global.webkitAudioContext;
+        if (AudioContextClass) {
+          const context = new AudioContextClass();
+          const source = context.createMediaElementSource(audio);
+          const gain = context.createGain();
+          gain.gain.value = 1.25;
+          source.connect(gain);
+          gain.connect(context.destination);
+          if (context.state === "suspended") context.resume().catch(() => {});
+          audio.__wusAudioContext = context;
+        }
+      } catch (error) {
+        console.warn("[Coin Flip] Extra volume boost unavailable; using maximum media volume.", error);
+      }
       audio.addEventListener("error", () => {
         console.error(`[Coin Flip] Could not load ${COIN_SOUND_URL}. The file must exist in the main-branch sounds folder at ../sounds/coin-flip.mp3 relative to the game page.`);
       }, { once: true });

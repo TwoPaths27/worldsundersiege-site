@@ -149,8 +149,13 @@
   }
 
   async function chooseLionFromDeck(player, unit) {
-    if (typeof global.showDeckSearchModal !== "function") return null;
-    const selected = await global.showDeckSearchModal(player.id, {
+    if (typeof global.showDeckSearchModal !== "function") {
+      console.error("[Sir Yvain] Deck search UI is unavailable.");
+      await showKnightMessageModal("Search Unavailable", "The Deck search window could not be opened.");
+      return null;
+    }
+    const playerId = Number(player?.id ?? player?.playerId ?? controllerOf(unit));
+    const selected = await global.showDeckSearchModal(playerId, {
       title: "Search Your Deck",
       message: `Choose an Animal named Lion for ${unit.name}.`,
       confirmLabel: "Select Lion",

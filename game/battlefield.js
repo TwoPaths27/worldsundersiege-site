@@ -863,8 +863,14 @@ function createBattlefieldCell(x, y) {
       }
     }
 
-    if (GameState.inspectedUnitId === occupant.id || GameState.inspectedUnitId === occupantRider?.id) {
+    const inspectedOccupant = GameState.inspectedUnitId === occupant.id || GameState.inspectedUnitId === occupantRider?.id;
+    if (inspectedOccupant) {
       cell.classList.add("cell-inspected");
+      const inspectedUnit = GameState.inspectedUnitId === occupantRider?.id ? occupantRider : occupant;
+      const isEnemyInspection = Number(inspectedUnit?.controller ?? inspectedUnit?.owner) !== Number(GameState.activePlayer);
+      if (isEnemyInspection && !selectedOccupant) {
+        cell.appendChild(createSelectedUnitControls(inspectedUnit));
+      }
     }
 
     if (isAttackTarget) {
@@ -1202,12 +1208,19 @@ function createUnitToken(unit) {
         event.stopPropagation();
         renderCardPreview(item);
       });
-      itemBadge.addEventListener("mouseenter", (event) => {
-        event.stopPropagation();
+      const previewItem = (event) => {
+        event?.stopPropagation?.();
         renderCardPreview(item);
+      };
+      itemBadge.addEventListener("pointerenter", previewItem);
+      itemBadge.addEventListener("pointermove", previewItem);
+      itemBadge.addEventListener("mouseenter", previewItem);
+      itemBadge.addEventListener("mouseover", previewItem);
+      itemBadge.addEventListener("focus", previewItem);
+      itemBadge.addEventListener("mouseleave", (event) => {
+        if (event.relatedTarget && itemRail.contains(event.relatedTarget)) return;
+        renderCardPreview(unit);
       });
-      itemBadge.addEventListener("focus", () => renderCardPreview(item));
-      itemBadge.addEventListener("mouseleave", () => renderCardPreview(unit));
       itemBadge.addEventListener("blur", () => renderCardPreview(unit));
       itemRail.appendChild(itemBadge);
     });
@@ -1222,7 +1235,10 @@ function createUnitToken(unit) {
     });
   });
 
-  token.addEventListener("mouseleave", () => {
+  token.addEventListener("mouseleave", (event) => {
+    // Equipped Item buttons can sit outside the visual token bounds. Do not
+    // overwrite their preview while the pointer is moving onto that rail.
+    if (event.relatedTarget?.closest?.(".equipped-item-rail")) return;
     renderCardPreview();
   });
 
@@ -1474,7 +1490,21 @@ function selectUnit(unitId) {
     return;
   }
 
-  if (unit.owner !== GameState.activePlayer) {
+  if (Number(unit.controller ?? unit.owner) !== Number(GameState.activePlayer)) {
+    // Enemy cards are inspectable but never become an actionable selection.
+    cancelInteraction();
+    GameState.selectedUnitId = null;
+    GameState.inspectedUnitId = unit.id;
+    GameState.selectedUnitAction = "inspect-enemy";
+    GameState.reachableSpaces = new Map();
+    GameState.attackableUnitIds = new Set();
+    GameState.attackableStrongholdPlayerId = null;
+    GameState.constructOperatorIds = new Set();
+    GameState.pendingConstructOperatorId = null;
+    GameState.mountTargetIds = new Set();
+    GameState.dismountSpaces = new Map();
+    renderCardPreview(unit);
+    renderGame();
     return;
   }
 
