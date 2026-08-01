@@ -148,62 +148,64 @@
     window.setTimeout(() => element.classList.remove("is-search-shuffling"), 1100);
   }
 
-  function chooseLionFromDeck(player, unit) {
+  async function chooseLionFromDeck(player, unit) {
+    if (typeof global.showDeckSearchModal !== "function") return null;
+    const selected = await global.showDeckSearchModal(player.id, {
+      title: "Search Your Deck",
+      message: `Choose an Animal named Lion for ${unit.name}.`,
+      confirmLabel: "Select Lion",
+      filter: (card) => String(card?.name ?? "").trim().toLowerCase() === "lion" &&
+        (typeof global.isAnimal !== "function" || global.isAnimal(card)),
+    });
+    if (!selected) return null;
+    const sure = await showKnightChoiceModal(
+      "Confirm Lion",
+      `Put ${selected.name} into play adjacent to ${unit.name}, then Mount ${unit.name} to it?`,
+      { yesLabel: "Yes", noLabel: "No" }
+    );
+    return sure ? selected : null;
+  }
+
+  function chooseAdjacentSpaceOnBoard(unit, spaces) {
     return new Promise((resolve) => {
-      const cards = [...(player.deck ?? [])].sort((a, b) => String(a?.name ?? "").localeCompare(String(b?.name ?? "")));
-      const modal = createKnightModalBase({
-        title: "Search Your Deck",
-        message: `Choose an Animal named Lion for ${unit.name}.`,
-        wide: true,
+      const battlefield = document.querySelector("#battlefield");
+      if (!battlefield || !spaces.length) { resolve(null); return; }
+      const keys = new Set(spaces.map(({ x, y }) => `${x},${y}`));
+      const notice = createKnightModalBase({
+        title: "Choose Lion's Space",
+        message: `Choose an open space adjacent to ${unit.name}.`,
       });
-      const body = modal.querySelector(".knight-effect-modal__body");
-      body.classList.add("knight-deck-search");
-      const list = document.createElement("div");
-      list.className = "knight-deck-search__cards";
-      let selected = null;
-
-      cards.forEach((card) => {
-        const isLion = String(card?.name ?? "").trim().toLowerCase() === "lion" &&
-          (typeof global.isAnimal !== "function" || global.isAnimal(card));
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "knight-deck-search__card";
-        button.disabled = !isLion;
-        button.dataset.cardId = card.id ?? card.databaseId ?? "";
-        if (card.cardImage) {
-          const image = document.createElement("img");
-          image.src = card.cardImage;
-          image.alt = card.name;
-          button.appendChild(image);
-        }
-        const name = document.createElement("span");
-        name.textContent = card.name;
-        button.appendChild(name);
-        button.addEventListener("mouseenter", () => global.renderCardPreview?.(card));
-        button.addEventListener("focus", () => global.renderCardPreview?.(card));
-        button.addEventListener("click", () => {
-          selected = card;
-          list.querySelectorAll(".is-selected").forEach((node) => node.classList.remove("is-selected"));
-          button.classList.add("is-selected");
-          confirm.disabled = false;
-        });
-        list.appendChild(button);
-      });
-
-      body.appendChild(list);
-      const actions = modal.querySelector(".knight-effect-modal__actions");
+      notice.classList.add("knight-placement-notice");
+      const actions = notice.querySelector(".knight-effect-modal__actions");
       const cancel = createKnightButton("Cancel", "cancel");
-      const confirm = createKnightButton("Select Lion", "confirm");
-      confirm.disabled = true;
-      cancel.addEventListener("click", () => { closeKnightModal(modal); resolve(null); });
-      confirm.addEventListener("click", async () => {
-        if (!selected) return;
-        const sure = await showKnightChoiceModal("Confirm Lion", `Put ${selected.name} into play adjacent to ${unit.name}, then Mount ${unit.name} to it?`, { yesLabel: "Yes", noLabel: "No" });
-        if (!sure) return;
-        closeKnightModal(modal);
-        resolve(selected);
-      });
-      actions.append(cancel, confirm);
+      actions.appendChild(cancel);
+
+      const legalCells = [...battlefield.querySelectorAll(".battlefield-cell")].filter((cell) =>
+        keys.has(`${Number(cell.dataset.x)},${Number(cell.dataset.y)}`)
+      );
+      legalCells.forEach((cell) => cell.classList.add("cell-effect-placement-target"));
+      document.body.classList.add("effect-placement-active");
+
+      const cleanup = () => {
+        battlefield.removeEventListener("click", onClick, true);
+        legalCells.forEach((cell) => cell.classList.remove("cell-effect-placement-target"));
+        document.body.classList.remove("effect-placement-active");
+        closeKnightModal(notice);
+      };
+      const finish = (space) => { cleanup(); resolve(space); };
+      const onClick = (event) => {
+        const cell = event.target.closest?.(".battlefield-cell");
+        if (!cell) return;
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        const key = `${x},${y}`;
+        if (!keys.has(key)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        finish(spaces.find((space) => space.x === x && space.y === y) ?? null);
+      };
+      battlefield.addEventListener("click", onClick, true);
+      cancel.addEventListener("click", () => finish(null));
     });
   }
 
@@ -306,7 +308,8 @@
     const lionCard = await chooseLionFromDeck(player, unit);
     if (!lionCard) return false;
 
-    const destination = spaces[0];
+    const destination = await chooseAdjacentSpaceOnBoard(unit, spaces);
+    if (!destination) return false;
     const removed = global.removeFromZone?.(lionCard, global.ZoneTypes.DECK, playerId);
     if (!removed) return false;
     global.shuffleDeck?.(playerId);

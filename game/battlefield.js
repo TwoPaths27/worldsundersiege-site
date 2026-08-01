@@ -405,6 +405,44 @@ function createSelectedUnitControls(unit) {
     `${unit.name} statistics and actions`
   );
 
+  const isEnemyInspection = Number(unit.controller ?? unit.owner) !== Number(GameState.activePlayer);
+  if (isEnemyInspection) {
+    controls.classList.add("selected-unit-controls--enemy-stats");
+
+    const topRow = document.createElement("div");
+    topRow.className = "selected-unit-controls__row selected-unit-controls__row--top";
+    const bottomRow = document.createElement("div");
+    bottomRow.className = "selected-unit-controls__row selected-unit-controls__row--bottom";
+
+    const makeEnemyStat = (label, value, kind) => {
+      const control = createSelectedUnitControl({
+        label,
+        value,
+        kind,
+        action: null,
+        isActive: false,
+        isDisabled: false,
+      });
+      control.classList.add("is-enemy-stat", "is-read-only");
+      control.removeAttribute("role");
+      control.tabIndex = -1;
+      return control;
+    };
+
+    topRow.append(
+      makeEnemyStat("RNG", typeof getEffectiveRange === "function" ? getEffectiveRange(unit) : unit.currentRange, "range"),
+      makeEnemyStat("SPD", typeof getRemainingEffectiveSpeed === "function" ? getRemainingEffectiveSpeed(unit) : unit.remainingSpeed, "speed")
+    );
+    bottomRow.append(
+      makeEnemyStat("ATK", unit.currentAttack, "attack"),
+      makeEnemyStat("HP", unit.currentHP, "health")
+    );
+    controls.append(topRow, bottomRow);
+    controls.addEventListener("pointerdown", (event) => event.stopPropagation());
+    controls.addEventListener("click", (event) => event.stopPropagation());
+    return controls;
+  }
+
   const canMove = !isConstruct(unit) && unit.remainingSpeed > 0;
   const attackAvailable = isConstruct(unit)
     ? constructHasLegalAttackTarget(unit)
@@ -1122,23 +1160,27 @@ function createUnitToken(unit) {
     });
     token.appendChild(riderOverlay);
 
-    const mountBadge = document.createElement("button");
-    mountBadge.type = "button";
-    mountBadge.className = "mounted-mount-badge";
-    mountBadge.textContent = `Mount: ${unit.name}`;
-    mountBadge.title = `Select Mount: ${unit.name}`;
-    mountBadge.setAttribute("aria-label", `Select Mount ${unit.name}`);
-    mountBadge.addEventListener("pointerdown", (event) => event.stopPropagation());
-    mountBadge.addEventListener("click", (event) => {
+    const mountPanel = document.createElement("button");
+    mountPanel.type = "button";
+    mountPanel.className = "mounted-mount-panel";
+    mountPanel.title = `${unit.name} — Mount`;
+    mountPanel.setAttribute("aria-label", `Select Mount ${unit.name}`);
+    const mountName = document.createElement("span");
+    mountName.className = "mounted-mount-panel__name";
+    mountName.textContent = unit.name;
+    mountPanel.appendChild(mountName);
+    mountPanel.addEventListener("pointerdown", (event) => event.stopPropagation());
+    mountPanel.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       selectUnit(unit.id);
     });
-    mountBadge.addEventListener("mouseenter", (event) => {
+    mountPanel.addEventListener("mouseenter", (event) => {
       event.stopPropagation();
       renderCardPreview(unit);
     });
-    token.appendChild(mountBadge);
+    mountPanel.addEventListener("focus", () => renderCardPreview(unit));
+    token.appendChild(mountPanel);
   }
 
 
@@ -2777,4 +2819,21 @@ function renderConcealedRevealControl(unit) {
   button.style.left = `${Math.max(6, cellRect.left - stageRect.left - button.offsetWidth - 10)}px`;
   button.style.top = `${cellRect.top - stageRect.top + (cellRect.height / 2)}px`;
   button.onclick = () => revealUnit(unit, "manual");
+}
+
+
+/* Effect activation presentation --------------------------------------- */
+function showCardEffectActivation(source, options = {}) {
+  const sourceId = typeof source === "object" ? source?.id : source;
+  if (!sourceId) return false;
+
+  const token = elements?.battlefield?.querySelector?.(`.unit-token[data-unit-id="${CSS.escape(String(sourceId))}"]`);
+  if (!token) return false;
+
+  token.classList.remove("is-effect-activating");
+  // Force reflow so repeated activations replay the animation.
+  void token.offsetWidth;
+  token.classList.add("is-effect-activating");
+  window.setTimeout(() => token.classList.remove("is-effect-activating"), Number(options.duration ?? 1050));
+  return true;
 }

@@ -119,6 +119,143 @@ function searchDeck(playerOrId, options = {}) {
   return moved;
 }
 
+
+
+/* V19.9.7.9 — shared themed Deck search browser.
+ * Card-specific effects should call searchDeckInteractive() rather than
+ * inventing their own prompts. The existing synchronous searchDeck() remains
+ * available for AI and legacy effects.
+ */
+function createDeckSearchModalBase({ title = "Search Deck", message = "Choose a card.", confirmLabel = "Choose", cancelLabel = "Cancel" } = {}) {
+  const modal = document.createElement("div");
+  modal.className = "deck-search-modal";
+  modal.innerHTML = `
+    <div class="deck-search-modal__backdrop"></div>
+    <section class="deck-search-modal__dialog" role="dialog" aria-modal="true">
+      <p class="deck-search-modal__eyebrow">Deck Search</p>
+      <h2 class="deck-search-modal__title"></h2>
+      <p class="deck-search-modal__message"></p>
+      <div class="deck-search-modal__list" role="listbox"></div>
+      <div class="deck-search-modal__actions">
+        <button type="button" class="deck-search-modal__button deck-search-modal__button--cancel"></button>
+        <button type="button" class="deck-search-modal__button deck-search-modal__button--confirm" disabled></button>
+      </div>
+    </section>`;
+  modal.querySelector(".deck-search-modal__title").textContent = title;
+  modal.querySelector(".deck-search-modal__message").textContent = message;
+  modal.querySelector(".deck-search-modal__button--cancel").textContent = cancelLabel;
+  modal.querySelector(".deck-search-modal__button--confirm").textContent = confirmLabel;
+  document.body.appendChild(modal);
+  document.body.classList.add("modal-open");
+  return modal;
+}
+
+function closeDeckSearchModal(modal) {
+  modal?.remove();
+  if (!document.querySelector(".deck-search-modal, .knight-effect-modal")) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function showDeckSearchModal(playerOrId, options = {}) {
+  const playerId = zoneEffectPlayerId(playerOrId);
+  const player = typeof ensurePlayerZones === "function" ? ensurePlayerZones(playerId) : zoneEffectPlayer(playerId);
+  if (!player) return Promise.resolve(null);
+
+  const predicate = normalizeCardFilter(options.filter);
+  const cards = [...(player.deck ?? [])].sort((a, b) =>
+    String(a?.name ?? "").localeCompare(String(b?.name ?? ""), undefined, { sensitivity: "base" })
+  );
+
+  return new Promise((resolve) => {
+    const modal = createDeckSearchModalBase({
+      title: options.title ?? "Search Your Deck",
+      message: options.message ?? "Choose a card from your Deck.",
+      confirmLabel: options.confirmLabel ?? "Choose Card",
+      cancelLabel: options.cancelLabel ?? "Cancel",
+    });
+    const list = modal.querySelector(".deck-search-modal__list");
+    const confirm = modal.querySelector(".deck-search-modal__button--confirm");
+    const cancel = modal.querySelector(".deck-search-modal__button--cancel");
+    let selected = null;
+
+    const finish = (value) => {
+      closeDeckSearchModal(modal);
+      resolve(value);
+    };
+
+    if (!cards.length) {
+      const empty = document.createElement("p");
+      empty.className = "deck-search-modal__empty";
+      empty.textContent = "Your Deck is empty.";
+      list.appendChild(empty);
+    }
+
+    cards.forEach((card) => {
+      const legal = predicate(card);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "deck-search-modal__card";
+      button.disabled = !legal;
+      button.setAttribute("role", "option");
+      button.setAttribute("aria-selected", "false");
+      button.title = legal ? `Select ${card.name}` : `${card.name} is not a legal choice`;
+
+      const image = document.createElement("div");
+      image.className = "deck-search-modal__card-image";
+      const art = card.cardImage || card.image || card.artwork || "";
+      if (art) image.style.backgroundImage = `url("${art}")`;
+
+      const name = document.createElement("span");
+      name.className = "deck-search-modal__card-name";
+      name.textContent = card.name ?? "Unknown Card";
+      button.append(image, name);
+
+      const choose = () => {
+        if (!legal) return;
+        selected = card;
+        list.querySelectorAll(".deck-search-modal__card").forEach((node) => {
+          const active = node === button;
+          node.classList.toggle("is-selected", active);
+          node.setAttribute("aria-selected", String(active));
+        });
+        confirm.disabled = false;
+        if (typeof renderCardPreview === "function") renderCardPreview(card);
+      };
+      button.addEventListener("click", choose);
+      button.addEventListener("mouseenter", () => { if (typeof renderCardPreview === "function") renderCardPreview(card); });
+      button.addEventListener("focus", () => { if (typeof renderCardPreview === "function") renderCardPreview(card); });
+      button.addEventListener("dblclick", () => { choose(); finish(selected); });
+      list.appendChild(button);
+    });
+
+    cancel.addEventListener("click", () => finish(null));
+    confirm.addEventListener("click", () => finish(selected));
+    modal.querySelector(".deck-search-modal__backdrop").addEventListener("click", () => finish(null));
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") finish(null);
+    });
+    cancel.focus();
+  });
+}
+
+async function searchDeckInteractive(playerOrId, options = {}) {
+  const playerId = zoneEffectPlayerId(playerOrId);
+  const card = await showDeckSearchModal(playerId, options);
+  if (!card) return [];
+  if (options.confirmSelection) {
+    const accepted = await options.confirmSelection(card);
+    if (!accepted) return [];
+  }
+  const moved = searchDeck(playerId, {
+    ...options,
+    amount: 1,
+    choose: () => [card],
+    render: options.render,
+  });
+  return moved;
+}
+
 function revealCardsFromDeck(playerOrId, amount = 1, options = {}) {
   const playerId = zoneEffectPlayerId(playerOrId);
   const player = typeof ensurePlayerZones === "function" ? ensurePlayerZones(playerId) : zoneEffectPlayer(playerId);
@@ -309,6 +446,8 @@ window.WUSZoneEffects = Object.freeze({
   getCardsInZone,
   chooseCards,
   searchDeck,
+  showDeckSearchModal,
+  searchDeckInteractive,
   revealCardsFromDeck,
   clearRevealedCards,
   moveRevealedCards,
@@ -322,6 +461,8 @@ window.WUSZoneEffects = Object.freeze({
 });
 
 window.searchDeck = searchDeck;
+window.showDeckSearchModal = showDeckSearchModal;
+window.searchDeckInteractive = searchDeckInteractive;
 window.revealCardsFromDeck = revealCardsFromDeck;
 window.clearRevealedCards = clearRevealedCards;
 window.moveRevealedCards = moveRevealedCards;

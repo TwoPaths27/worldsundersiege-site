@@ -25,6 +25,7 @@ const gameplayAudio = {
   death: createGameAudio("../sounds/death.mp3", GAMEPLAY_SFX_VOLUME),
   strongholdHit: createGameAudio("../sounds/stronghold-hit.mp3", GAMEPLAY_SFX_VOLUME),
   equipItem: createGameAudio("../sounds/Equip Item.mp3", 1.0),
+  activate: createGameAudio("../sounds/Activate.mp3", 1.0),
 };
 
 const ambienceAudio = createGameAudio("../sounds/ambience.mp3", 0.25);
@@ -143,6 +144,11 @@ function primeEndGameAudio() {
 
 
 /* Premium reveal presentation -------------------------------------------- */
+
+function playEffectActivateSound() {
+  return playGameAudio(gameplayAudio.activate);
+}
+
 const kingArthurRevealAudio = {
   voice: createGameAudio("../sounds/King Arthur.mp3", 1.0),
   music: createGameAudio("../sounds/King Arthur 2.mp3", 0.6),
