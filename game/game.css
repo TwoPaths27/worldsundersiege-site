@@ -8349,3 +8349,72 @@ body.is-game-animating .selected-unit-actions button {
 .knight-placement-notice .knight-effect-modal__dialog h2 { font-size: 17px; margin-bottom: 4px; }
 .knight-placement-notice .knight-effect-modal__dialog p { font-size: 13px; margin: 4px 0 8px; }
 @media (max-width: 760px) { .mounted-target-choice__options { grid-template-columns: 1fr; } .mounted-target-choice__option { min-height: 150px; } .mounted-target-choice__option img { height: 100px; } .knight-placement-notice { align-items: center !important; padding: 70px 8px 0 !important; } .knight-placement-notice .knight-effect-modal__dialog { width: min(300px, 88vw) !important; } }
+
+
+/* V19.9.7.9e — reliable Item preview and Arena-style effect feedback */
+.equipped-item-rail,
+.equipped-item-badge {
+  pointer-events: auto !important;
+}
+.equipped-item-badge {
+  position: relative;
+  z-index: 1000 !important;
+}
+.mounted-target-choice.is-resolving-choice .mounted-target-choice__dialog {
+  opacity: .72;
+  transform: scale(.985);
+  pointer-events: none;
+}
+.effect-activation-arena-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 680;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,224,111,.35), transparent 38%),
+    linear-gradient(115deg, transparent 0 35%, rgba(255,193,52,.18) 50%, transparent 65%);
+  mix-blend-mode: screen;
+}
+.effect-activation-beam {
+  position: fixed;
+  z-index: 790;
+  height: 7px;
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,246,187,0), #fff9c9 18%, #ffd85b 54%, rgba(255,151,0,0));
+  box-shadow: 0 0 8px #fff5b0, 0 0 22px #ffc52d, 0 0 38px rgba(255,140,0,.75);
+  animation: wus-effect-beam 900ms cubic-bezier(.14,.7,.22,1) both;
+}
+.unit-token.is-effect-impacted {
+  z-index: 740 !important;
+  animation: wus-effect-impact 850ms ease-out;
+}
+.effect-impact-number {
+  position: fixed;
+  z-index: 15000;
+  pointer-events: none;
+  color: #fff7d0;
+  font-size: 28px;
+  font-weight: 1000;
+  text-shadow: 0 2px 2px #561f00, 0 0 8px #ffcf4c, 0 0 18px #ff8500;
+  animation: wus-effect-impact-number 1.05s ease-out both;
+}
+@keyframes wus-effect-beam {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); filter: brightness(2); }
+  20% { opacity: 1; clip-path: inset(0 0 0 0); }
+  70% { opacity: .95; }
+  100% { opacity: 0; filter: brightness(.8); }
+}
+@keyframes wus-effect-impact {
+  0% { filter: brightness(1); transform: translate(0,0) scale(1); }
+  20% { filter: brightness(2.6) sepia(.7) saturate(2); transform: translate(-4px,0) scale(1.06); }
+  35% { transform: translate(4px,0) scale(1.03); }
+  50% { transform: translate(-3px,0) scale(1.02); }
+  100% { filter: brightness(1); transform: translate(0,0) scale(1); }
+}
+@keyframes wus-effect-impact-number {
+  0% { opacity: 0; transform: translate(-50%,-20%) scale(.55); }
+  22% { opacity: 1; transform: translate(-50%,-80%) scale(1.35); }
+  100% { opacity: 0; transform: translate(-50%,-185%) scale(.9); }
+}

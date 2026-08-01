@@ -387,12 +387,23 @@
       target && target.id !== kay.id && isBattlefieldUnitOrConstruct(target) &&
       distanceBetween(kay, target) > 0 && distanceBetween(kay, target) <= range
     );
+    if (!targets.length) return 0;
+
+    // Present the source and every impact before state-based actions remove
+    // destroyed cards. Players can clearly see that Sir Kay activated.
+    global.presentEffectActivation?.(kay, {
+      eventType: "sirKayEndTurn",
+      targets,
+      impactText: "−2",
+      particleCount: 34,
+      duration: 1500,
+    });
     for (const target of targets) target.currentHP = Number(target.currentHP ?? target.hp ?? 0) - 2;
-    if (targets.length) {
-      global.addLog?.(`${kay.name} deals 2 damage to ${targets.length} Unit${targets.length === 1 ? "" : "s"}/Construct${targets.length === 1 ? "" : "s"} in range.`);
-      global.runStateBasedActions?.({ source: kay, reason: "sir-kay-end-turn", render: false });
-      global.renderGame?.();
-    }
+    global.addLog?.(`${kay.name} deals 2 damage to ${targets.length} Unit${targets.length === 1 ? "" : "s"}/Construct${targets.length === 1 ? "" : "s"} in range.`);
+    global.renderGame?.();
+    window.setTimeout(() => {
+      global.runStateBasedActions?.({ source: kay, reason: "sir-kay-end-turn", render: true });
+    }, 850);
     return targets.length;
   }
 

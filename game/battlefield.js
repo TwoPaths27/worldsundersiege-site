@@ -1102,6 +1102,7 @@ function getEquippedItemPreviewCard(item) {
 function showMountedAttackTargetChoice(attacker, mount) {
   const rider = typeof getRider === "function" ? getRider(mount) : null;
   if (!rider) return Promise.resolve(mount);
+  GameState.isChoosingMountedAttackTarget = true;
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "mounted-target-choice";
@@ -1114,19 +1115,40 @@ function showMountedAttackTargetChoice(attacker, mount) {
         <button type="button" class="mounted-target-choice__cancel">Cancel</button>
       </section>`;
     const options = overlay.querySelector(".mounted-target-choice__options");
+    let finished = false;
+    const blockPointer = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+    };
+    const finish = (choice, event) => {
+      if (finished) return;
+      finished = true;
+      if (event) blockPointer(event);
+      overlay.classList.add("is-resolving-choice");
+      resolve(choice);
+      // Keep the modal over the board briefly to absorb the browser's
+      // synthetic follow-up click/tap. This prevents selecting the defender.
+      window.setTimeout(() => overlay.remove(), 260);
+    };
     const make = (unit, label) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "mounted-target-choice__option";
       const art = unit.cardImage || unit.tileImage || "";
       button.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
-      button.addEventListener("click", () => finish(unit));
+      button.addEventListener("pointerdown", blockPointer, true);
+      button.addEventListener("touchend", blockPointer, { capture: true, passive: false });
+      button.addEventListener("click", (event) => finish(unit, event), true);
       return button;
     };
     options.append(make(rider, "Character"), make(mount, "Mount"));
-    const finish = (choice) => { overlay.remove(); resolve(choice); };
-    overlay.querySelector(".mounted-target-choice__cancel").addEventListener("click", () => finish(null));
-    overlay.querySelector(".mounted-target-choice__backdrop").addEventListener("click", () => finish(null));
+    const cancel = overlay.querySelector(".mounted-target-choice__cancel");
+    const backdrop = overlay.querySelector(".mounted-target-choice__backdrop");
+    cancel.addEventListener("pointerdown", blockPointer, true);
+    cancel.addEventListener("click", (event) => finish(null, event), true);
+    backdrop.addEventListener("pointerdown", blockPointer, true);
+    backdrop.addEventListener("click", (event) => finish(null, event), true);
     document.body.appendChild(overlay);
     options.querySelector("button")?.focus();
   });
@@ -1388,7 +1410,7 @@ function createUnitToken(unit) {
 function handleBattlefieldClick(x, y) {
   clearAttackHoverState();
 
-  if (GameState.gameOver || GameState.isAnimating) {
+  if (GameState.gameOver || GameState.isAnimating || GameState.isChoosingMountedAttackTarget) {
     return;
   }
 
@@ -1503,10 +1525,17 @@ function handleBattlefieldClick(x, y) {
     if (isValidAttack) {
       const rider = typeof getRider === "function" ? getRider(clickedUnit) : null;
       if (rider) {
-        showMountedAttackTargetChoice(selectedUnit, clickedUnit).then((chosenTarget) => {
-          if (!chosenTarget) return;
+        showMountedAttackTargetChoice(selectedUnit, clickedUnit).then(async (chosenTarget) => {
+          if (!chosenTarget) {
+            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 280);
+            return;
+          }
           GameState.preferredMountedDamageTargetId = chosenTarget.id;
-          attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
+          try {
+            await attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
+          } finally {
+            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 280);
+          }
         });
         return;
       }
@@ -2815,7 +2844,8 @@ function createCardArtPreview(imageSource, altText) {
 }
 
 function renderCardPreview(unit = null) {
-  const previewUnit = unit ?? GameState.cardPreviewOverride ?? getSelectedUnit() ?? getInspectedUnit();
+  // An equipped Item hover/click must win over parent Unit hover and render calls.
+  const previewUnit = GameState.cardPreviewOverride ?? unit ?? getSelectedUnit() ?? getInspectedUnit();
 
   elements.cardPreview.replaceChildren();
 
@@ -3014,7 +3044,20 @@ function showCardEffectActivation(source, options = {}) {
   void token.offsetWidth;
   token.classList.add("is-effect-activating");
 
-  const particleCount = Number(options.particleCount ?? 18);
+  const arenaFlash = document.createElement("div");
+  arenaFlash.className = "effect-activation-arena-flash";
+  document.body.appendChild(arenaFlash);
+  arenaFlash.animate(
+    [
+      { opacity: 0 },
+      { opacity: .55, offset: .18 },
+      { opacity: .14, offset: .52 },
+      { opacity: 0 },
+    ],
+    { duration: 900, easing: "ease-out", fill: "forwards" }
+  ).finished.finally(() => arenaFlash.remove());
+
+  const particleCount = Number(options.particleCount ?? 30);
   for (let index = 0; index < particleCount; index += 1) {
     const particle = document.createElement("span");
     particle.className = "effect-firework-particle";
@@ -3027,7 +3070,48 @@ function showCardEffectActivation(source, options = {}) {
     token.appendChild(particle);
   }
 
-  const duration = Number(options.duration ?? 1250);
+  const targetIds = Array.isArray(options.targets)
+    ? options.targets.map((target) => typeof target === "object" ? target?.id : target).filter(Boolean)
+    : [];
+  const sourceRect = token.getBoundingClientRect();
+  targetIds.forEach((targetId, index) => {
+    const targetToken = elements?.battlefield?.querySelector?.(`.unit-token[data-unit-id="${CSS.escape(String(targetId))}"]`);
+    if (!targetToken) return;
+    const targetRect = targetToken.getBoundingClientRect();
+    const x1 = sourceRect.left + sourceRect.width / 2;
+    const y1 = sourceRect.top + sourceRect.height / 2;
+    const x2 = targetRect.left + targetRect.width / 2;
+    const y2 = targetRect.top + targetRect.height / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.max(1, Math.hypot(dx, dy));
+    const beam = document.createElement("span");
+    beam.className = "effect-activation-beam";
+    beam.style.left = `${x1}px`;
+    beam.style.top = `${y1}px`;
+    beam.style.width = `${length}px`;
+    beam.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+    beam.style.animationDelay = `${index * 55}ms`;
+    document.body.appendChild(beam);
+    window.setTimeout(() => beam.remove(), 1000 + index * 55);
+
+    targetToken.classList.remove("is-effect-impacted");
+    void targetToken.offsetWidth;
+    targetToken.classList.add("is-effect-impacted");
+    window.setTimeout(() => targetToken.classList.remove("is-effect-impacted"), 900);
+
+    if (options.impactText) {
+      const impact = document.createElement("span");
+      impact.className = "effect-impact-number";
+      impact.textContent = String(options.impactText);
+      impact.style.left = `${x2}px`;
+      impact.style.top = `${y2}px`;
+      document.body.appendChild(impact);
+      window.setTimeout(() => impact.remove(), 1150);
+    }
+  });
+
+  const duration = Number(options.duration ?? 1450);
   window.setTimeout(() => {
     token.classList.remove("is-effect-activating");
     token.querySelectorAll(".effect-firework-particle").forEach((particle) => particle.remove());
