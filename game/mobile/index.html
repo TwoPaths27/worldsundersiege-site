@@ -1,1 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="../">
+  <meta charset="UTF-8">
 
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Worlds Under Siege — Mobile Battle</title>
+
+  <link rel="stylesheet" href="./game.css?v=19.9.7.9n">
+  <link rel="stylesheet" href="./mobile/mobile.css?v=19.9.7.10-mobile">
+</head>
+<body>
+  <main class="game-layout">
+    <aside class="side-panel">
+      <section class="panel-card">
+        <h2>Selected Unit</h2>
+
+        <div id="selectedUnitPanel" class="empty-panel">
+          Select one of your Units.
+        </div>
+
+        <div class="selected-unit-actions">
+          <button id="endTurnButton" class="primary-button" type="button">
+            End Turn
+          </button>
+        </div>
+      </section>
+
+      <section id="priorityDock" class="priority-dock priority-dock--counter" aria-label="Counter window" hidden>
+        <div class="priority-counter-heading">COUNTER WINDOW</div>
+        <div class="priority-action-row priority-action-row--counter">
+          <div id="priorityStatusText" class="priority-status" role="status" aria-live="polite">Response available</div>
+          <button id="passPriorityButton" class="priority-pass-button" type="button">PASS</button>
+        </div>
+
+        <div id="actionPrompt" class="priority-choice-prompt" role="status" aria-live="polite" hidden>
+          <div id="actionPromptText" class="priority-choice-prompt__message"></div>
+          <div id="triggerChoiceControls" class="trigger-choice-controls" hidden>
+            <button id="acceptTriggerButton" class="trigger-choice-button trigger-choice-button--accept" type="button">Yes</button>
+            <button id="declineTriggerButton" class="trigger-choice-button trigger-choice-button--decline" type="button">No</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card chat-panel">
+        <h2>Game Chat</h2>
+
+        <div id="chatMessages" class="chat-messages" aria-live="polite" aria-label="Game chat messages">
+          <p class="chat-message chat-message--system">Chat connected. Be respectful and have fun.</p>
+        </div>
+
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <label class="visually-hidden" for="chatInput">Type a chat message</label>
+          <input
+            id="chatInput"
+            class="chat-input"
+            type="text"
+            maxlength="240"
+            placeholder="Type a message…"
+          >
+          <button class="chat-send-button" type="submit">Send</button>
+        </form>
+      </section>
+    </aside>
+
+<section class="battlefield-column">
+  <div class="battlefield-stage">
+    <button id="concealedRevealControl" class="concealed-reveal-control" type="button" hidden>Reveal?</button>
+
+    <svg
+      id="actionArrowLayer"
+      class="action-arrow-layer"
+      aria-hidden="true"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <marker
+          id="actionArrowHead"
+          markerWidth="9"
+          markerHeight="7"
+          refX="8"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 9 3.5, 0 7"></polygon>
+        </marker>
+      </defs>
+    </svg>
+
+    <aside id="floatingStack" class="floating-stack is-empty" aria-label="Stack" hidden>
+      <div class="floating-stack__header">
+        <span>STACK</span>
+        <strong id="floatingStackCount">0</strong>
+      </div>
+      <div class="floating-stack__body">
+        <div id="floatingStackEntries" class="floating-stack__entries"></div>
+        <div id="floatingStackCards" class="floating-stack__cards" aria-label="Layered stack cards"></div>
+      </div>
+    </aside>
+
+    <!-- Enemy deck, discard, and banish -->
+    <div class="zone-group zone-group--enemy-piles">
+      <button
+        id="enemyDiscardZone"
+        class="game-zone game-zone--pile"
+        type="button"
+        data-zone="discard"
+        data-owner="2"
+      >
+        <strong>Discard</strong>
+        <span id="enemyDiscardCount">0</span>
+      </button>
+
+      <button
+        id="enemyDeckZone"
+        class="game-zone game-zone--pile"
+        type="button"
+        data-zone="deck"
+        data-owner="2"
+      >
+        <strong>Deck</strong>
+        <span id="enemyDeckCount">60</span>
+      </button>
+
+      <button
+        id="enemyBanishZone"
+        class="game-zone game-zone--pile zone-group__banish"
+        type="button"
+        data-zone="banish"
+        data-owner="2"
+      >
+        <strong>Banish</strong>
+        <span id="enemyBanishCount">0</span>
+      </button>
+    </div>
+
+    <!-- Enemy Stronghold -->
+    <div class="stronghold-lane stronghold-lane--enemy">
+      <section
+        id="enemyStronghold"
+        class="stronghold stronghold--enemy"
+        data-owner="2"
+        role="button"
+        tabindex="0"
+      >
+        <div>
+          <span class="stronghold__owner">Player 2</span>
+          <strong>Enemy Stronghold</strong>
+        </div>
+
+        <div class="stronghold__health">
+          <span>HP</span>
+          <strong id="enemyStrongholdHP">15</strong>
+        </div>
+      </section>
+    </div>
+
+    <!-- Enemy Armies -->
+    <div class="army-zones army-zones--enemy">
+      <button
+        id="enemyArmy3"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="3"
+        data-owner="2"
+      >
+        Army 3
+      </button>
+
+      <button
+        id="enemyArmy2"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="2"
+        data-owner="2"
+      >
+        Army 2
+      </button>
+
+      <button
+        id="enemyArmy1"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="1"
+        data-owner="2"
+      >
+        Army 1
+      </button>
+    </div>
+
+   <!-- Enemy Event -->
+<div class="event-column event-column--enemy">
+
+  <button
+    id="enemyEventZone"
+    class="game-zone game-zone--event"
+    type="button"
+    data-zone="event"
+    data-owner="2"
+  >
+    <strong>Enemy Event</strong>
+    <span>Empty</span>
+  </button>
+
+  <div class="battlefield-energy battlefield-energy--enemy">
+    <span>Energy</span>
+    <strong>
+      <span id="enemyCurrentEnergy">1</span>
+      /
+      <span id="enemyMaxEnergy">1</span>
+    </strong>
+  </div>
+
+</div>
+
+<!-- Battlefield -->
+<section
+  id="battlefield"
+  class="battlefield"
+  aria-label="Seven column by six row battlefield"
+>
+  <!-- Generated by game.js -->
+</section>
+
+<!-- Player Event -->
+<div class="event-column event-column--player">
+
+  <button
+    id="playerEventZone"
+    class="game-zone game-zone--event"
+    type="button"
+    data-zone="event"
+    data-owner="1"
+  >
+    <strong>Player Event</strong>
+    <span>Empty</span>
+  </button>
+
+  <div class="battlefield-energy battlefield-energy--player">
+    <span>Energy</span>
+    <strong>
+      <span id="playerCurrentEnergy">1</span>
+      /
+      <span id="playerMaxEnergy">1</span>
+    </strong>
+  </div>
+
+</div>
+    <!-- Player Armies -->
+    <div class="army-zones army-zones--player">
+      <button
+        id="playerArmy1"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="1"
+        data-owner="1"
+      >
+        Army 1
+      </button>
+
+      <button
+        id="playerArmy2"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="2"
+        data-owner="1"
+      >
+        Army 2
+      </button>
+
+      <button
+        id="playerArmy3"
+        class="game-zone game-zone--army"
+        type="button"
+        data-zone="army"
+        data-army-index="3"
+        data-owner="1"
+      >
+        Army 3
+      </button>
+    </div>
+
+    <!-- Player Stronghold: Camelot -->
+<div class="stronghold-lane stronghold-lane--player">
+  <section
+    id="playerStronghold"
+    class="stronghold stronghold--player stronghold--card-art"
+    data-owner="1"
+    role="button"
+    tabindex="0"
+    aria-label="Camelot Stronghold, 15 HP"
+  >
+    <img
+      class="stronghold__card-image"
+      src="../cards/BOA-211Camelot.jpg"
+      alt="Camelot Stronghold card"
+      draggable="false"
+    >
+
+    <div class="stronghold__card-hud">
+      <strong class="stronghold__card-name">Camelot</strong>
+
+      <div class="stronghold__health">
+        <span>HP</span>
+        <strong id="playerStrongholdHP">15</strong>
+      </div>
+    </div>
+<div
+  id="playerStrongholdEffect"
+  class="stronghold__effect"
+  aria-hidden="true"
+></div>
+  </section>
+</div>
+
+    <!-- Player deck, discard, and banish -->
+    <div class="zone-group zone-group--player-piles">
+      <button
+        id="playerBanishZone"
+        class="game-zone game-zone--pile zone-group__banish"
+        type="button"
+        data-zone="banish"
+        data-owner="1"
+      >
+        <strong>Banish</strong>
+        <span id="playerBanishCount">0</span>
+      </button>
+
+      <button
+        id="playerDeckZone"
+        class="game-zone game-zone--pile"
+        type="button"
+        data-zone="deck"
+        data-owner="1"
+      >
+        <strong>Deck</strong>
+        <span id="playerDeckCount">60</span>
+      </button>
+
+      <button
+        id="playerDiscardZone"
+        class="game-zone game-zone--pile"
+        type="button"
+        data-zone="discard"
+        data-owner="1"
+      >
+        <strong>Discard</strong>
+        <span id="playerDiscardCount">0</span>
+      </button>
+    </div>
+
+  </div>
+</section>
+
+    <aside class="side-panel">
+      <section class="panel-card">
+        <h2>Card Preview</h2>
+
+        <div id="cardPreview" class="empty-panel card-preview">
+          Hover over a Unit to inspect it.
+        </div>
+      </section>
+
+      <section class="panel-card match-history-panel">
+        <div class="turn-indicator">
+          <span>Turn</span>
+          <strong id="turnNumber">1</strong>
+        </div>
+
+        <h2>Game Log</h2>
+        <div id="gameLog" class="game-log" aria-live="polite">
+          <p class="game-log__entry game-log__entry--system">Battlefield initialized.</p>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+ <section id="handDock" class="hand-dock" aria-label="Active player hand">
+  <button
+    id="toggleHandButton"
+    class="hand-dock__toggle"
+    type="button"
+    aria-expanded="true"
+    aria-controls="handPanel"
+  >
+    Hand
+  </button>
+
+  <div id="handPanel" class="hand-panel">
+    <div class="hand-panel__header">
+      <div>
+        <h2>Active Player Hand</h2>
+        <p id="handOwnerLabel">Player 1</p>
+      </div>
+
+      <span id="handCount">0 cards</span>
+    </div>
+
+    <div id="hand" class="hand-fan">
+      <!-- Cards are generated by game.js. -->
+    </div>
+  </div>
+</section>
+
+  <button id="exitGameButton" class="exit-game-button" type="button">
+    <span aria-hidden="true">✕</span> Exit
+  </button>
+
+
+  <div id="publicZoneModal" class="public-zone-modal" hidden>
+    <div class="public-zone-modal__backdrop" data-public-zone-close></div>
+    <section class="public-zone-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="publicZoneTitle">
+      <div class="public-zone-modal__header">
+        <div>
+          <h2 id="publicZoneTitle">Discard</h2>
+          <p id="publicZoneOwner">Player 1</p>
+        </div>
+        <div class="public-zone-modal__header-actions">
+          <span id="publicZoneCount">0 cards</span>
+          <button id="closePublicZoneButton" class="public-zone-modal__close" type="button" aria-label="Close zone browser">×</button>
+        </div>
+      </div>
+      <div id="publicZoneCards" class="hand-fan public-zone-modal__cards" tabindex="-1"></div>
+    </section>
+  </div>
+
+  <div id="exitModal" class="exit-modal" hidden>
+    <div class="exit-modal__backdrop" data-exit-close></div>
+
+    <section
+      class="exit-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="exitModalTitle"
+      aria-describedby="exitModalMessage"
+    >
+      <h2 id="exitModalTitle">Leave Match?</h2>
+      <p id="exitModalMessage">
+        Are you sure you want to quit and go to the homepage?
+      </p>
+
+      <div class="exit-modal__actions">
+        <button id="cancelExitButton" class="modal-button modal-button--cancel" type="button">
+          No
+        </button>
+        <button id="confirmExitButton" class="modal-button modal-button--confirm" type="button">
+          Yes
+        </button>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="victoryModal" class="exit-modal victory-modal" hidden>
+    <div class="exit-modal__backdrop victory-modal__backdrop"></div>
+
+    <section
+      class="exit-modal__dialog victory-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="victoryTitle"
+      aria-describedby="victoryMessage"
+    >
+      <img
+        class="victory-modal__logo"
+        src="../logo.png"
+        alt="Worlds Under Siege"
+      >
+      <p id="victoryEyebrow" class="victory-modal__eyebrow">Match Complete</p>
+      <h2 id="victoryTitle" class="victory-modal__title">Victory</h2>
+      <p id="victoryMessage" class="victory-modal__message">The enemy Stronghold has fallen.</p>
+
+      <div class="exit-modal__actions victory-modal__actions">
+        <button id="playAgainButton" class="modal-button modal-button--confirm" type="button">
+          Play Again
+        </button>
+        <button id="victoryHomeButton" class="modal-button modal-button--cancel" type="button">
+          Return Home
+        </button>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="eventChoiceModal" class="exit-modal event-choice-modal" hidden>
+    <div class="exit-modal__backdrop"></div>
+    <section class="exit-modal__dialog event-choice-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="eventChoiceTitle" aria-describedby="eventChoiceMessage">
+      <p class="event-choice-modal__eyebrow">Event Limit</p>
+      <h2 id="eventChoiceTitle">Choose the Event to Keep</h2>
+      <p id="eventChoiceMessage">You may control only one Event.</p>
+      <div class="event-choice-modal__cards">
+        <button id="keepCurrentEventButton" class="event-choice-card" type="button"></button>
+        <button id="keepIncomingEventButton" class="event-choice-card" type="button"></button>
+      </div>
+      <button id="cancelEventChoiceButton" class="modal-button modal-button--cancel" type="button">Cancel</button>
+    </section>
+  </div>
+
+
+  <div id="pregameLobbyModal" class="pregame-lobby" hidden>
+    <div class="pregame-lobby__backdrop"></div>
+    <section class="pregame-lobby__dialog" role="dialog" aria-modal="true" aria-labelledby="pregameLobbyTitle">
+      <p class="pregame-lobby__eyebrow">Match Setup</p>
+      <h2 id="pregameLobbyTitle">Choose Decks</h2>
+      <p id="pregameLobbyMessage" class="pregame-lobby__message"></p>
+
+      <div class="pregame-lobby__players">
+        <article class="pregame-player-card">
+          <h3>Player 1</h3>
+          <label for="playerOneDeckSelect">Deck</label>
+          <select id="playerOneDeckSelect"></select>
+          <div id="playerOneDeckDetails" class="pregame-deck-details"></div>
+        </article>
+
+        <article class="pregame-player-card">
+          <h3>Player 2</h3>
+          <label for="playerTwoDeckSelect">Deck</label>
+          <select id="playerTwoDeckSelect"></select>
+          <div id="playerTwoDeckDetails" class="pregame-deck-details"></div>
+        </article>
+      </div>
+
+      <div class="pregame-lobby__actions">
+        <button id="cancelMatchSetupButton" class="modal-button modal-button--cancel" type="button">Cancel</button>
+        <button id="startMatchButton" class="modal-button modal-button--confirm" type="button">Start Match</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="coinFlipModal" class="coin-flip-modal" hidden>
+    <div class="coin-flip-modal__backdrop"></div>
+    <section class="coin-flip-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="coinFlipTitle">
+      <p class="coin-flip-modal__eyebrow">Match Setup</p>
+      <h2 id="coinFlipTitle">Coin Flip</h2>
+      <div class="coin-flip-modal__coin-scene" aria-hidden="true">
+        <div class="coin-flip-modal__coin-stage">
+          <div id="coinFlipCoin" class="coin-flip-modal__coin">
+            <div class="coin-flip-modal__coin-face coin-flip-modal__coin-face--heads">
+              <img src="../logo.png" alt="" draggable="false">
+            </div>
+            <div class="coin-flip-modal__coin-face coin-flip-modal__coin-face--tails">
+              <img src="../logo.png" alt="" draggable="false">
+              <span>TAILS</span>
+            </div>
+          </div>
+        </div>
+        <div class="coin-flip-modal__coin-shadow"></div>
+      </div>
+      <p id="coinFlipPrompt"></p>
+      <div class="coin-flip-modal__actions">
+        <button type="button" data-coin-call="heads">Heads</button>
+        <button type="button" data-coin-call="tails">Tails</button>
+      </div>
+      <p id="coinFlipResult" class="coin-flip-modal__result" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div id="mulliganModal" class="mulligan-modal" hidden>
+    <div class="mulligan-modal__backdrop"></div>
+    <section class="mulligan-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mulliganTitle">
+      <p class="mulligan-modal__eyebrow">Opening Hand</p>
+      <h2 id="mulliganTitle">Opening Hand</h2>
+      <p id="mulliganPrompt" class="mulligan-modal__prompt"></p>
+      <div id="mulliganCards" class="mulligan-cards"></div>
+      <div class="mulligan-modal__actions">
+        <button id="freeMulliganButton" type="button">Free Mulligan</button>
+        <button id="keepOpeningHandButton" type="button">Keep Hand</button>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <div class="noscript-message">
+      JavaScript must be enabled to play Worlds Under Siege.
+    </div>
+  </noscript>
+
+<script src="./card-database.js?v=19.9.7.7-lancelot"></script>
+  <div id="deploymentChoiceModal" class="deployment-choice-modal" hidden>
+    <div class="deployment-choice-backdrop"></div>
+    <section class="deployment-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="deploymentChoiceTitle">
+      <div class="deployment-choice-kicker">DEPLOY UNIT</div>
+      <h2 id="deploymentChoiceTitle">How should this Unit enter play?</h2>
+      <p id="deploymentChoiceCardName" class="deployment-choice-card-name"></p>
+      <div class="deployment-choice-actions">
+        <button id="deployRevealedButton" class="deployment-choice-button deployment-choice-button--revealed" type="button">Revealed</button>
+        <button id="deployConcealedButton" class="deployment-choice-button deployment-choice-button--concealed" type="button">Concealed</button>
+        <button id="deployCancelButton" class="deployment-choice-button deployment-choice-button--cancel" type="button">Cancel</button>
+      </div>
+      <p class="deployment-choice-note">Concealed Units enter with Speed 1 and Range 0 and cannot attack, be targeted, mount, or use abilities until revealed.</p>
+    </section>
+  </div>
+
+<script src="./card-data.js?v=19.9.7"></script>
+<script src="./card-types.js?v=19.9.7.8b"></script>
+<script src="./game-state.js?v=15"></script>
+<script src="./deck-loader.js?v=19.9.7"></script>
+<script src="./pregame-lobby.js?v=19.9.7"></script>
+<script src="./coin-flip.js?v=19.9.7.9a"></script>
+<script src="./opening-hand.js?v=19.9.6.3"></script>
+<script src="./construct-range.js?v=19.7"></script>
+<script src="./conceal.js?v=19.9.7.1"></script>
+<script src="./replacement.js?v=13"></script>
+<script src="./events.js?v=13"></script>
+<script src="./effects.js?v=19.9.7.8-knights"></script>
+<script src="./zones.js?v=19.9.7.9l"></script>
+<script src="./zone-effects.js?v=19.9.7.9n"></script>
+<script src="./deck-ui.js?v=19.9.6.4g"></script>
+<script src="./zone-browser.js?v=19.9.7.9n"></script>
+<script src="./army-zone.js?v=19.9.6.7"></script>
+<script src="./costs.js?v=13"></script>
+<script src="./targeting.js?v=13"></script>
+<script src="./permanent.js?v=17.1"></script>
+<script src="./validator.js?v=17.1"></script>
+<script src="./event-controller.js?v=19.9.5"></script>
+<script src="./effect-engine.js?v=19.9.7"></script>
+<script src="./abilities.js?v=19.9.7"></script>
+<script src="./rules.js?v=19.9.7.8b"></script>
+<script src="./audio.js?v=19.9.7.9o"></script>
+<script src="./ui.js?v=19.9.6.14"></script>
+<script src="./animation.js?v=19.9.7.9i"></script>
+<script src="./priority.js?v=19.9.6.14"></script>
+<script src="./mount.js?v=19.9.7.9i"></script>
+<script src="./activation-feedback.js?v=19.9.7.9o"></script>
+<script src="./knights-004-010.js?v=19.9.7.9o"></script>
+<script src="./mounted-combat.js?v=19.9.7.9m"></script>
+<script src="./rules-cleanup.js?v=19.9.7.9g"></script>
+<script src="./ai-strategy.js?v=19.6"></script>
+<script src="./battlefield.js?v=19.9.7.9o"></script>
+<script src="./cards.js?v=19.9.7.9j"></script>
+<script src="./match.js?v=19.9.7.9o"></script>
+<script src="./game.js?v=19.9.6.4c"></script>
+<script src="./mobile/mobile.js?v=19.9.7.10-mobile"></script>
+</body>
+</html>
