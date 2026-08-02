@@ -77,7 +77,7 @@ body.mobile-battle {
   border: 2px solid #111820;
 }
 
-.game-layout {
+body.mobile-battle .game-layout {
   display: block !important;
   position: fixed !important;
   inset: calc(var(--mobile-toolbar-h) + var(--mobile-safe-top)) 0 calc(var(--mobile-hand-h) + var(--mobile-safe-bottom)) 0;
@@ -86,8 +86,8 @@ body.mobile-battle {
   overflow: hidden !important;
 }
 
-.game-layout > .side-panel { display: none !important; }
-.battlefield-column {
+body.mobile-battle .game-layout > .side-panel { display: none !important; }
+body.mobile-battle .battlefield-column {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -95,14 +95,14 @@ body.mobile-battle {
   padding: 0 !important;
   overflow: hidden !important;
 }
-.mobile-camera {
+body.mobile-battle .mobile-camera {
   position: absolute;
   inset: 0;
   overflow: hidden;
   touch-action: none;
   background: rgba(0,0,0,.08);
 }
-.battlefield-stage {
+body.mobile-battle .battlefield-stage {
   position: absolute !important;
   left: 0;
   top: 0;
@@ -113,18 +113,18 @@ body.mobile-battle {
 }
 
 /* Larger touch targets without changing visual tiles. */
-.battlefield-cell,
-.unit-token,
-.mounted-rider-overlay,
-.mounted-mount-panel,
-.game-zone,
-.stronghold {
+body.mobile-battle .battlefield-cell,
+body.mobile-battle .unit-token,
+body.mobile-battle .mounted-rider-overlay,
+body.mobile-battle .mounted-mount-panel,
+body.mobile-battle .game-zone,
+body.mobile-battle .stronghold {
   touch-action: manipulation;
 }
-.battlefield-cell { min-width: 72px; min-height: 72px; }
+body.mobile-battle .battlefield-cell { min-width: 72px; min-height: 72px; }
 
 /* Mobile hand: fixed, swipeable, no desktop fan clipping. */
-.hand-dock {
+body.mobile-battle .hand-dock {
   position: fixed !important;
   z-index: 11000 !important;
   left: 0 !important;
@@ -135,8 +135,8 @@ body.mobile-battle {
   padding-bottom: var(--mobile-safe-bottom) !important;
   transform: none !important;
 }
-.hand-dock__toggle { display: none !important; }
-.hand-panel {
+body.mobile-battle .hand-dock__toggle { display: none !important; }
+body.mobile-battle .hand-panel {
   display: flex !important;
   flex-direction: column;
   width: 100% !important;
@@ -147,10 +147,10 @@ body.mobile-battle {
   border-radius: 14px 14px 0 0 !important;
   background: rgba(18,25,20,.96) !important;
 }
-.hand-panel__header { min-height: 27px !important; padding: 0 4px !important; }
-.hand-panel__header h2 { font-size: 13px !important; }
-.hand-panel__header p { display: none !important; }
-.hand-fan {
+body.mobile-battle .hand-panel__header { min-height: 27px !important; padding: 0 4px !important; }
+body.mobile-battle .hand-panel__header h2 { font-size: 13px !important; }
+body.mobile-battle .hand-panel__header p { display: none !important; }
+body.mobile-battle .hand-fan {
   flex: 1 1 auto !important;
   display: flex !important;
   justify-content: flex-start !important;
@@ -165,7 +165,7 @@ body.mobile-battle {
   -webkit-overflow-scrolling: touch;
   transform: none !important;
 }
-.hand-card {
+body.mobile-battle .hand-card {
   position: relative !important;
   left: auto !important;
   bottom: auto !important;
@@ -176,15 +176,15 @@ body.mobile-battle {
   transform: none !important;
   scroll-snap-align: center;
 }
-.hand-card:hover,
-.hand-card:focus-visible,
-.hand-card.is-selected {
+body.mobile-battle .hand-card:hover,
+body.mobile-battle .hand-card:focus-visible,
+body.mobile-battle .hand-card.is-selected {
   transform: translateY(-9px) scale(1.08) !important;
   z-index: 30 !important;
 }
 
-.exit-game-button { display: none !important; }
-.match-history-panel { display: none !important; }
+body.mobile-battle .exit-game-button { display: none !important; }
+body.mobile-battle .match-history-panel { display: none !important; }
 
 .mobile-drawer {
   position: fixed;
@@ -283,5 +283,48 @@ body.mobile-battle {
 
 @media (orientation: landscape) {
   :root { --mobile-hand-h: 150px; --mobile-toolbar-h: 52px; }
-  .hand-card { width: 74px !important; height: 104px !important; flex-basis: 74px !important; }
+  body.mobile-battle .hand-card { width: 74px !important; height: 104px !important; flex-basis: 74px !important; }
+}
+
+
+/* Mobile bootstrap remains visible even when the shared game fails to initialize. */
+.mobile-bootstrap-status {
+  position: fixed;
+  z-index: 30000;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: #fff4d2;
+  background: radial-gradient(circle at center, rgba(44,55,43,.92), rgba(6,10,8,.98));
+  transition: opacity .22s ease;
+}
+.mobile-bootstrap-status strong { font-size: clamp(24px, 7vw, 38px); }
+.mobile-bootstrap-status span { max-width: 34rem; color: #d8dfd8; }
+.mobile-bootstrap-status[data-kind="error"] { color: #ffd7d7; background: rgba(58,12,12,.98); }
+.mobile-bootstrap-status.is-leaving { opacity: 0; pointer-events: none; }
+
+.mobile-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 8px 0 18px;
+}
+.mobile-zone-grid .mobile-button { min-height: 56px; }
+
+body.mobile-battle .pregame-lobby,
+body.mobile-battle .coin-flip-modal,
+body.mobile-battle .mulligan-modal,
+body.mobile-battle .deployment-choice-modal,
+body.mobile-battle .public-zone-modal,
+body.mobile-battle .exit-modal {
+  z-index: 21000 !important;
+}
+
+body.mobile-battle.mobile-dialog-open .mobile-toolbar,
+body.mobile-battle.mobile-dialog-open .hand-dock {
+  opacity: .28;
+  pointer-events: none;
 }
