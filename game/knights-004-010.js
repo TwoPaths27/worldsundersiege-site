@@ -448,7 +448,7 @@
     }
   }
 
-  function resolveKayEndTurn(kay, playerId) {
+  async function resolveKayEndTurn(kay, playerId) {
     if (!isFaceUpInPlay(kay) || controllerOf(kay) !== Number(playerId)) return 0;
     const range = typeof global.getCurrentRange === "function" ? global.getCurrentRange(kay) : Number(kay.currentRange ?? kay.range ?? 0);
     const targets = (getGameState().units ?? []).filter((target) =>
@@ -457,30 +457,38 @@
     );
     if (!targets.length) return 0;
 
-    // Present the source and every impact before state-based actions remove
-    // destroyed cards. Players can clearly see that Sir Kay activated.
     global.presentEffectActivation?.(kay, {
       eventType: "sirKayEndTurn",
       targets,
       impactText: "−2",
       particleCount: 34,
       duration: 1500,
+      force: true,
     });
-    showSirKayFireDamage(targets);
-    for (const target of targets) target.currentHP = Number(target.currentHP ?? target.hp ?? 0) - 2;
+    showSirKayFireDamage(targets, 1450);
     global.addLog?.(`${kay.name} deals 2 damage to ${targets.length} Unit${targets.length === 1 ? "" : "s"}/Construct${targets.length === 1 ? "" : "s"} in range.`);
+
+    await new Promise((resolve) => window.setTimeout(resolve, 900));
+    for (const target of targets) target.currentHP = Number(target.currentHP ?? target.hp ?? 0) - 2;
     global.renderGame?.();
-    window.setTimeout(() => {
-      if (typeof global.runStateBasedActions === "function") {
-        global.runStateBasedActions({ source: kay, reason: "sir-kay-end-turn", render: true });
-      } else {
-        for (const target of [...targets]) {
-          if (Number(target.currentHP ?? target.hp ?? 0) <= 0) global.destroyUnit?.(target, { source: kay, cause: "sir-kay-end-turn" });
-        }
-        global.renderGame?.();
+
+    if (typeof global.runStateBasedActions === "function") {
+      global.runStateBasedActions({ source: kay, reason: "sir-kay-end-turn", render: true });
+    } else {
+      for (const target of [...targets]) {
+        if (Number(target.currentHP ?? target.hp ?? 0) <= 0) global.destroyUnit?.(target, { source: kay, cause: "sir-kay-end-turn" });
       }
-    }, 850);
+      global.renderGame?.();
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
     return targets.length;
+  }
+
+  async function resolveKnightEndTurnEffects(playerId) {
+    const state = getGameState();
+    const kays = (state.units ?? []).filter((unit) => isSirKay(unit) && controllerOf(unit) === Number(playerId));
+    for (const kay of kays) await resolveKayEndTurn(kay, playerId);
+    return true;
   }
 
   function getSagremoreRequiredTargets(sagremore) {
@@ -566,12 +574,6 @@
       if (isSirLucan(unit)) healOtherFriendlyUnitsWhenLucanDies(unit);
     }, { priority: 100 });
 
-    global.onGameEvent("turnEnding", (event) => {
-      const playerId = Number(event?.payload?.playerId);
-      const kays = (getGameState().units ?? []).filter((unit) => isSirKay(unit) && controllerOf(unit) === playerId);
-      for (const kay of kays) resolveKayEndTurn(kay, playerId);
-    }, { priority: 30 });
-
     global.onGameEvent("turnEnded", (event) => {
       const endedPlayer = Number(event?.payload?.playerId);
       for (const unit of getGameState().units ?? []) {
@@ -593,6 +595,7 @@
     resolveYvainReveal,
     resolveBedivereReveal,
     resolveKayEndTurn,
+    resolveKnightEndTurnEffects,
     getSagremoreRequiredTargets,
     enforceSagremoreAttackRequirement,
     applySagremoreRevealSpeed,

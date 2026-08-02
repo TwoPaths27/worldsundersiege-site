@@ -328,6 +328,7 @@ function showBattlefieldChoiceModal(title, message, { yesLabel = "Yes", noLabel 
     };
     no.addEventListener("click", () => finish(false));
     yes.addEventListener("click", () => finish(true));
+    actions.append(no, yes);
     modal.querySelector(".battlefield-choice-modal__backdrop").addEventListener("click", () => finish(false));
     document.body.appendChild(modal);
     document.body.classList.add("modal-open");
@@ -1870,7 +1871,8 @@ async function equipSelectedItem(host) {
 
   cancelInteraction();
   emitGameEvent("cardPlayed", { card: item, playerId, target: host }, { source: item });
-  playOneShot(gameplayAudio.equipItem);
+  if (typeof playBoostedOneShot === "function") playBoostedOneShot(gameplayAudio.equipItem, 1.25);
+  else playOneShot(gameplayAudio.equipItem);
   addLog(`🛡 ${player.name} equipped ${item.name} to ${host.name}.`);
   addLog(`🔋 −${item.cost} Energy.`);
   renderGame();

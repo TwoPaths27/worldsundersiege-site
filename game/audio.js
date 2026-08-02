@@ -102,6 +102,25 @@ function playOneShot(audio) {
   }
 }
 
+
+function playBoostedOneShot(audio, gain = 1.25) {
+  if (!audio) return;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) { playOneShot(audio); return; }
+  try {
+    const context = playBoostedOneShot.context || (playBoostedOneShot.context = new AudioContextClass());
+    const element = audio.cloneNode();
+    element.volume = 1;
+    const source = context.createMediaElementSource(element);
+    const gainNode = context.createGain();
+    gainNode.gain.value = Math.max(1, Number(gain) || 1.25);
+    source.connect(gainNode).connect(context.destination);
+    element.play().catch(() => playOneShot(audio));
+  } catch {
+    playOneShot(audio);
+  }
+}
+
 function playRepeatedSound(audio, count, interval = 150) {
   const repeatCount = Math.max(0, Math.floor(count));
   for (let index = 0; index < repeatCount; index += 1) {

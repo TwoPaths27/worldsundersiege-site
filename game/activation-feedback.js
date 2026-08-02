@@ -79,12 +79,16 @@
 
   global.onGameEvent("triggerResolved", (event) => {
     if (event?.payload?.resolution?.resolved === false) return;
-    presentEffectActivation(sourceFromEvent(event), { eventType: "triggerResolved" });
+    const source = sourceFromEvent(event);
+    if (isMerlin(source)) return;
+    presentEffectActivation(source, { eventType: "triggerResolved" });
   }, { priority: -50 });
 
   global.onGameEvent("abilityResolved", (event) => {
     if (event?.payload?.resolution?.resolved === false) return;
-    presentEffectActivation(sourceFromEvent(event), { eventType: "abilityResolved" });
+    const source = sourceFromEvent(event);
+    if (isMerlin(source)) return;
+    presentEffectActivation(source, { eventType: "abilityResolved" });
   }, { priority: -60 });
 
   global.onGameEvent("continuousEffectAdded", (event) => {

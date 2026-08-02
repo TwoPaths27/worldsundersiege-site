@@ -168,7 +168,7 @@ function beginMainStep(playerId = GameState.activePlayer) {
   return true;
 }
 
-function requestEndStep() {
+async function requestEndStep() {
   if (
     GameState.isAnimating ||
     GameState.priority.active ||
@@ -233,7 +233,7 @@ function endTurn() {
   return requestEndStep();
 }
 
-function finalizeEndTurn(expectedPlayerId = GameState.activePlayer) {
+async function finalizeEndTurn(expectedPlayerId = GameState.activePlayer) {
   if (expectedPlayerId !== GameState.activePlayer) {
     console.warn(
       "Ignored stale end-step completion because the active player changed."
@@ -264,6 +264,18 @@ function finalizeEndTurn(expectedPlayerId = GameState.activePlayer) {
     playerId: previousPlayer,
     turn: GameState.turn,
   });
+
+  GameState.isAnimating = true;
+  renderGame();
+  try {
+    if (typeof resolveKnightEndTurnEffects === "function") {
+      await resolveKnightEndTurnEffects(previousPlayer);
+    }
+    // Let death/reveal/leave-play presentations finish before control passes.
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  } finally {
+    GameState.isAnimating = false;
+  }
 
   clearEndOfTurnEffects(previousPlayer);
 
