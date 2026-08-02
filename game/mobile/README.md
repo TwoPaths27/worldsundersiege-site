@@ -21,3 +21,12 @@ Implemented mobile phases:
 10. Fail-safe: if mobile enhancement fails, the shared standard interface remains instead of a blank battlefield.
 
 Deploy the entire project and visit `/game/mobile/` on a phone. Do not overwrite `/game/index.html` with the mobile index.
+
+## V19.9.7.10c mobile-only layout pass
+
+- Unlocks and resumes `ambience.mp3` on the first phone touch/click, working around mobile autoplay restrictions.
+- Fits the battlefield to nearly the full screen width instead of fitting the entire desktop stage.
+- Reflows the mobile-only zone layout: Stronghold centered below the board, Energy directly underneath, and player Event/Armies/Deck/Discard/Banish grouped below the board toward the left.
+- Simplifies the top bar to Exit, title, Chat, and a full-width End Turn row.
+- Replaces the temporary center-screen Expand control with a `Zoom Card` button immediately below the top bar.
+- No desktop files are modified.

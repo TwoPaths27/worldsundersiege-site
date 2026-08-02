@@ -328,3 +328,94 @@ body.mobile-battle.mobile-dialog-open .hand-dock {
   opacity: .28;
   pointer-events: none;
 }
+
+/* V19.9.7.10c — phone-only board/HUD reflow. Desktop route never loads this file. */
+body.mobile-battle .mobile-toolbar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  min-height: calc(86px + var(--mobile-safe-top));
+  padding-bottom: 6px;
+}
+body.mobile-battle .mobile-toolbar__title {
+  font-size: 12px;
+}
+body.mobile-battle .mobile-button--chat {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 58px;
+}
+body.mobile-battle .mobile-button--end-wide {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-height: 34px;
+  height: 34px;
+  padding: 4px 10px;
+}
+body.mobile-battle .game-layout {
+  inset: calc(86px + var(--mobile-safe-top)) 0 calc(var(--mobile-hand-h) + var(--mobile-safe-bottom)) 0;
+}
+body.mobile-battle .mobile-drawer {
+  top: calc(86px + var(--mobile-safe-top));
+}
+
+/* The board itself is the width reference; surrounding zones are repositioned by mobile.js. */
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed {
+  margin: 0 !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed #battlefield {
+  margin: 0 !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .stronghold-lane,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .battlefield-energy {
+  margin: 0 !important;
+  max-width: none !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .game-zone {
+  min-width: 62px !important;
+  min-height: 62px !important;
+  font-size: 10px !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column {
+  display: block !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column .battlefield-energy {
+  display: none !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .battlefield-energy {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 52px !important;
+  border-radius: 9px !important;
+}
+
+/* Zoom button appears directly below the mobile menu bar instead of covering the board. */
+body.mobile-battle .mobile-expand-prompt {
+  left: 50%;
+  top: calc(92px + var(--mobile-safe-top));
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  z-index: 12250;
+}
+
+/* Keep the hand compact enough to leave more camera room. */
+@media (orientation: portrait) {
+  :root { --mobile-hand-h: 168px; }
+  body.mobile-battle .hand-card {
+    flex-basis: 82px !important;
+    width: 82px !important;
+    height: 116px !important;
+  }
+}

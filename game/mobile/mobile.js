@@ -21,6 +21,8 @@
     camera: null,
     stage: null,
     initialized: false,
+    audioUnlocked: false,
+    layoutScheduled: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -63,24 +65,37 @@
     stage.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
   }
 
+  function getBoardMetrics(stage = state.stage) {
+    const board = $("#battlefield");
+    if (!stage || !board) return null;
+    return {
+      board,
+      left: board.offsetLeft || 0,
+      top: board.offsetTop || 0,
+      width: board.offsetWidth || 700,
+      height: board.offsetHeight || 600,
+    };
+  }
+
   function centerBoard(camera = state.camera, stage = state.stage, scale = null) {
     if (!camera || !stage) return;
     if (Number.isFinite(scale)) {
       state.scale = Math.max(state.minScale, Math.min(state.maxScale, scale));
     }
-    const sw = stage.scrollWidth || stage.offsetWidth || 1080;
-    const sh = stage.scrollHeight || stage.offsetHeight || 900;
-    state.x = (camera.clientWidth - sw * state.scale) / 2;
-    state.y = (camera.clientHeight - sh * state.scale) / 2;
+    const metrics = getBoardMetrics(stage);
+    if (!metrics) return;
+    state.x = (camera.clientWidth - metrics.width * state.scale) / 2 - metrics.left * state.scale;
+    state.y = (camera.clientHeight - metrics.height * state.scale) / 2 - metrics.top * state.scale;
     applyTransform(stage);
   }
 
   function fitBoard(camera = state.camera, stage = state.stage) {
     if (!camera || !stage) return;
-    const sw = stage.scrollWidth || stage.offsetWidth || 1080;
-    const sh = stage.scrollHeight || stage.offsetHeight || 900;
-    const fit = Math.min(camera.clientWidth / sw, camera.clientHeight / sh);
-    centerBoard(camera, stage, Math.max(state.minScale, Math.min(0.95, fit * 1.04)));
+    const metrics = getBoardMetrics(stage);
+    if (!metrics) return;
+    // Mobile is width-first: the battlefield spans almost the full phone width.
+    const fit = (camera.clientWidth - 8) / Math.max(1, metrics.width);
+    centerBoard(camera, stage, Math.max(state.minScale, Math.min(1.45, fit)));
   }
 
   function distance(a, b) {
@@ -89,6 +104,102 @@
 
   function midpoint(a, b) {
     return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+  }
+
+  function setAbsoluteBox(element, left, top, width = null) {
+    if (!element) return;
+    element.style.setProperty("position", "absolute", "important");
+    element.style.setProperty("left", `${Math.round(left)}px`, "important");
+    element.style.setProperty("top", `${Math.round(top)}px`, "important");
+    element.style.setProperty("right", "auto", "important");
+    element.style.setProperty("bottom", "auto", "important");
+    element.style.setProperty("transform", "none", "important");
+    if (Number.isFinite(width)) element.style.setProperty("width", `${Math.round(width)}px`, "important");
+  }
+
+  function arrangeMobileBoard(stage = state.stage) {
+    if (!stage) return;
+    const board = $("#battlefield");
+    if (!board || board.offsetWidth < 100 || board.offsetHeight < 100) return;
+
+    const boardWidth = board.offsetWidth;
+    const boardHeight = board.offsetHeight;
+    const gap = 10;
+    const zoneW = Math.max(64, Math.min(86, boardWidth / 7 - 5));
+    const boardTop = 150;
+
+    setAbsoluteBox(board, 0, boardTop, boardWidth);
+
+    const enemyStronghold = $(".stronghold-lane--enemy");
+    const playerStronghold = $(".stronghold-lane--player");
+    setAbsoluteBox(enemyStronghold, boardWidth * 0.28, 44, boardWidth * 0.44);
+    setAbsoluteBox(playerStronghold, boardWidth * 0.28, boardTop + boardHeight + gap, boardWidth * 0.44);
+
+    const enemyEnergy = $(".battlefield-energy--enemy");
+    const playerEnergy = $(".battlefield-energy--player");
+    setAbsoluteBox(enemyEnergy, boardWidth * 0.43, 108, boardWidth * 0.14);
+    setAbsoluteBox(playerEnergy, boardWidth * 0.43, boardTop + boardHeight + 76, boardWidth * 0.14);
+
+    // Enemy utilities stay compact at the top edges.
+    setAbsoluteBox($(".zone-group--enemy-piles"), 0, 18, zoneW * 3 + gap * 2);
+    setAbsoluteBox($(".army-zones--enemy"), boardWidth - (zoneW * 3 + gap * 2), 18, zoneW * 3 + gap * 2);
+    setAbsoluteBox($(".event-column--enemy"), boardWidth - zoneW, 92, zoneW);
+
+    // Player utilities are grouped below the board on the lower-left, as a mobile HUD.
+    const lowerOne = boardTop + boardHeight + 112;
+    const lowerTwo = lowerOne + 76;
+    setAbsoluteBox($(".event-column--player"), 0, lowerOne, zoneW);
+    setAbsoluteBox($(".army-zones--player"), zoneW + gap, lowerOne, zoneW * 3 + gap * 2);
+    setAbsoluteBox($(".zone-group--player-piles"), 0, lowerTwo, zoneW * 3 + gap * 2);
+
+    stage.style.setProperty("min-width", `${Math.ceil(boardWidth)}px`, "important");
+    stage.style.setProperty("width", `${Math.ceil(boardWidth)}px`, "important");
+    stage.style.setProperty("min-height", `${Math.ceil(lowerTwo + 120)}px`, "important");
+    stage.classList.add("mobile-stage-reflowed");
+  }
+
+  function scheduleMobileBoardLayout() {
+    if (state.layoutScheduled) return;
+    state.layoutScheduled = true;
+    requestAnimationFrame(() => {
+      state.layoutScheduled = false;
+      arrangeMobileBoard();
+      fitBoard();
+    });
+  }
+
+  function unlockMobileAudio() {
+    if (state.audioUnlocked) return;
+    state.audioUnlocked = true;
+    try {
+      if (typeof ambienceAudio !== "undefined" && ambienceAudio) {
+        ambienceAudio.volume = Math.max(0.25, Number(ambienceAudio.volume) || 0.25);
+        const playback = ambienceAudio.play();
+        playback?.catch?.(() => { state.audioUnlocked = false; });
+      } else if (typeof startAmbience === "function") {
+        startAmbience();
+      }
+      const Context = window.AudioContext || window.webkitAudioContext;
+      if (Context && playBoostedOneShot?.context?.state === "suspended") {
+        playBoostedOneShot.context.resume().catch(() => {});
+      }
+    } catch (error) {
+      state.audioUnlocked = false;
+      console.warn("[Mobile] Audio unlock deferred.", error);
+    }
+  }
+
+  function installMobileAudioUnlock() {
+    const unlock = () => unlockMobileAudio();
+    document.addEventListener("pointerdown", unlock, { capture: true, passive: true });
+    document.addEventListener("touchstart", unlock, { capture: true, passive: true });
+    document.addEventListener("click", unlock, { capture: true, passive: true });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        state.audioUnlocked = false;
+        unlockMobileAudio();
+      }
+    });
   }
 
   function installCamera(stage) {
@@ -219,37 +330,36 @@
   function installExpandPrompt() {
     let pressTimer = null;
     document.addEventListener("pointerdown", (event) => {
-      const source = event.target.closest(".unit-token, .hand-card, .public-zone-card, .zone-browser-card");
+      const source = event.target.closest(".unit-token, .mounted-rider-overlay, .mounted-mount-panel, .hand-card, .public-zone-card, .zone-browser-card");
       if (!source) return;
       state.lastTappedToken = source;
       pressTimer = setTimeout(() => showCardArt(source), 520);
     }, true);
 
-    document.addEventListener("pointerup", () => {
+    const cancelPress = () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
-    }, true);
-    document.addEventListener("pointercancel", () => {
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = null;
-    }, true);
+    };
+    document.addEventListener("pointerup", cancelPress, true);
+    document.addEventListener("pointercancel", cancelPress, true);
 
     document.addEventListener("click", (event) => {
-      const token = event.target.closest(".unit-token");
+      const token = event.target.closest(".unit-token, .mounted-rider-overlay, .mounted-mount-panel");
       if (!token) return;
       state.lastTappedToken = token;
       $(".mobile-expand-prompt")?.remove();
       const prompt = document.createElement("button");
       prompt.type = "button";
       prompt.className = "mobile-expand-prompt";
-      prompt.textContent = "Expand";
+      prompt.textContent = "Zoom Card";
       prompt.addEventListener("click", (e) => {
-        e.stopPropagation();
+        e.preventDefault();
+        e.stopImmediatePropagation();
         showCardArt(state.lastTappedToken);
         prompt.remove();
       });
       document.body.appendChild(prompt);
-      setTimeout(() => prompt.remove(), 2600);
+      setTimeout(() => prompt.remove(), 3600);
     }, true);
   }
 
@@ -323,6 +433,8 @@
 
     setBootstrapStatus("Preparing touch controls…");
     const camera = installCamera(stage);
+    installMobileAudioUnlock();
+    scheduleMobileBoardLayout();
 
     const toolbar = document.createElement("nav");
     toolbar.className = "mobile-toolbar";
@@ -330,20 +442,16 @@
     const title = document.createElement("div");
     title.className = "mobile-toolbar__title";
     title.textContent = "Worlds Under Siege";
-    const inspectButton = createButton("Unit", "Open selected unit and card preview");
-    const zonesButton = createButton("Zones", "Open zones");
-    const centerButton = createButton("◎", "Center Board");
-    const chatButton = createButton("Chat", "Open Chat");
+    const chatButton = createButton("Chat", "Open Chat", "mobile-button--chat");
     const badge = document.createElement("span");
     badge.className = "mobile-unread";
     badge.hidden = true;
     chatButton.appendChild(badge);
-    toolbar.append(home, title, inspectButton, zonesButton, centerButton, chatButton);
+    toolbar.append(home, title, chatButton);
     document.body.appendChild(toolbar);
 
     const chatDrawer = makeDrawer("left", "Game Chat", "chat");
     const inspectDrawer = makeDrawer("right", "Unit & Card", "inspect");
-    const zonesDrawer = createZoneDrawer();
 
     const chatPanel = desktopSidePanels[0]?.querySelector(".chat-panel");
     const selectedPanel = desktopSidePanels[0]?.querySelector(".panel-card:first-child");
@@ -353,9 +461,6 @@
     if (previewPanel) inspectDrawer.appendChild(previewPanel);
 
     home.addEventListener("click", () => $("#exitGameButton")?.click());
-    centerButton.addEventListener("click", () => fitBoard(camera, stage));
-    inspectButton.addEventListener("click", () => openDrawer(inspectDrawer, "inspect"));
-    zonesButton.addEventListener("click", () => openDrawer(zonesDrawer, "zones"));
     chatButton.addEventListener("click", () => {
       if (state.chatOpen) closeDrawers();
       else {
@@ -378,7 +483,7 @@
 
     const desktopEnd = $("#endTurnButton");
     if (desktopEnd) {
-      const mobileEnd = createButton("End", "End Turn", "mobile-button--end");
+      const mobileEnd = createButton("End Turn", "End Turn", "mobile-button--end mobile-button--end-wide");
       mobileEnd.addEventListener("click", () => desktopEnd.click());
       toolbar.appendChild(mobileEnd);
       const syncEnd = () => { mobileEnd.disabled = desktopEnd.disabled; };
@@ -391,9 +496,15 @@
 
     const battlefield = $("#battlefield");
     if (battlefield && window.MutationObserver) {
-      new MutationObserver(() => requestAnimationFrame(() => applyTransform(stage)))
+      new MutationObserver(() => scheduleMobileBoardLayout())
         .observe(battlefield, { childList: true, subtree: true });
     }
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => scheduleMobileBoardLayout()).observe(battlefield);
+    }
+    setTimeout(scheduleMobileBoardLayout, 250);
+    setTimeout(scheduleMobileBoardLayout, 900);
 
     state.initialized = true;
     hideBootstrapStatus();
