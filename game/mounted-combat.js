@@ -47,12 +47,19 @@
     return canMountedUnitDeclareAttack(unit);
   }
 
-  function getMountedDamageChoices(character) {
-    if (!isMountedCharacter(character)) return [character].filter(Boolean);
+  function getMountedDamageChoices(unit) {
+    if (!unit) return [];
+    if (isMountedCarrier(unit)) {
+      const rider = typeof global.getRider === "function"
+        ? global.getRider(unit)
+        : getGameState()?.units?.find((candidate) => idOf(candidate) === unit.riderId);
+      return rider ? [rider, unit] : [unit];
+    }
+    if (!isMountedCharacter(unit)) return [unit];
     const mount = typeof global.getMount === "function"
-      ? global.getMount(character)
-      : getGameState()?.units?.find((unit) => idOf(unit) === character.mountedOn);
-    return mount ? [character, mount] : [character];
+      ? global.getMount(unit)
+      : getGameState()?.units?.find((candidate) => idOf(candidate) === unit.mountedOn);
+    return mount ? [unit, mount] : [unit];
   }
 
   function chooseAIMountedDamageTarget(character, mount, damage, source = null) {

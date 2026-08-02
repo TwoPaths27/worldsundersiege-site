@@ -618,7 +618,12 @@ function createSelectedUnitControls(unit) {
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (!button.disabled) setSelectedUnitAction("dismount");
+      if (!button.disabled) {
+        Promise.resolve(setSelectedUnitAction("dismount")).catch((error) => {
+          console.error("Dismount prompt failed:", error);
+          if (typeof addLog === "function") addLog("The dismount choice could not be opened.");
+        });
+      }
     });
     mountRow.appendChild(button);
     controls.appendChild(mountRow);
@@ -1378,7 +1383,9 @@ function createUnitToken(unit) {
         GameState.selectedUnitAction === "attack" &&
         GameState.attackableUnitIds?.has(unit.id)
       ) {
-        beginAttackAgainstMountedPair(selectedAttacker, unit, rider);
+        showMountedAttackTargetChoice(selectedAttacker, unit, (chosenTarget) => {
+          if (chosenTarget) beginAttackAgainstMountedPair(selectedAttacker, unit, chosenTarget);
+        });
         return;
       }
       if (selectedCard && isItem(selectedCard)) {
@@ -1418,7 +1425,9 @@ function createUnitToken(unit) {
         GameState.selectedUnitAction === "attack" &&
         GameState.attackableUnitIds?.has(unit.id)
       ) {
-        beginAttackAgainstMountedPair(selectedAttacker, unit, unit);
+        showMountedAttackTargetChoice(selectedAttacker, unit, (chosenTarget) => {
+          if (chosenTarget) beginAttackAgainstMountedPair(selectedAttacker, unit, chosenTarget);
+        });
         return;
       }
       if (selectedCard && isItem(selectedCard)) {

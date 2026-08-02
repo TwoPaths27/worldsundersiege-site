@@ -395,6 +395,31 @@
     return true;
   }
 
+  function showSirKayFireDamage(targets, duration = 1250) {
+    for (const target of targets ?? []) {
+      const targetId = String(target?.id ?? "");
+      if (!targetId) continue;
+      const token = document.querySelector(`.unit-token[data-unit-id="${CSS.escape(targetId)}"]`);
+      if (!token) continue;
+      token.classList.remove("is-sir-kay-burning");
+      token.querySelectorAll(".sir-kay-flame").forEach((node) => node.remove());
+      void token.offsetWidth;
+      token.classList.add("is-sir-kay-burning");
+      for (let index = 0; index < 10; index += 1) {
+        const flame = document.createElement("span");
+        flame.className = "sir-kay-flame";
+        flame.style.setProperty("--flame-x", `${7 + Math.random() * 86}%`);
+        flame.style.setProperty("--flame-delay", `${Math.random() * 240}ms`);
+        flame.style.setProperty("--flame-scale", `${0.75 + Math.random() * 0.65}`);
+        token.appendChild(flame);
+      }
+      window.setTimeout(() => {
+        token.classList.remove("is-sir-kay-burning");
+        token.querySelectorAll(".sir-kay-flame").forEach((node) => node.remove());
+      }, duration);
+    }
+  }
+
   function resolveKayEndTurn(kay, playerId) {
     if (!isFaceUpInPlay(kay) || controllerOf(kay) !== Number(playerId)) return 0;
     const range = typeof global.getCurrentRange === "function" ? global.getCurrentRange(kay) : Number(kay.currentRange ?? kay.range ?? 0);
@@ -413,6 +438,7 @@
       particleCount: 34,
       duration: 1500,
     });
+    showSirKayFireDamage(targets);
     for (const target of targets) target.currentHP = Number(target.currentHP ?? target.hp ?? 0) - 2;
     global.addLog?.(`${kay.name} deals 2 damage to ${targets.length} Unit${targets.length === 1 ? "" : "s"}/Construct${targets.length === 1 ? "" : "s"} in range.`);
     global.renderGame?.();
