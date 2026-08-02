@@ -157,20 +157,22 @@ function closeDeckSearchModal(modal) {
   }
 }
 
-function showDeckSearchModal(playerOrId, options = {}) {
+function showZoneSearchModal(playerOrId, zoneName = ZoneTypes.DECK, options = {}) {
   const playerId = zoneEffectPlayerId(playerOrId);
   const player = typeof ensurePlayerZones === "function" ? ensurePlayerZones(playerId) : zoneEffectPlayer(playerId);
   if (!player) return Promise.resolve(null);
 
+  const normalizedZone = typeof normalizeZoneName === "function" ? normalizeZoneName(zoneName) : zoneName;
+  const zoneCards = typeof getZone === "function" ? getZone(normalizedZone, playerId) : player?.[normalizedZone];
   const predicate = normalizeCardFilter(options.filter);
-  const cards = [...(player.deck ?? [])].sort((a, b) =>
+  const cards = [...(Array.isArray(zoneCards) ? zoneCards : [])].sort((a, b) =>
     String(a?.name ?? "").localeCompare(String(b?.name ?? ""), undefined, { sensitivity: "base" })
   );
 
   return new Promise((resolve) => {
     const modal = createDeckSearchModalBase({
-      title: options.title ?? "Search Your Deck",
-      message: options.message ?? "Choose a card from your Deck.",
+      title: options.title ?? (normalizedZone === ZoneTypes.DECK ? "Search Your Deck" : `Choose from ${String(normalizedZone)}`),
+      message: options.message ?? "Choose a card.",
       confirmLabel: options.confirmLabel ?? "Choose Card",
       cancelLabel: options.cancelLabel ?? "Cancel",
     });
@@ -187,7 +189,7 @@ function showDeckSearchModal(playerOrId, options = {}) {
     if (!cards.length) {
       const empty = document.createElement("p");
       empty.className = "deck-search-modal__empty";
-      empty.textContent = "Your Deck is empty.";
+      empty.textContent = normalizedZone === ZoneTypes.DECK ? "Your Deck is empty." : `This ${String(normalizedZone)} zone is empty.`;
       list.appendChild(empty);
     }
 
@@ -237,6 +239,14 @@ function showDeckSearchModal(playerOrId, options = {}) {
     });
     cancel.focus();
   });
+}
+
+function showDeckSearchModal(playerOrId, options = {}) {
+  return showZoneSearchModal(playerOrId, ZoneTypes.DECK, options);
+}
+
+function showDiscardSearchModal(playerOrId, options = {}) {
+  return showZoneSearchModal(playerOrId, ZoneTypes.DISCARD, options);
 }
 
 async function searchDeckInteractive(playerOrId, options = {}) {
@@ -461,7 +471,9 @@ window.WUSZoneEffects = Object.freeze({
 });
 
 window.searchDeck = searchDeck;
+window.showZoneSearchModal = showZoneSearchModal;
 window.showDeckSearchModal = showDeckSearchModal;
+window.showDiscardSearchModal = showDiscardSearchModal;
 window.searchDeckInteractive = searchDeckInteractive;
 window.revealCardsFromDeck = revealCardsFromDeck;
 window.clearRevealedCards = clearRevealedCards;

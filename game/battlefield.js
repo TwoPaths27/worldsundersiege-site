@@ -399,8 +399,16 @@ async function setSelectedUnitAction(action) {
   }
 
   if (action === "dismount") {
-    if (typeof canDismount !== "function" || !canDismount(unit)) return;
     const mount = typeof getMount === "function" ? getMount(unit) : null;
+    if (!mount) return;
+    if (typeof canDismount !== "function" || !canDismount(unit)) {
+      await showBattlefieldChoiceModal(
+        "Cannot Dismount",
+        unit.mountChangeUsed ? "You cannot dismount during the same turn you mounted." : "This Character cannot dismount right now.",
+        { yesLabel: "OK", noLabel: "Close" }
+      );
+      return;
+    }
     if (!mount) return;
     const confirmed = await showBattlefieldChoiceModal(
       "Dismount",
@@ -613,7 +621,8 @@ function createSelectedUnitControls(unit) {
     button.type = "button";
     button.className = "selected-unit-mount-control";
     button.textContent = "DISMOUNT";
-    button.disabled = !canDismountNow;
+    button.disabled = false;
+    button.title = canDismountNow ? "Dismount this Character" : "You cannot dismount during the same turn you mounted.";
     button.classList.toggle("is-active", GameState.selectedUnitAction === "dismount");
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -2744,19 +2753,20 @@ async function resolveUnitAttack(attacker, defender, constructOperator = null) {
     playOneShot(gameplayAudio.attack);
     await animateAttack(attackerToken, defenderToken, attacker, defender);
 
-    const canRetaliate = canUnitRetaliate(attacker, defender);
+    const retaliationSource = (typeof getRider === "function" && getRider(defender)) || defender;
+    const canRetaliate = canUnitRetaliate(attacker, retaliationSource);
 
-// Show the defender's retaliation before resolving deaths.
-// The defender can retaliate even when the incoming attack is lethal.
+// Show the defender's retaliation before resolving deaths. A mounted Animal
+// cannot attack by itself, but its rider can retaliate from the shared square.
 if (canRetaliate) {
   playOneShot(gameplayAudio.attack);
-  await animateAttack(defenderToken, attackerToken, defender, attacker);
+  await animateAttack(defenderToken, attackerToken, retaliationSource, attacker);
 }
 
 // If the attacker is mounted and the defender will retaliate, the defending
 // player chooses whether return damage hits the Character or the Mount.
 if (canRetaliate && attacker?.mountedOn && typeof showMountedDamageAssignmentChoice === "function") {
-  const returnTarget = await showMountedDamageAssignmentChoice(defender, attacker, defender.currentAttack, "Assign Return Damage");
+  const returnTarget = await showMountedDamageAssignmentChoice(retaliationSource, attacker, retaliationSource.currentAttack, "Assign Return Damage");
   if (returnTarget) {
     GameState.mountedDamageTargetQueue ??= [];
     GameState.mountedDamageTargetQueue.push(returnTarget.id);
@@ -2766,7 +2776,7 @@ if (canRetaliate && attacker?.mountedOn && typeof showMountedDamageAssignmentCho
 // Apply all combat damage before checking whether either unit died.
 const combatResult = applyUnitCombatDamage(
   attacker,
-  defender,
+  retaliationSource,
   canRetaliate
 );
 
@@ -2784,7 +2794,7 @@ addLog(
 
 if (canRetaliate) {
   addLog(
-    `↩ Player ${defender.owner}'s ${defender.name} dealt ${combatResult.defenderDamage ?? defender.currentAttack} damage to ${attackerDamageTarget.name}.`
+    `↩ Player ${retaliationSource.owner}'s ${retaliationSource.name} dealt ${combatResult.defenderDamage ?? retaliationSource.currentAttack} damage to ${attackerDamageTarget.name}.`
   );
 }
 

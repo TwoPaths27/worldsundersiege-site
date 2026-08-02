@@ -30,6 +30,32 @@ function getPublicZoneTitle(playerId, zoneName) {
   return { ownerName, label, title: `${ownerName} ${label}` };
 }
 
+
+function openPublicZoneCardViewer(card) {
+  if (!card) return false;
+  const modal = document.createElement("div");
+  modal.className = "public-zone-card-viewer";
+  const art = card.cardImage || card.image || card.artwork || "";
+  modal.innerHTML = `
+    <div class="public-zone-card-viewer__backdrop"></div>
+    <section class="public-zone-card-viewer__dialog" role="dialog" aria-modal="true" aria-label="${String(card.name ?? "Card").replace(/"/g, "&quot;")}">
+      <button type="button" class="public-zone-card-viewer__close" aria-label="Close enlarged card">×</button>
+      ${art ? `<img class="public-zone-card-viewer__image" src="${art}" alt="${String(card.name ?? "Card").replace(/"/g, "&quot;")}">` : ""}
+      <h2>${card.name ?? "Unknown Card"}</h2>
+    </section>`;
+  const close = () => {
+    modal.remove();
+    if (!document.querySelector(".public-zone-card-viewer")) document.body.classList.remove("card-viewer-open");
+  };
+  modal.querySelector(".public-zone-card-viewer__close")?.addEventListener("click", close);
+  modal.querySelector(".public-zone-card-viewer__backdrop")?.addEventListener("click", close);
+  modal.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
+  document.body.appendChild(modal);
+  document.body.classList.add("card-viewer-open");
+  modal.querySelector(".public-zone-card-viewer__close")?.focus();
+  return true;
+}
+
 function createPublicZoneCard(card) {
   const button = document.createElement("button");
   button.type = "button";
@@ -72,7 +98,10 @@ function createPublicZoneCard(card) {
   button.append(cost, stats, name);
   button.addEventListener("mouseenter", () => renderHandCardPreview(card));
   button.addEventListener("focus", () => renderHandCardPreview(card));
-  button.addEventListener("click", () => renderHandCardPreview(card));
+  button.addEventListener("click", () => {
+    renderHandCardPreview(card);
+    openPublicZoneCardViewer(card);
+  });
   return button;
 }
 
@@ -154,3 +183,4 @@ window.PublicZoneBrowser = PublicZoneBrowser;
 window.openPublicZoneBrowser = openPublicZoneBrowser;
 window.closePublicZoneBrowser = closePublicZoneBrowser;
 window.refreshPublicZoneBrowser = refreshPublicZoneBrowser;
+window.openPublicZoneCardViewer = openPublicZoneCardViewer;

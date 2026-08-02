@@ -354,41 +354,69 @@
 
   function healOtherFriendlyUnitsWhenLucanDies(lucan) {
     const controller = controllerOf(lucan);
-    let healed = 0;
+    const targets = [];
     for (const unit of getGameState().units ?? []) {
       if (!unit || unit.id === lucan.id || controllerOf(unit) !== controller) continue;
       if (typeof global.isUnit === "function" && !global.isUnit(unit)) continue;
       const maximum = typeof global.getCurrentMaxHP === "function"
         ? global.getCurrentMaxHP(unit)
         : Number(unit.maxHP ?? unit.printedHP ?? unit.hp ?? 0);
-      if (Number(unit.currentHP) < maximum) {
-        unit.currentHP = maximum;
-        healed += 1;
-      }
+      if (Number(unit.currentHP) < maximum) targets.push(unit);
     }
-    global.addLog?.(`${lucan.name} removes all Damage Counters from ${healed} other Unit${healed === 1 ? "" : "s"} you control.`);
+    global.presentEffectActivation?.(lucan, {
+      eventType: "sirLucanDies", targets, impactText: "HEALED", fireworks: true,
+      particleCount: 48, duration: 1450, force: true,
+    });
+    for (const unit of targets) {
+      const maximum = typeof global.getCurrentMaxHP === "function"
+        ? global.getCurrentMaxHP(unit)
+        : Number(unit.maxHP ?? unit.printedHP ?? unit.hp ?? 0);
+      unit.currentHP = maximum;
+    }
+    global.addLog?.(`${lucan.name} removes all Damage Counters from ${targets.length} other Unit${targets.length === 1 ? "" : "s"} you control.`);
     global.renderGame?.();
-    return healed;
+    return targets.length;
   }
 
-  function resolveBedivereReveal(unit) {
+  function confirmBedivereItem(unit, card) {
+    return new Promise((resolve) => {
+      const modal = createKnightModalBase({ title: "Select this Item?", message: `Return ${card.name} to your hand?`, wide: true });
+      modal.classList.add("bedivere-item-confirm");
+      const body = modal.querySelector(".knight-effect-modal__body");
+      const art = card.cardImage || card.image || card.artwork || "";
+      if (art) {
+        const image = document.createElement("img"); image.className = "bedivere-item-confirm__image"; image.src = art; image.alt = card.name ?? "Item"; body.appendChild(image);
+      }
+      const actions = modal.querySelector(".knight-effect-modal__actions");
+      const no = createKnightButton("No", "cancel"); const yes = createKnightButton("Yes", "confirm");
+      const finish = (value) => { closeKnightModal(modal); resolve(value); };
+      no.addEventListener("click", () => finish(false)); yes.addEventListener("click", () => finish(true));
+      actions.append(no, yes); yes.focus();
+    });
+  }
+
+  async function resolveBedivereReveal(unit) {
     if (!isSirBedivere(unit) || !isFaceUpInPlay(unit)) return false;
     const playerId = controllerOf(unit);
     const player = global.ensurePlayerZones?.(playerId) ?? getGameState().players?.[playerId];
     const items = (player?.discard ?? []).filter((card) => typeof global.isItem === "function" && global.isItem(card));
     if (!items.length) {
+      await showKnightMessageModal("No Item Found", "There are no Items in your Discard Pile.");
       global.addLog?.(`${unit.name} found no Item in the Discard Pile.`);
       return false;
     }
-    if (global.confirm?.(`${unit.name}: Return an Item from your Discard Pile to your hand?`) === false) return false;
-    const chosen = chooseOneByPrompt([...items].reverse(), `${unit.name}: Choose an Item`);
+    const useEffect = await showKnightChoiceModal("Sir Bedivere — Reveal", "Choose one Item from your Discard Pile and return it to your hand?", { yesLabel: "Open Discard", noLabel: "No" });
+    if (!useEffect) return false;
+    const chosen = typeof global.showDiscardSearchModal === "function"
+      ? await global.showDiscardSearchModal(playerId, {
+          title: "Choose an Item", message: "Only Items may be selected.", confirmLabel: "Inspect Item",
+          filter: (card) => typeof global.isItem === "function" && global.isItem(card),
+        })
+      : null;
     if (!chosen) return false;
-    const moved = global.moveCard?.(chosen, {
-      playerId,
-      from: global.ZoneTypes.DISCARD,
-      to: global.ZoneTypes.HAND,
-      reason: "sir-bedivere-reveal",
-    });
+    if (!(await confirmBedivereItem(unit, chosen))) return false;
+    global.presentEffectActivation?.(unit, { eventType: "sirBedivereReveal", targets: [chosen], fireworks: true, force: true });
+    const moved = global.moveCard?.(chosen, { playerId, from: global.ZoneTypes.DISCARD, to: global.ZoneTypes.HAND, reason: "sir-bedivere-reveal" });
     if (!moved) return false;
     global.addLog?.(`${unit.name} returned ${chosen.name} from the Discard Pile to hand.`);
     global.renderGame?.();
@@ -533,10 +561,10 @@
       if (isSirSagremore(unit)) applySagremoreRevealSpeed(unit);
     }, { priority: 20 });
 
-    global.onGameEvent("unitDestroyed", (event) => {
+    global.onGameEvent("unitLeavingPlay", (event) => {
       const unit = event?.payload?.unit;
       if (isSirLucan(unit)) healOtherFriendlyUnitsWhenLucanDies(unit);
-    }, { priority: 20 });
+    }, { priority: 100 });
 
     global.onGameEvent("turnEnding", (event) => {
       const playerId = Number(event?.payload?.playerId);

@@ -8521,3 +8521,13 @@ body.is-game-animating .selected-unit-actions button {
   100% { opacity: 0; transform: translate(-50%,-46px) scale(.12) rotate(-10deg); }
 }
 .battlefield-choice-modal, .battlefield-choice-modal__dialog, .battlefield-choice-modal__button { pointer-events: auto !important; }
+
+
+/* V19.9.7.9n — public-zone zoom, Bedivere confirmation */
+.public-zone-card-viewer { position:fixed; inset:0; z-index:12000; display:grid; place-items:center; }
+.public-zone-card-viewer__backdrop { position:absolute; inset:0; background:rgba(2,5,10,.86); backdrop-filter:blur(5px); }
+.public-zone-card-viewer__dialog { position:relative; z-index:1; width:min(86vw,430px); max-height:92vh; display:grid; justify-items:center; gap:12px; padding:18px; border:2px solid #d7b65b; border-radius:18px; background:linear-gradient(155deg,#182234,#090d15); box-shadow:0 0 48px rgba(235,194,82,.35); }
+.public-zone-card-viewer__image { display:block; max-width:100%; max-height:78vh; object-fit:contain; border-radius:12px; box-shadow:0 18px 50px #000; }
+.public-zone-card-viewer__close { position:absolute; top:8px; right:10px; z-index:2; width:40px; height:40px; border-radius:50%; border:1px solid #e8cf82; background:#111927; color:#fff; font-size:28px; cursor:pointer; }
+.public-zone-card-viewer h2 { margin:0; color:#f5dfa0; font-family:Georgia,serif; text-align:center; }
+.bedivere-item-confirm__image { display:block; width:min(310px,70vw); max-height:58vh; object-fit:contain; margin:0 auto 12px; border-radius:12px; box-shadow:0 15px 42px rgba(0,0,0,.75); }
