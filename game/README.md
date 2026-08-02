@@ -1,14 +1,23 @@
-# Worlds Under Siege game folder — v20
+# Worlds Under Siege Mobile Route
 
-Adds critical Stronghold pulsing, mouse-click audio, card energy/placement audio, movement/attack/death/Stronghold-hit audio, and destroyed-unit travel to discard.
+This directory adds a separate mobile presentation route without modifying the desktop route.
 
-Expected sound files in the site root `sounds` folder:
-- mouse-click.mp3
-- energy.mp3
-- placement.mp3
-- move.mp3
-- attack.mp3
-- death.mp3
-- stronghold-hit.mp3
+- Desktop remains: `/game/`
+- Mobile is: `/game/mobile/`
 
-V19.9.4 adds the Army Zone engine and interface. See V19_9_4_ARMY_ZONE_NOTES.md.
+`mobile/index.html` uses `<base href="../">`, so it loads the same engine, card database, rules, effects, sounds, and desktop DOM from `/game/`. It then loads only `mobile/mobile.css` and `mobile/mobile.js` to provide a touch-focused presentation.
+
+Implemented mobile phases:
+
+1. Separate route and separate CSS/JS; no desktop files changed.
+2. Shared normal game bootstrap with mobile enhancements applied afterward.
+3. One-finger board pan, two-finger pinch zoom, board centering, and double-tap reset.
+4. Fixed mobile toolbar with End Turn, Chat, Unit/Card, center, and Exit controls.
+5. Chat drawer with unread badge.
+6. Selected-unit/Card Preview drawer; Game Log omitted from mobile.
+7. Swipeable mobile hand.
+8. Tap a battlefield Unit and choose Expand to view its artwork.
+9. Phone-sized scrollable game dialogs and safe-area support.
+10. Fail-safe: if mobile enhancement fails, the shared standard interface remains instead of a blank battlefield.
+
+Deploy the entire project and visit `/game/mobile/` on a phone. Do not overwrite `/game/index.html` with the mobile index.
