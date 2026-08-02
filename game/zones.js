@@ -218,8 +218,6 @@ function endGameByDeckOut(playerOrId) {
 
   player.hasLost = true;
   player.lossReason = "deck-out";
-  GameState.gameOver = true;
-  GameState.winnerPlayerId = opponentId;
 
   if (typeof addLog === "function") {
     addLog(`${player.name} tried to draw from an empty Deck and loses the game.`);
@@ -228,7 +226,16 @@ function endGameByDeckOut(playerOrId) {
     emitGameEvent("playerLost", { playerId, reason: "deck-out", winnerPlayerId: opponentId }, { source: player });
     emitGameEvent("gameEnded", { winnerPlayerId: opponentId, loserPlayerId: playerId, reason: "deck-out" }, { source: GameState });
   }
-  if (typeof renderGame === "function") renderGame();
+
+  // Deck-out uses the same cinematic end-game pipeline as a destroyed
+  // Stronghold. Do not merely freeze the state after writing to the log.
+  if (typeof endGame === "function" && opponentId != null) {
+    Promise.resolve(endGame(opponentId, playerId, { reason: "deck-out" })).catch(console.error);
+  } else {
+    GameState.gameOver = true;
+    GameState.winnerPlayerId = opponentId;
+    if (typeof renderGame === "function") renderGame();
+  }
   return true;
 }
 

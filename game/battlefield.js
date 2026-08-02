@@ -1153,7 +1153,7 @@ function showMountedAttackTargetChoice(attacker, mount, onChoose = null) {
       button.type = "button";
       button.className = "mounted-target-choice__option";
       const art = unit.cardImage || unit.tileImage || "";
-      button.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
+      button.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>${getCombatStatSummary(unit, attacker?.currentAttack)}`;
       ["pointerdown", "mousedown", "touchstart", "touchend", "click"].forEach((type) => {
         button.addEventListener(type, (event) => {
           blockPointer(event);
@@ -1202,7 +1202,7 @@ function showMountedDamageAssignmentChoice(source, mountedCharacter, damage, hea
     const add = (unit, label) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "mounted-target-choice__option";
       const art = unit.cardImage || unit.tileImage || "";
-      b.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
+      b.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>${getCombatStatSummary(unit, damage)}`;
       b.addEventListener("pointerdown", stop, true);
       b.addEventListener("click", (e) => finish(unit, e), true);
       options.appendChild(b);
@@ -1214,6 +1214,28 @@ function showMountedDamageAssignmentChoice(source, mountedCharacter, damage, hea
   });
 }
 window.showMountedDamageAssignmentChoice = showMountedDamageAssignmentChoice;
+
+function getCombatStatSummary(unit, incomingDamage = null) {
+  const atk = Math.max(0, Number(unit?.currentAttack ?? unit?.attack ?? unit?.atk ?? 0));
+  const spd = Math.max(0, Number(unit?.currentSpeed ?? unit?.speed ?? unit?.spd ?? 0));
+  const rng = Math.max(0, Number(unit?.currentRange ?? unit?.range ?? 0));
+  const hp = Math.max(0, Number(unit?.currentHP ?? unit?.hp ?? unit?.health ?? 0));
+  const damage = incomingDamage == null ? null : Math.max(0, Number(incomingDamage) || 0);
+  const after = damage == null ? null : Math.max(0, hp - damage);
+  return `<span class="mounted-choice-stats">ATK ${atk} · SPD ${spd} · RNG ${rng} · HP ${hp}</span>` +
+    (damage == null ? "" : `<span class="mounted-choice-damage">Takes ${damage} → ${after} HP${after <= 0 ? " (Destroyed)" : ""}</span>`);
+}
+
+function beginAttackAgainstMountedPair(attacker, mount, chosenTarget) {
+  if (!attacker || !mount || !chosenTarget) return false;
+  GameState.mountedDamageTargetQueue ??= [];
+  GameState.mountedDamageTargetQueue.push(chosenTarget.id);
+  GameState.preferredMountedDamageTargetId = chosenTarget.id;
+  GameState.suppressBattlefieldClickUntil = Date.now() + 900;
+  installMountedChoicePointerShield(700);
+  Promise.resolve(attackUnit(attacker, mount, getPendingConstructOperator())).catch(console.error);
+  return true;
+}
 
 function createUnitToken(unit) {
   const token = document.createElement("div");
@@ -1349,6 +1371,16 @@ function createUnitToken(unit) {
       event.preventDefault();
       event.stopPropagation();
       const selectedCard = getSelectedCard();
+      const selectedAttacker = getSelectedUnit();
+      if (
+        Number(unit.owner) !== Number(GameState.activePlayer) &&
+        selectedAttacker &&
+        GameState.selectedUnitAction === "attack" &&
+        GameState.attackableUnitIds?.has(unit.id)
+      ) {
+        beginAttackAgainstMountedPair(selectedAttacker, unit, rider);
+        return;
+      }
       if (selectedCard && isItem(selectedCard)) {
         if (canAttachItemToHost(selectedCard, rider, { playerId: getInteractionPlayerId() })) {
           equipSelectedItem(rider);
@@ -1379,6 +1411,16 @@ function createUnitToken(unit) {
       event.preventDefault();
       event.stopPropagation();
       const selectedCard = getSelectedCard();
+      const selectedAttacker = getSelectedUnit();
+      if (
+        Number(unit.owner) !== Number(GameState.activePlayer) &&
+        selectedAttacker &&
+        GameState.selectedUnitAction === "attack" &&
+        GameState.attackableUnitIds?.has(unit.id)
+      ) {
+        beginAttackAgainstMountedPair(selectedAttacker, unit, unit);
+        return;
+      }
       if (selectedCard && isItem(selectedCard)) {
         if (canAttachItemToHost(selectedCard, unit, { playerId: getInteractionPlayerId() })) {
           equipSelectedItem(unit);
@@ -1591,13 +1633,7 @@ function handleBattlefieldClick(x, y) {
         const mountedDefender = clickedUnit;
         const operator = getPendingConstructOperator();
         showMountedAttackTargetChoice(attackingUnit, mountedDefender, (chosenTarget) => {
-          GameState.mountedDamageTargetQueue ??= [];
-          GameState.mountedDamageTargetQueue.push(chosenTarget.id);
-          GameState.preferredMountedDamageTargetId = chosenTarget.id;
-          // Begin combat from the modal callback itself, before any tile click can fire.
-          window.setTimeout(() => {
-            attackUnit(attackingUnit, mountedDefender, operator).catch?.(console.error);
-          }, 0);
+          beginAttackAgainstMountedPair(attackingUnit, mountedDefender, chosenTarget);
         });
         return;
       }
@@ -2598,7 +2634,7 @@ renderGame();
 }
 
 
-async function endGame(winnerPlayerId, losingPlayerId) {
+async function endGame(winnerPlayerId, losingPlayerId, options = {}) {
   GameState.gameOver = true;
   GameState.winnerPlayerId = winnerPlayerId;
   GameState.selectedUnitId = null;
@@ -2614,7 +2650,12 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   GameState.pendingConstructOperatorId = null;
 
   clearAttackHoverState();
-  addLog(`🏆 Player ${winnerPlayerId} destroyed Player ${losingPlayerId}'s Stronghold and won the match!`);
+  const endReason = options?.reason ?? "stronghold";
+  if (endReason === "deck-out") {
+    addLog(`🏆 Player ${winnerPlayerId} won because Player ${losingPlayerId} could not draw from an empty Deck.`);
+  } else {
+    addLog(`🏆 Player ${winnerPlayerId} destroyed Player ${losingPlayerId}'s Stronghold and won the match!`);
+  }
   renderGame();
 
   const winningStronghold = winnerPlayerId === 1
@@ -2635,9 +2676,15 @@ async function endGame(winnerPlayerId, losingPlayerId) {
   const isLocalVictory = winnerPlayerId === 1;
   elements.victoryModal.classList.toggle("victory-modal--win", isLocalVictory);
   elements.victoryModal.classList.toggle("victory-modal--defeat", !isLocalVictory);
-  elements.victoryEyebrow.textContent = isLocalVictory ? "Stronghold Conquered" : "Stronghold Lost";
+  elements.victoryEyebrow.textContent = endReason === "deck-out"
+    ? (isLocalVictory ? "Opponent Deck Exhausted" : "Deck Exhausted")
+    : (isLocalVictory ? "Stronghold Conquered" : "Stronghold Lost");
   elements.victoryTitle.textContent = isLocalVictory ? "Victory" : "Defeat";
-  elements.victoryMessage.textContent = isLocalVictory
+  elements.victoryMessage.textContent = endReason === "deck-out"
+    ? (isLocalVictory
+      ? `Player ${losingPlayerId} could not draw a card and lost the match.`
+      : `You could not draw a card from your empty Deck.`)
+    : isLocalVictory
     ? "The enemy Stronghold has fallen. The battlefield is yours."
     : "Your Stronghold has fallen. The siege is over.";
 
@@ -3159,13 +3206,13 @@ function showCardEffectActivation(source, options = {}) {
     : [];
   const sourceRect = token.getBoundingClientRect();
   if (options.reveal) {
-    const skyBeam = document.createElement("span");
-    skyBeam.className = "effect-reveal-sky-beam";
-    skyBeam.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
-    skyBeam.style.top = `${Math.max(0, sourceRect.top - 170)}px`;
-    skyBeam.style.height = `${Math.max(190, 170 + sourceRect.height / 2)}px`;
-    document.body.appendChild(skyBeam);
-    window.setTimeout(() => skyBeam.remove(), 1250);
+    // A radial magical burst reads as an activation instead of a rigid rod.
+    const burst = document.createElement("span");
+    burst.className = "effect-reveal-burst";
+    burst.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+    burst.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+    document.body.appendChild(burst);
+    window.setTimeout(() => burst.remove(), 1250);
   }
   targetIds.forEach((targetId, index) => {
     const targetToken = elements?.battlefield?.querySelector?.(`.unit-token[data-unit-id="${CSS.escape(String(targetId))}"]`);

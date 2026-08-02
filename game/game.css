@@ -8472,3 +8472,28 @@ body.is-game-animating .selected-unit-actions button {
   transform-origin: center; border-radius: 12px; overflow: hidden;
   filter: drop-shadow(0 14px 18px rgba(0,0,0,.72)) drop-shadow(0 0 15px rgba(78,172,255,.75));
 }
+
+
+/* V19.9.7.9l — radial activation burst and mounted combat details */
+.effect-reveal-burst {
+  position: fixed; z-index: 14980; width: 24px; height: 24px; border-radius: 50%;
+  pointer-events: none; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #fffbd1 0 12%, #ffd85e 13% 29%, rgba(255,174,18,.7) 30% 46%, transparent 48%);
+  box-shadow: 0 0 18px #fff5a8, 0 0 42px #ffc52f, 0 0 76px rgba(255,137,0,.78);
+  animation: wus-reveal-burst 1.15s cubic-bezier(.12,.72,.2,1) both;
+}
+.effect-reveal-burst::before, .effect-reveal-burst::after {
+  content: ""; position: absolute; inset: 50%; width: 180px; height: 4px;
+  transform: translate(-50%,-50%); border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #fff5a0 28%, #ffd13d 50%, #fff5a0 72%, transparent);
+  box-shadow: 0 0 12px #ffbd24;
+}
+.effect-reveal-burst::after { transform: translate(-50%,-50%) rotate(90deg); }
+@keyframes wus-reveal-burst {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.15) rotate(-12deg); }
+  18% { opacity: 1; transform: translate(-50%,-50%) scale(1.25) rotate(0); }
+  55% { opacity: .92; transform: translate(-50%,-50%) scale(2.1) rotate(8deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(3.15) rotate(18deg); }
+}
+.mounted-choice-stats { display:block; margin-top:6px; color:#d8dee9; font-size:12px; font-weight:800; }
+.mounted-choice-damage { display:block; margin-top:5px; color:#ffcf72; font-size:13px; font-weight:900; }
