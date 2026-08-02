@@ -101,6 +101,12 @@
   function mountCharacter(character, mount, options = {}) {
     if (!canMount(character, mount, options)) return false;
 
+    // Capture the rider and Mount positions before state/render changes so the
+    // Character can visibly fly into the mounted tile like an equipped Item.
+    const finishMountAnimation = options.animate !== false && typeof global.prepareMountEquipAnimation === "function"
+      ? global.prepareMountEquipAnimation(character, mount)
+      : null;
+
     const characterId = idOf(character);
     const mountId = idOf(mount);
     if (!characterId || !mountId) return false;
@@ -133,7 +139,9 @@
     if (typeof global.renderGame === "function" && options.render !== false) {
       global.renderGame();
     }
-    if (typeof global.animateUnitMounted === "function" && options.animate !== false) {
+    if (typeof finishMountAnimation === "function") {
+      requestAnimationFrame(() => requestAnimationFrame(finishMountAnimation));
+    } else if (typeof global.animateUnitMounted === "function" && options.animate !== false) {
       global.animateUnitMounted(character, mount);
     }
     return true;

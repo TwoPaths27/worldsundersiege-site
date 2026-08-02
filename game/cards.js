@@ -804,6 +804,11 @@ function commitSelectedAction(targetId = null) {
   if (actionEnergyCost === 0 && canMerlinMakeActionFree(user, playerId)) {
     user.merlinFreeActionTurnKey = getCurrentActionTurnKey();
     addLog(`${user.name}'s Magical Prowess makes ${card.name} cost 0 Energy.`);
+    emitGameEvent(
+      "merlinFreeActionUsed",
+      { merlin: user, action: card, playerId, stackEntry: queuedStackEntry },
+      { source: user }
+    );
   }
 
   emitGameEvent(

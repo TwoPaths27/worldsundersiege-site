@@ -466,15 +466,20 @@
       : `${Number(getGameState().turn) || 0}:${Number(getGameState().activePlayer) || 0}`;
     if (unit.sagremoreRevealTurnIdentity === identity) return false;
     unit.sagremoreRevealTurnIdentity = identity;
-    global.presentEffectActivation?.(unit, {
-      eventType: "sirSagremoreReveal",
-      reveal: true,
-      fireworks: true,
-      targets: [unit],
-      impactText: "+1 SPD",
-      particleCount: 40,
-      duration: 1400,
-    });
+    // Defer the presentation until the battlefield token exists. Force avoids
+    // the shared reveal listener suppressing this card-specific flare.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      global.presentEffectActivation?.(unit, {
+        eventType: "sirSagremoreReveal",
+        reveal: true,
+        fireworks: true,
+        targets: [unit],
+        impactText: "+1 SPD",
+        particleCount: 52,
+        duration: 1600,
+        force: true,
+      });
+    }));
     global.addContinuousEffect?.({
       id: `sagremore-reveal-speed:${unit.id}:${identity}`,
       active: true,

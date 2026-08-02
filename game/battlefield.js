@@ -1099,7 +1099,15 @@ function getEquippedItemPreviewCard(item) {
   return preview;
 }
 
-function showMountedAttackTargetChoice(attacker, mount) {
+function installMountedChoicePointerShield(duration = 850) {
+  const shield = document.createElement("div");
+  shield.className = "mounted-choice-pointer-shield";
+  shield.setAttribute("aria-hidden", "true");
+  document.body.appendChild(shield);
+  window.setTimeout(() => shield.remove(), Math.max(250, Number(duration) || 850));
+}
+
+function showMountedAttackTargetChoice(attacker, mount, onChoose = null) {
   const rider = typeof getRider === "function" ? getRider(mount) : null;
   if (!rider) return Promise.resolve(mount);
   GameState.isChoosingMountedAttackTarget = true;
@@ -1117,19 +1125,28 @@ function showMountedAttackTargetChoice(attacker, mount) {
     const options = overlay.querySelector(".mounted-target-choice__options");
     let finished = false;
     const blockPointer = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation?.();
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      event?.stopImmediatePropagation?.();
     };
     const finish = (choice, event) => {
       if (finished) return;
       finished = true;
-      if (event) blockPointer(event);
+      blockPointer(event);
       overlay.classList.add("is-resolving-choice");
+      GameState.suppressBattlefieldClickUntil = Date.now() + 1000;
+      installMountedChoicePointerShield(900);
+
+      // Execute the combat callback before the modal is removed. This prevents
+      // the browser's synthetic follow-up tap from selecting the defender.
+      if (choice && typeof onChoose === "function") {
+        try { onChoose(choice); } catch (error) { console.error(error); }
+      }
       resolve(choice);
-      // Keep the modal over the board briefly to absorb the browser's
-      // synthetic follow-up click/tap. This prevents selecting the defender.
-      window.setTimeout(() => overlay.remove(), 260);
+      window.setTimeout(() => {
+        overlay.remove();
+        GameState.isChoosingMountedAttackTarget = false;
+      }, 420);
     };
     const make = (unit, label) => {
       const button = document.createElement("button");
@@ -1137,9 +1154,12 @@ function showMountedAttackTargetChoice(attacker, mount) {
       button.className = "mounted-target-choice__option";
       const art = unit.cardImage || unit.tileImage || "";
       button.innerHTML = `${art ? `<img src="${art}" alt="">` : ""}<strong>${label}</strong><span>${unit.name}</span>`;
-      button.addEventListener("pointerdown", blockPointer, true);
-      button.addEventListener("touchend", blockPointer, { capture: true, passive: false });
-      button.addEventListener("click", (event) => finish(unit, event), true);
+      ["pointerdown", "mousedown", "touchstart", "touchend", "click"].forEach((type) => {
+        button.addEventListener(type, (event) => {
+          blockPointer(event);
+          if (type === "click") finish(unit, event);
+        }, { capture: true, passive: false });
+      });
       return button;
     };
     options.append(make(rider, "Character"), make(mount, "Mount"));
@@ -1567,21 +1587,17 @@ function handleBattlefieldClick(x, y) {
     if (isValidAttack) {
       const rider = typeof getRider === "function" ? getRider(clickedUnit) : null;
       if (rider) {
-        showMountedAttackTargetChoice(selectedUnit, clickedUnit).then(async (chosenTarget) => {
-          if (!chosenTarget) {
-            GameState.suppressBattlefieldClickUntil = Date.now() + 500;
-            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 320);
-            return;
-          }
+        const attackingUnit = selectedUnit;
+        const mountedDefender = clickedUnit;
+        const operator = getPendingConstructOperator();
+        showMountedAttackTargetChoice(attackingUnit, mountedDefender, (chosenTarget) => {
           GameState.mountedDamageTargetQueue ??= [];
           GameState.mountedDamageTargetQueue.push(chosenTarget.id);
-          GameState.suppressBattlefieldClickUntil = Date.now() + 700;
-          try {
-            await attackUnit(selectedUnit, clickedUnit, getPendingConstructOperator());
-          } finally {
-            GameState.suppressBattlefieldClickUntil = Date.now() + 450;
-            window.setTimeout(() => { GameState.isChoosingMountedAttackTarget = false; }, 360);
-          }
+          GameState.preferredMountedDamageTargetId = chosenTarget.id;
+          // Begin combat from the modal callback itself, before any tile click can fire.
+          window.setTimeout(() => {
+            attackUnit(attackingUnit, mountedDefender, operator).catch?.(console.error);
+          }, 0);
         });
         return;
       }

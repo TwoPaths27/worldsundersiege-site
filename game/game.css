@@ -8462,3 +8462,13 @@ body.is-game-animating .selected-unit-actions button {
   64% { opacity: .95; }
   100% { opacity: 0; transform: translateX(-50%) scaleY(.86); }
 }
+
+/* V19.9.7.9i — mounted choice shield and Mount equip flight */
+.mounted-choice-pointer-shield {
+  position: fixed; inset: 0; z-index: 11990; background: transparent; pointer-events: auto; touch-action: none;
+}
+.mount-equip-flying-unit {
+  position: fixed !important; z-index: 20060 !important; margin: 0 !important; pointer-events: none !important;
+  transform-origin: center; border-radius: 12px; overflow: hidden;
+  filter: drop-shadow(0 14px 18px rgba(0,0,0,.72)) drop-shadow(0 0 15px rgba(78,172,255,.75));
+}

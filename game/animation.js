@@ -562,6 +562,39 @@ function animateUnitConceal(unit) {
   runTransientClass(getUnitAnimationElement(unit), "unit-conceal-fold", 520);
 }
 
+
+function prepareMountEquipAnimation(character, mount) {
+  const riderElement = getUnitAnimationElement(character);
+  const mountElement = getUnitAnimationElement(mount);
+  if (!riderElement || !mountElement) return null;
+  const riderRect = riderElement.getBoundingClientRect();
+  const mountRect = mountElement.getBoundingClientRect();
+  const clone = riderElement.cloneNode(true);
+  clone.classList.add("mount-equip-flying-unit");
+  clone.setAttribute("aria-hidden", "true");
+  Object.assign(clone.style, {
+    left: `${riderRect.left}px`, top: `${riderRect.top}px`,
+    width: `${riderRect.width}px`, height: `${riderRect.height}px`,
+  });
+  document.body.appendChild(clone);
+  riderElement.style.visibility = "hidden";
+  return () => {
+    const targetElement = getUnitAnimationElement(mount) ?? mountElement;
+    const targetRect = targetElement.getBoundingClientRect();
+    const dx = targetRect.left + targetRect.width * .18 - riderRect.left;
+    const dy = targetRect.top + targetRect.height * .08 - riderRect.top;
+    const animation = clone.animate([
+      { transform: "translate3d(0,0,0) scale(1)", opacity: 1, filter: "drop-shadow(0 8px 12px rgba(0,0,0,.65))" },
+      { transform: `translate3d(${dx * .55}px,${dy - 34}px,0) scale(.92) rotate(-4deg)`, opacity: 1, offset: .55 },
+      { transform: `translate3d(${dx}px,${dy}px,0) scale(.56) rotate(0deg)`, opacity: .15, filter: "drop-shadow(0 0 18px rgba(88,180,255,.95))" },
+    ], { duration: 720, easing: "cubic-bezier(.18,.8,.2,1)", fill: "forwards" });
+    animation.finished.catch(() => {}).finally(() => {
+      clone.remove();
+      riderElement.style.visibility = "";
+      runTransientClass(targetElement, "unit-mount-arrive", 720);
+    });
+  };
+}
 function animateUnitMounted(character, mount) {
   const riderElement = getUnitAnimationElement(character);
   const mountElement = getUnitAnimationElement(mount);
@@ -636,6 +669,7 @@ window.animateItemEquip = animateItemEquip;
 window.getUnitAnimationElement = getUnitAnimationElement;
 window.animateUnitReveal = animateUnitReveal;
 window.animateUnitConceal = animateUnitConceal;
+window.prepareMountEquipAnimation = prepareMountEquipAnimation;
 window.animateUnitMounted = animateUnitMounted;
 window.animateUnitDismounted = animateUnitDismounted;
 window.animateConstructRangeChange = animateConstructRangeChange;

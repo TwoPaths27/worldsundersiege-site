@@ -18,7 +18,7 @@
     if (!source) return false;
     const key = activationKey(source);
     const now = Date.now();
-    if (now - (recent.get(key) ?? 0) < 320) return false;
+    if (!options.force && now - (recent.get(key) ?? 0) < 320) return false;
     recent.set(key, now);
 
     global.showCardEffectActivation?.(source, options);
@@ -31,20 +31,50 @@
   if (typeof global.onGameEvent !== "function") return;
 
 
+  function isMerlin(source) {
+    if (!source) return false;
+    const identities = [source.databaseId, source.gameplayId, source.variantOf, source.sharedCardId]
+      .filter(Boolean)
+      .map((value) => String(value).toUpperCase());
+    return source.name === "Merlin" || identities.includes("BOA-002") || identities.includes("MERLIN");
+  }
+
+  function hasOnRevealEffect(unit) {
+    if (!unit || isMerlin(unit)) return false;
+    const text = String(unit.effectText ?? unit.rulesText ?? unit.sourceCard?.effectText ?? "");
+    return /\b(?:when|whenever)\b[\s\S]{0,110}\b(?:is|was|becomes?|are)?\s*revealed\b/i.test(text);
+  }
+
+  global.hasOnRevealEffect = hasOnRevealEffect;
+
   global.onGameEvent("unitRevealed", (event) => {
     const unit = event?.payload?.unit ?? sourceFromEvent(event);
-    const text = String(unit?.effectText ?? unit?.rulesText ?? unit?.sourceCard?.effectText ?? "");
-    if (!unit || !/\b(?:when|whenever)\b[\s\S]{0,80}\breveal(?:ed)?\b/i.test(text)) return;
-    // The battlefield token is normally created by the render that follows the
-    // reveal event, so wait two frames before presenting the universal reveal flare.
+    if (!hasOnRevealEffect(unit)) return;
+
+    // Face-up recruitment emits before the token is guaranteed to exist. Wait
+    // until the render completes, then play the same reveal presentation for
+    // every true on-reveal trigger in the game.
     requestAnimationFrame(() => requestAnimationFrame(() => {
       presentEffectActivation(unit, {
         eventType: "unitRevealed",
         reveal: true,
         fireworks: true,
+        force: true,
         targets: [unit],
       });
     }));
+  }, { priority: -45 });
+
+  global.onGameEvent("merlinFreeActionUsed", (event) => {
+    const merlin = event?.payload?.merlin ?? sourceFromEvent(event);
+    const action = event?.payload?.action ?? null;
+    presentEffectActivation(merlin, {
+      eventType: "merlinFreeActionUsed",
+      fireworks: true,
+      force: true,
+      targets: action ? [action] : [merlin],
+      impactText: "0",
+    });
   }, { priority: -45 });
 
   global.onGameEvent("triggerResolved", (event) => {
