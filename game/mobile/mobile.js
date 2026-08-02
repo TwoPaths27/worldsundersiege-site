@@ -23,6 +23,7 @@
     initialized: false,
     audioUnlocked: false,
     layoutScheduled: false,
+    clickSoundReady: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -85,7 +86,12 @@
     const metrics = getBoardMetrics(stage);
     if (!metrics) return;
     state.x = (camera.clientWidth - metrics.width * state.scale) / 2 - metrics.left * state.scale;
-    state.y = (camera.clientHeight - metrics.height * state.scale) / 2 - metrics.top * state.scale;
+    // Center the complete mobile HUD vertically when it fits, while keeping the board centered horizontally.
+    const contentHeight = Math.max(stage.scrollHeight || 0, stage.offsetHeight || 0, metrics.top + metrics.height);
+    const scaledContentHeight = contentHeight * state.scale;
+    state.y = scaledContentHeight <= camera.clientHeight
+      ? (camera.clientHeight - scaledContentHeight) / 2
+      : Math.min(8, -metrics.top * state.scale + 110);
     applyTransform(stage);
   }
 
@@ -124,9 +130,9 @@
 
     const boardWidth = board.offsetWidth;
     const boardHeight = board.offsetHeight;
-    const gap = 10;
-    const zoneW = Math.max(64, Math.min(86, boardWidth / 7 - 5));
-    const boardTop = 150;
+    const gap = 8;
+    const zoneW = Math.max(54, Math.min(72, boardWidth / 8));
+    const boardTop = 132;
 
     setAbsoluteBox(board, 0, boardTop, boardWidth);
 
@@ -145,16 +151,21 @@
     setAbsoluteBox($(".army-zones--enemy"), boardWidth - (zoneW * 3 + gap * 2), 18, zoneW * 3 + gap * 2);
     setAbsoluteBox($(".event-column--enemy"), boardWidth - zoneW, 92, zoneW);
 
-    // Player utilities are grouped below the board on the lower-left, as a mobile HUD.
-    const lowerOne = boardTop + boardHeight + 112;
-    const lowerTwo = lowerOne + 76;
+    // Player HUD: Stronghold and Energy stay centered; Event, Armies, Deck, Discard, and Banish
+    // remain visible in two compact rows beneath the board instead of falling below the camera.
+    const playerStrongholdTop = boardTop + boardHeight + gap;
+    setAbsoluteBox(playerStronghold, boardWidth * 0.28, playerStrongholdTop, boardWidth * 0.44);
+    setAbsoluteBox(playerEnergy, boardWidth * 0.43, playerStrongholdTop + 58, boardWidth * 0.14);
+
+    const lowerOne = playerStrongholdTop + 116;
+    const lowerTwo = lowerOne + 66;
     setAbsoluteBox($(".event-column--player"), 0, lowerOne, zoneW);
     setAbsoluteBox($(".army-zones--player"), zoneW + gap, lowerOne, zoneW * 3 + gap * 2);
     setAbsoluteBox($(".zone-group--player-piles"), 0, lowerTwo, zoneW * 3 + gap * 2);
 
     stage.style.setProperty("min-width", `${Math.ceil(boardWidth)}px`, "important");
     stage.style.setProperty("width", `${Math.ceil(boardWidth)}px`, "important");
-    stage.style.setProperty("min-height", `${Math.ceil(lowerTwo + 120)}px`, "important");
+    stage.style.setProperty("min-height", `${Math.ceil(lowerTwo + 76)}px`, "important");
     stage.classList.add("mobile-stage-reflowed");
   }
 
@@ -187,6 +198,32 @@
       state.audioUnlocked = false;
       console.warn("[Mobile] Audio unlock deferred.", error);
     }
+  }
+
+
+  function installMobileButtonClickSound() {
+    if (state.clickSoundReady) return;
+    state.clickSoundReady = true;
+    const soundUrl = new URL("../sounds/mouse-click.mp3", document.baseURI).href;
+    let baseAudio = null;
+    try {
+      baseAudio = new Audio(soundUrl);
+      baseAudio.preload = "auto";
+      baseAudio.volume = 1;
+    } catch (error) {
+      console.warn("[Mobile] Could not prepare button click sound.", error);
+      return;
+    }
+
+    document.addEventListener("pointerdown", (event) => {
+      const button = event.target.closest("button, [role='button']");
+      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return;
+      try {
+        const click = baseAudio.cloneNode(true);
+        click.volume = 1;
+        click.play().catch(() => {});
+      } catch (_) {}
+    }, { capture: true, passive: true });
   }
 
   function installMobileAudioUnlock() {
@@ -434,6 +471,7 @@
     setBootstrapStatus("Preparing touch controls…");
     const camera = installCamera(stage);
     installMobileAudioUnlock();
+    installMobileButtonClickSound();
     scheduleMobileBoardLayout();
 
     const toolbar = document.createElement("nav");

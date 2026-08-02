@@ -419,3 +419,22 @@ body.mobile-battle .mobile-expand-prompt {
     height: 116px !important;
   }
 }
+
+
+/* V19.9.7.10d — keep every battlefield zone inside the initial mobile camera view. */
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones {
+  gap: 6px !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .game-zone {
+  min-width: 52px !important;
+  min-height: 56px !important;
+  width: auto !important;
+  padding: 4px !important;
+  line-height: 1.1 !important;
+}
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group--player-piles,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones--player,
+body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column--player {
+  z-index: 12 !important;
+}
