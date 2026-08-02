@@ -45,16 +45,13 @@
   }
 
   function fitBoard(camera, stage) {
-    const sw = stage.offsetWidth || 900;
-    const sh = stage.offsetHeight || 930;
-    // Mobile layout is deliberately compact. Fit primarily to the phone width
-    // so the 7-column board reaches both sides, then center vertically when
-    // there is spare room. The user can still pan and pinch afterward.
-    const widthFit = (camera.clientWidth / sw) * 0.995;
-    const heightFit = (camera.clientHeight / sh) * 0.995;
-    state.scale = Math.max(state.minScale, Math.min(1.15, widthFit, heightFit * 1.12));
+    const sw = stage.offsetWidth || 760;
+    const sh = stage.offsetHeight || 900;
+    // Match the reference: prioritize width so the seven-column board fills
+    // the phone. The packed HUD beneath remains reachable by a small pan.
+    state.scale = Math.max(state.minScale, Math.min(1.2, (camera.clientWidth / sw) * 0.995));
     state.x = (camera.clientWidth - sw * state.scale) / 2;
-    state.y = Math.max(0, (camera.clientHeight - sh * state.scale) / 2);
+    state.y = 0;
     applyTransform(stage);
   }
 
@@ -207,14 +204,12 @@
     const title = document.createElement("div");
     title.className = "mobile-toolbar__title";
     title.textContent = "Worlds Under Siege";
-    const inspectButton = createButton("Unit", "Open selected unit and card preview");
-    const centerButton = createButton("◎", "Center Board");
-    const chatButton = createButton("Chat", "Open Chat");
+    const chatButton = createButton("Chat", "Open Chat", "mobile-chat-button");
     const badge = document.createElement("span");
     badge.className = "mobile-unread";
     badge.hidden = true;
     chatButton.appendChild(badge);
-    toolbar.append(home, title, inspectButton, centerButton, chatButton);
+    toolbar.append(home, title, chatButton);
     document.body.appendChild(toolbar);
 
     const chatDrawer = makeDrawer("left", "Game Chat");
@@ -227,8 +222,6 @@
     if (previewPanel) inspectDrawer.appendChild(previewPanel);
 
     home.addEventListener("click", () => $("#exitGameButton")?.click());
-    centerButton.addEventListener("click", () => fitBoard(camera, stage));
-    inspectButton.addEventListener("click", () => openDrawer(inspectDrawer, "inspect"));
     chatButton.addEventListener("click", () => {
       if (state.chatOpen) closeDrawers();
       else {
@@ -252,7 +245,7 @@
     // Mirror the real End Turn button in the top toolbar without moving it.
     const desktopEnd = $("#endTurnButton");
     if (desktopEnd) {
-      const mobileEnd = createButton("End", "End Turn", "mobile-button--end");
+      const mobileEnd = createButton("End Turn", "End Turn", "mobile-button--end");
       mobileEnd.addEventListener("click", () => desktopEnd.click());
       toolbar.appendChild(mobileEnd);
       new MutationObserver(() => { mobileEnd.disabled = desktopEnd.disabled; })

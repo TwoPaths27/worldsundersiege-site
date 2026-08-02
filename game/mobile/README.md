@@ -25,3 +25,7 @@ Deploy the entire project and visit `/game/mobile/` on a phone. Do not overwrite
 
 ## V19.9.7.10e
 Rebuilt the mobile stage as a compact phone playmat matching the approved mockup: board nearly edge-to-edge, enemy HUD above, player Stronghold directly below, Energy underneath, Armies/Event lower-left, and Deck/Discard/Banish lower-right. Desktop remains untouched.
+
+
+## V19.9.7.10f
+Rebuilt the initial camera and mobile playmat to match the supplied compact reference: full-width board, packed player HUD directly beneath it, and simplified top toolbar.
