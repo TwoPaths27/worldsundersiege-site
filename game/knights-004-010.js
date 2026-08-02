@@ -52,7 +52,12 @@
   }
 
   function isFaceUpInPlay(value) {
-    return Boolean(value && !value.isConcealed && (!value.zone || String(value.zone).toLowerCase() === "battlefield"));
+    if (!value || value.isConcealed) return false;
+    const state = getGameState();
+    const id = value.id ?? value.instanceId;
+    const present = Boolean(id && state?.units?.some((unit) => (unit.id ?? unit.instanceId) === id));
+    const zone = String(value.zone ?? "battlefield").toLowerCase();
+    return present && (zone === "battlefield" || zone === "mounted" || Boolean(value.mountedOn));
   }
 
   function isBattlefieldUnitOrConstruct(value) {
@@ -62,8 +67,18 @@
     ));
   }
 
+  function battlefieldPosition(value) {
+    if (value?.mountedOn && typeof global.getMount === "function") {
+      const mount = global.getMount(value);
+      if (mount) return { x: Number(mount.x), y: Number(mount.y) };
+    }
+    return { x: Number(value?.x), y: Number(value?.y) };
+  }
+
   function distanceBetween(first, second) {
-    return Math.abs(Number(first?.x) - Number(second?.x)) + Math.abs(Number(first?.y) - Number(second?.y));
+    const a = battlefieldPosition(first);
+    const b = battlefieldPosition(second);
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   }
 
   function getAdjacentOpenSpaces(unit) {
@@ -402,7 +417,14 @@
     global.addLog?.(`${kay.name} deals 2 damage to ${targets.length} Unit${targets.length === 1 ? "" : "s"}/Construct${targets.length === 1 ? "" : "s"} in range.`);
     global.renderGame?.();
     window.setTimeout(() => {
-      global.runStateBasedActions?.({ source: kay, reason: "sir-kay-end-turn", render: true });
+      if (typeof global.runStateBasedActions === "function") {
+        global.runStateBasedActions({ source: kay, reason: "sir-kay-end-turn", render: true });
+      } else {
+        for (const target of [...targets]) {
+          if (Number(target.currentHP ?? target.hp ?? 0) <= 0) global.destroyUnit?.(target, { source: kay, cause: "sir-kay-end-turn" });
+        }
+        global.renderGame?.();
+      }
     }, 850);
     return targets.length;
   }
@@ -444,6 +466,15 @@
       : `${Number(getGameState().turn) || 0}:${Number(getGameState().activePlayer) || 0}`;
     if (unit.sagremoreRevealTurnIdentity === identity) return false;
     unit.sagremoreRevealTurnIdentity = identity;
+    global.presentEffectActivation?.(unit, {
+      eventType: "sirSagremoreReveal",
+      reveal: true,
+      fireworks: true,
+      targets: [unit],
+      impactText: "+1 SPD",
+      particleCount: 40,
+      duration: 1400,
+    });
     global.addContinuousEffect?.({
       id: `sagremore-reveal-speed:${unit.id}:${identity}`,
       active: true,

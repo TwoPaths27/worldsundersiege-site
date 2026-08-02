@@ -2,6 +2,13 @@
 
 /* Worlds Under Siege — v19.4 mounted combat integration. */
 (function mountedCombatModule(global) {
+  function getGameState() {
+    try {
+      if (typeof GameState !== "undefined" && GameState) return GameState;
+    } catch (_) {}
+    return global.GameState ?? null;
+  }
+
   function idOf(unit) {
     return unit?.id ?? unit?.instanceId ?? null;
   }
@@ -44,7 +51,7 @@
     if (!isMountedCharacter(character)) return [character].filter(Boolean);
     const mount = typeof global.getMount === "function"
       ? global.getMount(character)
-      : global.GameState?.units?.find((unit) => idOf(unit) === character.mountedOn);
+      : getGameState()?.units?.find((unit) => idOf(unit) === character.mountedOn);
     return mount ? [character, mount] : [character];
   }
 
@@ -65,11 +72,12 @@
     if (choices.length < 2) return choices[0] ?? mountedCharacter;
 
     const [character, mount] = choices;
-    const queue = global.GameState?.mountedDamageTargetQueue;
+    const state = getGameState();
+    const queue = state?.mountedDamageTargetQueue;
     const queuedId = Array.isArray(queue) && queue.length ? queue.shift() : null;
-    const preferredId = queuedId ?? global.GameState?.preferredMountedDamageTargetId;
+    const preferredId = queuedId ?? state?.preferredMountedDamageTargetId;
     if (preferredId) {
-      global.GameState.preferredMountedDamageTargetId = null;
+      if (state) state.preferredMountedDamageTargetId = null;
       const preferred = choices.find((choice) => idOf(choice) === preferredId);
       if (preferred) return preferred;
     }
@@ -133,7 +141,7 @@
     if (unit.riderId) {
       const rider = typeof global.getRider === "function"
         ? global.getRider(unit)
-        : global.GameState?.units?.find((candidate) => idOf(candidate) === unit.riderId);
+        : getGameState()?.units?.find((candidate) => idOf(candidate) === unit.riderId);
       if (rider) {
         rider.mountedOn = null;
         rider.x = unit.x;

@@ -2,6 +2,12 @@
 
 /* Worlds Under Siege — v19.2 Mount core and movement integration. */
 (function mountModule(global) {
+  function getGameState() {
+    if (global?.GameState) return global.GameState;
+    if (typeof GameState !== "undefined") return GameState;
+    return null;
+  }
+
   function idOf(unit) {
     return unit?.id ?? unit?.instanceId ?? null;
   }
@@ -9,7 +15,7 @@
   function unitById(id) {
     if (!id) return null;
     if (typeof global.getUnitById === "function") return global.getUnitById(id);
-    return global.GameState?.units?.find((unit) => idOf(unit) === id) ?? null;
+    return getGameState()?.units?.find((unit) => idOf(unit) === id) ?? null;
   }
 
   function initializeMountState(unit) {
@@ -198,7 +204,7 @@
   }
 
   function resetMountChangesForPlayer(playerId) {
-    for (const unit of global.GameState?.units ?? []) {
+    for (const unit of getGameState()?.units ?? []) {
       if (Number(unit.controller ?? unit.owner) === Number(playerId)) {
         initializeMountState(unit);
         unit.mountChangeUsed = false;

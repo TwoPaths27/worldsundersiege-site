@@ -2,9 +2,15 @@
 
 /* Worlds Under Siege — v19.8 rules cleanup and state-based actions. */
 (function rulesCleanupModule(global) {
+  function getGameState() {
+    if (global?.GameState) return global.GameState;
+    if (typeof GameState !== "undefined") return GameState;
+    return null;
+  }
+
   const idOf = (unit) => unit?.id ?? unit?.instanceId ?? null;
   const controllerOf = (unit) => Number(unit?.controller ?? unit?.owner);
-  const allUnits = () => Array.isArray(global.GameState?.units) ? global.GameState.units : [];
+  const allUnits = () => Array.isArray(getGameState()?.units) ? getGameState().units : [];
   const unitById = (id) => allUnits().find((unit) => idOf(unit) === id) ?? null;
 
   function isOnBattlefield(unit) {
@@ -94,8 +100,9 @@
   }
 
   function runStateBasedActions(options = {}) {
-    if (!global.GameState || global.GameState._runningStateBasedActions) return { destroyed: [], repairs: [] };
-    global.GameState._runningStateBasedActions = true;
+    const state = getGameState();
+    if (!state || state._runningStateBasedActions) return { destroyed: [], repairs: [] };
+    state._runningStateBasedActions = true;
     try {
       for (const unit of allUnits()) normalizeUnitState(unit);
       const repairs = repairMountRelationships({ log: options.logRepairs });
@@ -111,7 +118,7 @@
       }
       return { destroyed, repairs: repairs.concat(postRepairs) };
     } finally {
-      global.GameState._runningStateBasedActions = false;
+      state._runningStateBasedActions = false;
     }
   }
 
