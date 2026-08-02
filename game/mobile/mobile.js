@@ -5,7 +5,7 @@
     scale: 0.72,
     x: 0,
     y: 0,
-    minScale: 0.38,
+    minScale: 0.7,
     maxScale: 2.8,
     pointers: new Map(),
     startDistance: 0,
@@ -45,12 +45,10 @@
   }
 
   function fitBoard(camera, stage) {
-    const sw = stage.offsetWidth || 760;
-    const sh = stage.offsetHeight || 900;
-    // Match the reference: prioritize width so the seven-column board fills
-    // the phone. The packed HUD beneath remains reachable by a small pan.
-    state.scale = Math.max(state.minScale, Math.min(1.2, (camera.clientWidth / sw) * 0.995));
-    state.x = (camera.clientWidth - sw * state.scale) / 2;
+    // The mobile stage is authored directly in viewport CSS pixels. Start at
+    // true size instead of shrinking the desktop stage to fit its old bounds.
+    state.scale = 1;
+    state.x = 0;
     state.y = 0;
     applyTransform(stage);
   }

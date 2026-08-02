@@ -29,3 +29,6 @@ Rebuilt the mobile stage as a compact phone playmat matching the approved mockup
 
 ## V19.9.7.10f
 Rebuilt the initial camera and mobile playmat to match the supplied compact reference: full-width board, packed player HUD directly beneath it, and simplified top toolbar.
+
+
+V19.9.7.10g uses a phone-native viewport layout: full-width board, compact enemy row, and a packed player HUD directly beneath the board.
