@@ -16,40 +16,10 @@
     unread: 0,
     chatOpen: false,
     inspectOpen: false,
-    zonesOpen: false,
     lastTappedToken: null,
-    camera: null,
-    stage: null,
-    initialized: false,
-    audioUnlocked: false,
-    layoutScheduled: false,
-    clickSoundReady: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-  function setBootstrapStatus(message, kind = "loading") {
-    let panel = $("#mobileBootstrapStatus");
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.id = "mobileBootstrapStatus";
-      panel.className = "mobile-bootstrap-status";
-      panel.innerHTML = '<strong>Worlds Under Siege</strong><span></span>';
-      document.body.appendChild(panel);
-    }
-    panel.dataset.kind = kind;
-    panel.querySelector("span").textContent = message;
-    panel.hidden = false;
-  }
-
-  function hideBootstrapStatus() {
-    const panel = $("#mobileBootstrapStatus");
-    if (!panel) return;
-    panel.classList.add("is-leaving");
-    setTimeout(() => panel.remove(), 260);
-  }
 
   function createButton(label, title, extra = "") {
     const button = document.createElement("button");
@@ -61,47 +31,31 @@
     return button;
   }
 
-  function applyTransform(stage = state.stage) {
-    if (!stage) return;
+  function applyTransform(stage) {
     stage.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
   }
 
-  function getBoardMetrics(stage = state.stage) {
-    const board = $("#battlefield");
-    if (!stage || !board) return null;
-    return {
-      board,
-      left: board.offsetLeft || 0,
-      top: board.offsetTop || 0,
-      width: board.offsetWidth || 700,
-      height: board.offsetHeight || 600,
-    };
-  }
-
-  function centerBoard(camera = state.camera, stage = state.stage, scale = null) {
-    if (!camera || !stage) return;
-    if (Number.isFinite(scale)) {
-      state.scale = Math.max(state.minScale, Math.min(state.maxScale, scale));
-    }
-    const metrics = getBoardMetrics(stage);
-    if (!metrics) return;
-    state.x = (camera.clientWidth - metrics.width * state.scale) / 2 - metrics.left * state.scale;
-    // Center the complete mobile HUD vertically when it fits, while keeping the board centered horizontally.
-    const contentHeight = Math.max(stage.scrollHeight || 0, stage.offsetHeight || 0, metrics.top + metrics.height);
-    const scaledContentHeight = contentHeight * state.scale;
-    state.y = scaledContentHeight <= camera.clientHeight
-      ? (camera.clientHeight - scaledContentHeight) / 2
-      : Math.min(8, -metrics.top * state.scale + 110);
+  function centerBoard(camera, stage, scale = null) {
+    if (Number.isFinite(scale)) state.scale = Math.max(state.minScale, Math.min(state.maxScale, scale));
+    const sw = stage.offsetWidth || 1080;
+    const sh = stage.offsetHeight || 900;
+    state.x = (camera.clientWidth - sw * state.scale) / 2;
+    state.y = (camera.clientHeight - sh * state.scale) / 2;
     applyTransform(stage);
   }
 
-  function fitBoard(camera = state.camera, stage = state.stage) {
-    if (!camera || !stage) return;
-    const metrics = getBoardMetrics(stage);
-    if (!metrics) return;
-    // Mobile is width-first: the battlefield spans almost the full phone width.
-    const fit = (camera.clientWidth - 8) / Math.max(1, metrics.width);
-    centerBoard(camera, stage, Math.max(state.minScale, Math.min(1.45, fit)));
+  function fitBoard(camera, stage) {
+    const sw = stage.offsetWidth || 900;
+    const sh = stage.offsetHeight || 930;
+    // Mobile layout is deliberately compact. Fit primarily to the phone width
+    // so the 7-column board reaches both sides, then center vertically when
+    // there is spare room. The user can still pan and pinch afterward.
+    const widthFit = (camera.clientWidth / sw) * 0.995;
+    const heightFit = (camera.clientHeight / sh) * 0.995;
+    state.scale = Math.max(state.minScale, Math.min(1.15, widthFit, heightFit * 1.12));
+    state.x = (camera.clientWidth - sw * state.scale) / 2;
+    state.y = Math.max(0, (camera.clientHeight - sh * state.scale) / 2);
+    applyTransform(stage);
   }
 
   function distance(a, b) {
@@ -112,149 +66,14 @@
     return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
   }
 
-  function setAbsoluteBox(element, left, top, width = null) {
-    if (!element) return;
-    element.style.setProperty("position", "absolute", "important");
-    element.style.setProperty("left", `${Math.round(left)}px`, "important");
-    element.style.setProperty("top", `${Math.round(top)}px`, "important");
-    element.style.setProperty("right", "auto", "important");
-    element.style.setProperty("bottom", "auto", "important");
-    element.style.setProperty("transform", "none", "important");
-    if (Number.isFinite(width)) element.style.setProperty("width", `${Math.round(width)}px`, "important");
-  }
-
-  function arrangeMobileBoard(stage = state.stage) {
-    if (!stage) return;
-    const board = $("#battlefield");
-    if (!board || board.offsetWidth < 100 || board.offsetHeight < 100) return;
-
-    const boardWidth = board.offsetWidth;
-    const boardHeight = board.offsetHeight;
-    const gap = 8;
-    const zoneW = Math.max(54, Math.min(72, boardWidth / 8));
-    const boardTop = 132;
-
-    setAbsoluteBox(board, 0, boardTop, boardWidth);
-
-    const enemyStronghold = $(".stronghold-lane--enemy");
-    const playerStronghold = $(".stronghold-lane--player");
-    setAbsoluteBox(enemyStronghold, boardWidth * 0.28, 44, boardWidth * 0.44);
-    setAbsoluteBox(playerStronghold, boardWidth * 0.28, boardTop + boardHeight + gap, boardWidth * 0.44);
-
-    const enemyEnergy = $(".battlefield-energy--enemy");
-    const playerEnergy = $(".battlefield-energy--player");
-    setAbsoluteBox(enemyEnergy, boardWidth * 0.43, 108, boardWidth * 0.14);
-    setAbsoluteBox(playerEnergy, boardWidth * 0.43, boardTop + boardHeight + 76, boardWidth * 0.14);
-
-    // Enemy utilities stay compact at the top edges.
-    setAbsoluteBox($(".zone-group--enemy-piles"), 0, 18, zoneW * 3 + gap * 2);
-    setAbsoluteBox($(".army-zones--enemy"), boardWidth - (zoneW * 3 + gap * 2), 18, zoneW * 3 + gap * 2);
-    setAbsoluteBox($(".event-column--enemy"), boardWidth - zoneW, 92, zoneW);
-
-    // Player HUD: Stronghold and Energy stay centered; Event, Armies, Deck, Discard, and Banish
-    // remain visible in two compact rows beneath the board instead of falling below the camera.
-    const playerStrongholdTop = boardTop + boardHeight + gap;
-    setAbsoluteBox(playerStronghold, boardWidth * 0.28, playerStrongholdTop, boardWidth * 0.44);
-    setAbsoluteBox(playerEnergy, boardWidth * 0.43, playerStrongholdTop + 58, boardWidth * 0.14);
-
-    const lowerOne = playerStrongholdTop + 116;
-    const lowerTwo = lowerOne + 66;
-    setAbsoluteBox($(".event-column--player"), 0, lowerOne, zoneW);
-    setAbsoluteBox($(".army-zones--player"), zoneW + gap, lowerOne, zoneW * 3 + gap * 2);
-    setAbsoluteBox($(".zone-group--player-piles"), 0, lowerTwo, zoneW * 3 + gap * 2);
-
-    stage.style.setProperty("min-width", `${Math.ceil(boardWidth)}px`, "important");
-    stage.style.setProperty("width", `${Math.ceil(boardWidth)}px`, "important");
-    stage.style.setProperty("min-height", `${Math.ceil(lowerTwo + 76)}px`, "important");
-    stage.classList.add("mobile-stage-reflowed");
-  }
-
-  function scheduleMobileBoardLayout() {
-    if (state.layoutScheduled) return;
-    state.layoutScheduled = true;
-    requestAnimationFrame(() => {
-      state.layoutScheduled = false;
-      arrangeMobileBoard();
-      fitBoard();
-    });
-  }
-
-  function unlockMobileAudio() {
-    if (state.audioUnlocked) return;
-    state.audioUnlocked = true;
-    try {
-      if (typeof ambienceAudio !== "undefined" && ambienceAudio) {
-        ambienceAudio.volume = Math.max(0.25, Number(ambienceAudio.volume) || 0.25);
-        const playback = ambienceAudio.play();
-        playback?.catch?.(() => { state.audioUnlocked = false; });
-      } else if (typeof startAmbience === "function") {
-        startAmbience();
-      }
-      const Context = window.AudioContext || window.webkitAudioContext;
-      if (Context && playBoostedOneShot?.context?.state === "suspended") {
-        playBoostedOneShot.context.resume().catch(() => {});
-      }
-    } catch (error) {
-      state.audioUnlocked = false;
-      console.warn("[Mobile] Audio unlock deferred.", error);
-    }
-  }
-
-
-  function installMobileButtonClickSound() {
-    if (state.clickSoundReady) return;
-    state.clickSoundReady = true;
-    const soundUrl = new URL("../sounds/mouse-click.mp3", document.baseURI).href;
-    let baseAudio = null;
-    try {
-      baseAudio = new Audio(soundUrl);
-      baseAudio.preload = "auto";
-      baseAudio.volume = 1;
-    } catch (error) {
-      console.warn("[Mobile] Could not prepare button click sound.", error);
-      return;
-    }
-
-    document.addEventListener("pointerdown", (event) => {
-      const button = event.target.closest("button, [role='button']");
-      if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return;
-      try {
-        const click = baseAudio.cloneNode(true);
-        click.volume = 1;
-        click.play().catch(() => {});
-      } catch (_) {}
-    }, { capture: true, passive: true });
-  }
-
-  function installMobileAudioUnlock() {
-    const unlock = () => unlockMobileAudio();
-    document.addEventListener("pointerdown", unlock, { capture: true, passive: true });
-    document.addEventListener("touchstart", unlock, { capture: true, passive: true });
-    document.addEventListener("click", unlock, { capture: true, passive: true });
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        state.audioUnlocked = false;
-        unlockMobileAudio();
-      }
-    });
-  }
-
   function installCamera(stage) {
-    if (stage.parentElement?.classList.contains("mobile-camera")) {
-      state.camera = stage.parentElement;
-      state.stage = stage;
-      return stage.parentElement;
-    }
-
     const camera = document.createElement("div");
     camera.className = "mobile-camera";
     stage.parentNode.insertBefore(camera, stage);
     camera.appendChild(stage);
-    state.camera = camera;
-    state.stage = stage;
 
     camera.addEventListener("pointerdown", (event) => {
-      if (event.target.closest("button, input, textarea, select, .unit-token, .battlefield-cell, .stronghold, .game-zone")) return;
+      if (event.target.closest("button, input, textarea, select, .unit-token, .battlefield-cell")) return;
       camera.setPointerCapture?.(event.pointerId);
       state.pointers.set(event.pointerId, event);
       state.startX = state.x;
@@ -279,12 +98,11 @@
         const [a, b] = [...state.pointers.values()];
         const newDistance = distance(a, b);
         const center = midpoint(a, b);
-        const nextScale = Math.max(
-          state.minScale,
-          Math.min(state.maxScale, state.startScale * (newDistance / Math.max(1, state.startDistance)))
-        );
-        const localX = (state.startCenter.x - state.startX) / Math.max(0.001, state.startScale);
-        const localY = (state.startCenter.y - state.startY) / Math.max(0.001, state.startScale);
+        const oldScale = state.scale;
+        const nextScale = Math.max(state.minScale, Math.min(state.maxScale,
+          state.startScale * (newDistance / Math.max(1, state.startDistance))));
+        const localX = (state.startCenter.x - state.startX) / oldScale;
+        const localY = (state.startCenter.y - state.startY) / oldScale;
         state.scale = nextScale;
         state.x = center.x - localX * nextScale;
         state.y = center.y - localY * nextScale;
@@ -310,54 +128,41 @@
     return camera;
   }
 
-  function makeDrawer(side, title, kind) {
+  function makeDrawer(side, title) {
     const drawer = document.createElement("aside");
     drawer.className = `mobile-drawer mobile-drawer--${side}`;
-    drawer.dataset.drawer = kind;
     drawer.innerHTML = `<div class="mobile-drawer__header"><h2>${title}</h2><button type="button" class="mobile-button" data-close-drawer>×</button></div>`;
     document.body.appendChild(drawer);
-    drawer.querySelector("[data-close-drawer]").addEventListener("click", closeDrawers);
+    drawer.querySelector("[data-close-drawer]").addEventListener("click", () => closeDrawers());
     return drawer;
   }
 
   function closeDrawers() {
-    $$(".mobile-drawer.is-open").forEach(el => el.classList.remove("is-open"));
+    document.querySelectorAll(".mobile-drawer.is-open").forEach(el => el.classList.remove("is-open"));
     $(".mobile-backdrop")?.remove();
     state.chatOpen = false;
     state.inspectOpen = false;
-    state.zonesOpen = false;
   }
 
   function openDrawer(drawer, kind) {
-    if (drawer.classList.contains("is-open")) {
-      closeDrawers();
-      return;
-    }
     closeDrawers();
     const backdrop = document.createElement("div");
     backdrop.className = "mobile-backdrop";
     backdrop.addEventListener("click", closeDrawers);
     document.body.appendChild(backdrop);
     drawer.classList.add("is-open");
-    state.chatOpen = kind === "chat";
-    state.inspectOpen = kind === "inspect";
-    state.zonesOpen = kind === "zones";
+    if (kind === "chat") state.chatOpen = true;
+    if (kind === "inspect") state.inspectOpen = true;
   }
 
-  function imageFromElement(element) {
-    return element?.dataset?.cardImage
-      || element?.dataset?.image
-      || element?.querySelector("img")?.src
-      || element?.style?.backgroundImage?.match(/url\(["']?(.*?)["']?\)/)?.[1]
-      || null;
-  }
-
-  function showCardArt(source) {
-    const imageUrl = imageFromElement(source);
+  function showCardArt(unitToken) {
+    const imageUrl = unitToken?.style?.backgroundImage?.match(/url\(["']?(.*?)["']?\)/)?.[1]
+      || unitToken?.querySelector("img")?.src
+      || unitToken?.dataset?.cardImage;
     if (!imageUrl) return;
     const modal = document.createElement("div");
     modal.className = "mobile-card-modal";
-    modal.innerHTML = `<button class="mobile-card-modal__close" type="button" aria-label="Close">×</button><img alt="Expanded card">`;
+    modal.innerHTML = `<button class="mobile-card-modal__close" type="button">×</button><img alt="Expanded card">`;
     modal.querySelector("img").src = imageUrl;
     modal.querySelector("button").addEventListener("click", () => modal.remove());
     modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
@@ -365,140 +170,65 @@
   }
 
   function installExpandPrompt() {
-    let pressTimer = null;
-    document.addEventListener("pointerdown", (event) => {
-      const source = event.target.closest(".unit-token, .mounted-rider-overlay, .mounted-mount-panel, .hand-card, .public-zone-card, .zone-browser-card");
-      if (!source) return;
-      state.lastTappedToken = source;
-      pressTimer = setTimeout(() => showCardArt(source), 520);
-    }, true);
-
-    const cancelPress = () => {
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = null;
-    };
-    document.addEventListener("pointerup", cancelPress, true);
-    document.addEventListener("pointercancel", cancelPress, true);
-
     document.addEventListener("click", (event) => {
-      const token = event.target.closest(".unit-token, .mounted-rider-overlay, .mounted-mount-panel");
+      const token = event.target.closest(".unit-token");
       if (!token) return;
       state.lastTappedToken = token;
       $(".mobile-expand-prompt")?.remove();
       const prompt = document.createElement("button");
       prompt.type = "button";
       prompt.className = "mobile-expand-prompt";
-      prompt.textContent = "Zoom Card";
+      prompt.textContent = "Expand";
       prompt.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
+        e.stopPropagation();
         showCardArt(state.lastTappedToken);
         prompt.remove();
       });
       document.body.appendChild(prompt);
-      setTimeout(() => prompt.remove(), 3600);
+      setTimeout(() => prompt.remove(), 2600);
     }, true);
   }
 
-  function createZoneDrawer() {
-    const drawer = makeDrawer("right", "Zones", "zones");
-    const grid = document.createElement("div");
-    grid.className = "mobile-zone-grid";
-    const zoneSpecs = [
-      ["Deck", "#playerDeckZone"],
-      ["Discard", "#playerDiscardZone"],
-      ["Banish", "#playerBanishZone"],
-      ["Event", "#playerEventZone"],
-      ["Army 1", "#playerArmy1"],
-      ["Army 2", "#playerArmy2"],
-      ["Army 3", "#playerArmy3"],
-      ["Enemy Discard", "#enemyDiscardZone"],
-      ["Enemy Banish", "#enemyBanishZone"],
-    ];
-    zoneSpecs.forEach(([label, selector]) => {
-      const button = createButton(label, `Open ${label}`);
-      button.addEventListener("click", () => {
-        closeDrawers();
-        $(selector)?.click();
-      });
-      grid.appendChild(button);
-    });
-    drawer.appendChild(grid);
-    return drawer;
-  }
-
-  async function waitForSharedGame(timeoutMs = 12000) {
-    const started = performance.now();
-    while (performance.now() - started < timeoutMs) {
-      const stage = $(".battlefield-stage");
-      const battlefield = $("#battlefield");
-      const lobby = $("#pregameLobbyModal");
-      const hand = $("#handDock");
-      if (stage && battlefield && lobby && hand) return true;
-      await delay(100);
-    }
-    return false;
-  }
-
-  function installStartupWatchdog() {
-    const lobby = $("#pregameLobbyModal");
-    if (!lobby) return;
-    const observer = new MutationObserver(() => {
-      if (!lobby.hidden) {
-        document.body.classList.add("mobile-dialog-open");
-      } else {
-        document.body.classList.remove("mobile-dialog-open");
-        setTimeout(() => fitBoard(), 120);
-      }
-    });
-    observer.observe(lobby, { attributes: true, attributeFilter: ["hidden"] });
-  }
-
-  async function initializeMobile() {
+  function initializeMobile() {
     if (new URLSearchParams(location.search).get("desktop") === "1") {
       location.replace("../" + location.search.replace(/([?&])desktop=1(&|$)/, "$1").replace(/[?&]$/, ""));
       return;
     }
 
-    setBootstrapStatus("Loading shared game engine…");
-    const ready = await waitForSharedGame();
-    if (!ready) throw new Error("Timed out while waiting for the shared game interface.");
-
-    const stage = $(".battlefield-stage");
-    const desktopSidePanels = $$(".game-layout > .side-panel");
     document.body.classList.add("mobile-battle");
+    const stage = $(".battlefield-stage");
+    const desktopSidePanels = [...document.querySelectorAll(".game-layout > .side-panel")];
+    if (!stage || desktopSidePanels.length < 2) throw new Error("Mobile UI could not find the shared desktop battlefield DOM.");
 
-    setBootstrapStatus("Preparing touch controls…");
     const camera = installCamera(stage);
-    installMobileAudioUnlock();
-    installMobileButtonClickSound();
-    scheduleMobileBoardLayout();
-
     const toolbar = document.createElement("nav");
     toolbar.className = "mobile-toolbar";
     const home = createButton("✕", "Exit Match");
     const title = document.createElement("div");
     title.className = "mobile-toolbar__title";
     title.textContent = "Worlds Under Siege";
-    const chatButton = createButton("Chat", "Open Chat", "mobile-button--chat");
+    const inspectButton = createButton("Unit", "Open selected unit and card preview");
+    const centerButton = createButton("◎", "Center Board");
+    const chatButton = createButton("Chat", "Open Chat");
     const badge = document.createElement("span");
     badge.className = "mobile-unread";
     badge.hidden = true;
     chatButton.appendChild(badge);
-    toolbar.append(home, title, chatButton);
+    toolbar.append(home, title, inspectButton, centerButton, chatButton);
     document.body.appendChild(toolbar);
 
-    const chatDrawer = makeDrawer("left", "Game Chat", "chat");
-    const inspectDrawer = makeDrawer("right", "Unit & Card", "inspect");
-
-    const chatPanel = desktopSidePanels[0]?.querySelector(".chat-panel");
-    const selectedPanel = desktopSidePanels[0]?.querySelector(".panel-card:first-child");
-    const previewPanel = desktopSidePanels[1]?.querySelector(".panel-card:first-child");
+    const chatDrawer = makeDrawer("left", "Game Chat");
+    const inspectDrawer = makeDrawer("right", "Unit & Card");
+    const chatPanel = desktopSidePanels[0].querySelector(".chat-panel");
+    const selectedPanel = desktopSidePanels[0].querySelector(".panel-card:first-child");
+    const previewPanel = desktopSidePanels[1].querySelector(".panel-card:first-child");
     if (chatPanel) chatDrawer.appendChild(chatPanel);
     if (selectedPanel) inspectDrawer.appendChild(selectedPanel);
     if (previewPanel) inspectDrawer.appendChild(previewPanel);
 
     home.addEventListener("click", () => $("#exitGameButton")?.click());
+    centerButton.addEventListener("click", () => fitBoard(camera, stage));
+    inspectButton.addEventListener("click", () => openDrawer(inspectDrawer, "inspect"));
     chatButton.addEventListener("click", () => {
       if (state.chatOpen) closeDrawers();
       else {
@@ -519,49 +249,33 @@
       }).observe(messages, { childList: true });
     }
 
+    // Mirror the real End Turn button in the top toolbar without moving it.
     const desktopEnd = $("#endTurnButton");
     if (desktopEnd) {
-      const mobileEnd = createButton("End Turn", "End Turn", "mobile-button--end mobile-button--end-wide");
+      const mobileEnd = createButton("End", "End Turn", "mobile-button--end");
       mobileEnd.addEventListener("click", () => desktopEnd.click());
       toolbar.appendChild(mobileEnd);
-      const syncEnd = () => { mobileEnd.disabled = desktopEnd.disabled; };
-      syncEnd();
-      new MutationObserver(syncEnd).observe(desktopEnd, { attributes: true, attributeFilter: ["disabled"] });
+      new MutationObserver(() => { mobileEnd.disabled = desktopEnd.disabled; })
+        .observe(desktopEnd, { attributes: true, attributeFilter: ["disabled"] });
     }
 
     installExpandPrompt();
-    installStartupWatchdog();
-
-    const battlefield = $("#battlefield");
-    if (battlefield && window.MutationObserver) {
-      new MutationObserver(() => scheduleMobileBoardLayout())
-        .observe(battlefield, { childList: true, subtree: true });
-    }
-
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => scheduleMobileBoardLayout()).observe(battlefield);
-    }
-    setTimeout(scheduleMobileBoardLayout, 250);
-    setTimeout(scheduleMobileBoardLayout, 900);
-
-    state.initialized = true;
-    hideBootstrapStatus();
-    console.info("[Mobile] Mobile route initialized without changing the desktop route.");
+    console.info("[Mobile] Separate mobile UI initialized. Desktop route remains unchanged.");
   }
 
-  async function boot() {
+  function boot() {
     try {
-      await initializeMobile();
+      initializeMobile();
     } catch (error) {
       console.error("[Mobile] Enhancement failed; preserving shared desktop UI as fallback.", error);
       document.body.classList.remove("mobile-battle");
-      setBootstrapStatus(`Mobile controls could not start: ${error.message}`, "error");
+      const notice = document.createElement("div");
+      notice.style.cssText = "position:fixed;z-index:20000;left:10px;right:10px;top:10px;padding:12px;background:#5a1c1c;color:white;border:1px solid #ff8b8b;border-radius:10px";
+      notice.textContent = "Mobile controls could not start. The standard game interface has been preserved. Refresh or use /game/ on this device.";
+      document.body.appendChild(notice);
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true });
+  else boot();
 })();

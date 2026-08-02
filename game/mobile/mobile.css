@@ -77,7 +77,7 @@ body.mobile-battle {
   border: 2px solid #111820;
 }
 
-body.mobile-battle .game-layout {
+.game-layout {
   display: block !important;
   position: fixed !important;
   inset: calc(var(--mobile-toolbar-h) + var(--mobile-safe-top)) 0 calc(var(--mobile-hand-h) + var(--mobile-safe-bottom)) 0;
@@ -86,8 +86,8 @@ body.mobile-battle .game-layout {
   overflow: hidden !important;
 }
 
-body.mobile-battle .game-layout > .side-panel { display: none !important; }
-body.mobile-battle .battlefield-column {
+.game-layout > .side-panel { display: none !important; }
+.battlefield-column {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -95,14 +95,14 @@ body.mobile-battle .battlefield-column {
   padding: 0 !important;
   overflow: hidden !important;
 }
-body.mobile-battle .mobile-camera {
+.mobile-camera {
   position: absolute;
   inset: 0;
   overflow: hidden;
   touch-action: none;
   background: rgba(0,0,0,.08);
 }
-body.mobile-battle .battlefield-stage {
+.battlefield-stage {
   position: absolute !important;
   left: 0;
   top: 0;
@@ -113,18 +113,18 @@ body.mobile-battle .battlefield-stage {
 }
 
 /* Larger touch targets without changing visual tiles. */
-body.mobile-battle .battlefield-cell,
-body.mobile-battle .unit-token,
-body.mobile-battle .mounted-rider-overlay,
-body.mobile-battle .mounted-mount-panel,
-body.mobile-battle .game-zone,
-body.mobile-battle .stronghold {
+.battlefield-cell,
+.unit-token,
+.mounted-rider-overlay,
+.mounted-mount-panel,
+.game-zone,
+.stronghold {
   touch-action: manipulation;
 }
-body.mobile-battle .battlefield-cell { min-width: 72px; min-height: 72px; }
+.battlefield-cell { min-width: 72px; min-height: 72px; }
 
 /* Mobile hand: fixed, swipeable, no desktop fan clipping. */
-body.mobile-battle .hand-dock {
+.hand-dock {
   position: fixed !important;
   z-index: 11000 !important;
   left: 0 !important;
@@ -135,8 +135,8 @@ body.mobile-battle .hand-dock {
   padding-bottom: var(--mobile-safe-bottom) !important;
   transform: none !important;
 }
-body.mobile-battle .hand-dock__toggle { display: none !important; }
-body.mobile-battle .hand-panel {
+.hand-dock__toggle { display: none !important; }
+.hand-panel {
   display: flex !important;
   flex-direction: column;
   width: 100% !important;
@@ -147,10 +147,10 @@ body.mobile-battle .hand-panel {
   border-radius: 14px 14px 0 0 !important;
   background: rgba(18,25,20,.96) !important;
 }
-body.mobile-battle .hand-panel__header { min-height: 27px !important; padding: 0 4px !important; }
-body.mobile-battle .hand-panel__header h2 { font-size: 13px !important; }
-body.mobile-battle .hand-panel__header p { display: none !important; }
-body.mobile-battle .hand-fan {
+.hand-panel__header { min-height: 27px !important; padding: 0 4px !important; }
+.hand-panel__header h2 { font-size: 13px !important; }
+.hand-panel__header p { display: none !important; }
+.hand-fan {
   flex: 1 1 auto !important;
   display: flex !important;
   justify-content: flex-start !important;
@@ -165,7 +165,7 @@ body.mobile-battle .hand-fan {
   -webkit-overflow-scrolling: touch;
   transform: none !important;
 }
-body.mobile-battle .hand-card {
+.hand-card {
   position: relative !important;
   left: auto !important;
   bottom: auto !important;
@@ -176,15 +176,15 @@ body.mobile-battle .hand-card {
   transform: none !important;
   scroll-snap-align: center;
 }
-body.mobile-battle .hand-card:hover,
-body.mobile-battle .hand-card:focus-visible,
-body.mobile-battle .hand-card.is-selected {
+.hand-card:hover,
+.hand-card:focus-visible,
+.hand-card.is-selected {
   transform: translateY(-9px) scale(1.08) !important;
   z-index: 30 !important;
 }
 
-body.mobile-battle .exit-game-button { display: none !important; }
-body.mobile-battle .match-history-panel { display: none !important; }
+.exit-game-button { display: none !important; }
+.match-history-panel { display: none !important; }
 
 .mobile-drawer {
   position: fixed;
@@ -283,158 +283,209 @@ body.mobile-battle .match-history-panel { display: none !important; }
 
 @media (orientation: landscape) {
   :root { --mobile-hand-h: 150px; --mobile-toolbar-h: 52px; }
-  body.mobile-battle .hand-card { width: 74px !important; height: 104px !important; flex-basis: 74px !important; }
+  .hand-card { width: 74px !important; height: 104px !important; flex-basis: 74px !important; }
 }
 
-
-/* Mobile bootstrap remains visible even when the shared game fails to initialize. */
-.mobile-bootstrap-status {
-  position: fixed;
-  z-index: 30000;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
-  color: #fff4d2;
-  background: radial-gradient(circle at center, rgba(44,55,43,.92), rgba(6,10,8,.98));
-  transition: opacity .22s ease;
-}
-.mobile-bootstrap-status strong { font-size: clamp(24px, 7vw, 38px); }
-.mobile-bootstrap-status span { max-width: 34rem; color: #d8dfd8; }
-.mobile-bootstrap-status[data-kind="error"] { color: #ffd7d7; background: rgba(58,12,12,.98); }
-.mobile-bootstrap-status.is-leaving { opacity: 0; pointer-events: none; }
-
-.mobile-zone-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 8px 0 18px;
-}
-.mobile-zone-grid .mobile-button { min-height: 56px; }
-
-body.mobile-battle .pregame-lobby,
-body.mobile-battle .coin-flip-modal,
-body.mobile-battle .mulligan-modal,
-body.mobile-battle .deployment-choice-modal,
-body.mobile-battle .public-zone-modal,
-body.mobile-battle .exit-modal {
-  z-index: 21000 !important;
+/* === V19.9.7.10e — compact phone battlefield layout =====================
+   Mobile route only. Desktop /game/ styles are not changed.
+   The whole battlefield stage is rebuilt as one compact 900x930 playmat so
+   the board and all player zones remain together, like the supplied mockup.
+=========================================================================== */
+body.mobile-battle {
+  --mobile-toolbar-h: 58px;
+  --mobile-hand-h: 154px;
 }
 
-body.mobile-battle.mobile-dialog-open .mobile-toolbar,
-body.mobile-battle.mobile-dialog-open .hand-dock {
-  opacity: .28;
-  pointer-events: none;
-}
-
-/* V19.9.7.10c — phone-only board/HUD reflow. Desktop route never loads this file. */
-body.mobile-battle .mobile-toolbar {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  min-height: calc(86px + var(--mobile-safe-top));
-  padding-bottom: 6px;
-}
-body.mobile-battle .mobile-toolbar__title {
-  font-size: 12px;
-}
-body.mobile-battle .mobile-button--chat {
-  grid-column: 3;
-  grid-row: 1;
-  min-width: 58px;
-}
-body.mobile-battle .mobile-button--end-wide {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  width: 100%;
-  min-height: 34px;
-  height: 34px;
-  padding: 4px 10px;
-}
-body.mobile-battle .game-layout {
-  inset: calc(86px + var(--mobile-safe-top)) 0 calc(var(--mobile-hand-h) + var(--mobile-safe-bottom)) 0;
-}
-body.mobile-battle .mobile-drawer {
-  top: calc(86px + var(--mobile-safe-top));
-}
-
-/* The board itself is the width reference; surrounding zones are repositioned by mobile.js. */
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed {
-  margin: 0 !important;
+body.mobile-battle .battlefield-stage {
+  width: 900px !important;
+  min-width: 900px !important;
+  height: 930px !important;
+  min-height: 930px !important;
   max-width: none !important;
+  padding: 0 !important;
   overflow: visible !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed #battlefield {
+
+/* Board: the visual anchor, nearly edge-to-edge after camera fitting. */
+body.mobile-battle #battlefield {
+  position: absolute !important;
+  left: 100px !important;
+  top: 150px !important;
+  width: 700px !important;
+  height: 600px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+/* Enemy row — mirrored above the board. */
+body.mobile-battle .stronghold-lane--enemy {
+  position: absolute !important;
+  left: 310px !important;
+  top: 28px !important;
+  width: 280px !important;
+  height: 92px !important;
   margin: 0 !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .stronghold-lane,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .battlefield-energy {
+body.mobile-battle #enemyStronghold {
+  width: 280px !important;
+  min-width: 280px !important;
+  height: 86px !important;
+}
+body.mobile-battle .zone-group--enemy-piles {
+  position: absolute !important;
+  left: 100px !important;
+  top: 28px !important;
+  width: 195px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 61px) !important;
+  gap: 6px !important;
   margin: 0 !important;
-  max-width: none !important;
+  transform: none !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: 8px !important;
-  align-items: stretch !important;
+body.mobile-battle .army-zones--enemy {
+  position: absolute !important;
+  left: 606px !important;
+  top: 32px !important;
+  width: 194px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  transform: none !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .game-zone {
-  min-width: 62px !important;
-  min-height: 62px !important;
+body.mobile-battle .event-column--enemy {
+  position: absolute !important;
+  left: 808px !important;
+  top: 150px !important;
+  width: 76px !important;
+  height: 132px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.mobile-battle .battlefield-energy--enemy {
+  position: absolute !important;
+  left: 342px !important;
+  top: 116px !important;
+  width: 216px !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+}
+
+/* Player row — matches the supplied layout: armies/event on the lower-left,
+   Stronghold centered, energy below it, public piles grouped on the right. */
+body.mobile-battle .stronghold-lane--player {
+  position: absolute !important;
+  left: 300px !important;
+  top: 758px !important;
+  width: 300px !important;
+  height: 86px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.mobile-battle #playerStronghold {
+  width: 300px !important;
+  min-width: 300px !important;
+  height: 82px !important;
+}
+body.mobile-battle .battlefield-energy--player {
+  position: absolute !important;
+  left: 390px !important;
+  top: 848px !important;
+  width: 120px !important;
+  min-height: 58px !important;
+  margin: 0 !important;
+}
+body.mobile-battle .army-zones--player {
+  position: absolute !important;
+  left: 100px !important;
+  top: 758px !important;
+  width: 192px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.mobile-battle .event-column--player {
+  position: absolute !important;
+  left: 100px !important;
+  top: 848px !important;
+  width: 76px !important;
+  height: 76px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.mobile-battle .zone-group--player-piles {
+  position: absolute !important;
+  left: 612px !important;
+  top: 758px !important;
+  width: 188px !important;
+  height: 166px !important;
+  display: grid !important;
+  grid-template-columns: 86px 46px !important;
+  grid-template-rows: 80px 80px !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.mobile-battle #playerDeckZone {
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+  width: 86px !important;
+  height: 166px !important;
+}
+body.mobile-battle #playerDiscardZone {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+body.mobile-battle #playerBanishZone {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+}
+
+/* Compact zone cards so all labels remain readable after scaling. */
+body.mobile-battle .game-zone--army,
+body.mobile-battle .game-zone--pile,
+body.mobile-battle .game-zone--event {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 5px 3px !important;
+  font-size: 12px !important;
+  line-height: 1.08 !important;
+}
+body.mobile-battle .army-zones--player .game-zone,
+body.mobile-battle .army-zones--enemy .game-zone {
+  width: 60px !important;
+  height: 82px !important;
+}
+body.mobile-battle .event-column--player .game-zone--event,
+body.mobile-battle .event-column--enemy .game-zone--event {
+  width: 76px !important;
+  height: 76px !important;
+}
+body.mobile-battle .zone-group--enemy-piles .game-zone {
+  width: 61px !important;
+  height: 86px !important;
+}
+body.mobile-battle #playerDiscardZone,
+body.mobile-battle #playerBanishZone {
+  width: 46px !important;
+  height: 80px !important;
   font-size: 10px !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column {
-  display: block !important;
+
+/* Keep overlays attached to the board rather than the old desktop stage. */
+body.mobile-battle #actionArrowLayer {
+  left: 100px !important;
+  top: 150px !important;
+  width: 700px !important;
+  height: 600px !important;
 }
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column .battlefield-energy {
-  display: none !important;
-}
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .battlefield-energy {
-  display: grid !important;
-  place-items: center !important;
-  min-height: 52px !important;
-  border-radius: 9px !important;
+body.mobile-battle #floatingStack {
+  right: 12px !important;
+  top: 300px !important;
 }
 
-/* Zoom button appears directly below the mobile menu bar instead of covering the board. */
-body.mobile-battle .mobile-expand-prompt {
-  left: 50%;
-  top: calc(92px + var(--mobile-safe-top));
-  transform: translateX(-50%);
-  padding: 8px 18px;
-  z-index: 12250;
-}
-
-/* Keep the hand compact enough to leave more camera room. */
-@media (orientation: portrait) {
-  :root { --mobile-hand-h: 168px; }
-  body.mobile-battle .hand-card {
-    flex-basis: 82px !important;
-    width: 82px !important;
-    height: 116px !important;
-  }
-}
-
-
-/* V19.9.7.10d — keep every battlefield zone inside the initial mobile camera view. */
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones {
-  gap: 6px !important;
-}
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .game-zone {
-  min-width: 52px !important;
-  min-height: 56px !important;
-  width: auto !important;
-  padding: 4px !important;
-  line-height: 1.1 !important;
-}
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .zone-group--player-piles,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .army-zones--player,
-body.mobile-battle .battlefield-stage.mobile-stage-reflowed .event-column--player {
-  z-index: 12 !important;
+@media (orientation: landscape) {
+  body.mobile-battle { --mobile-hand-h: 126px; }
 }
