@@ -312,4 +312,6 @@ if (typeof onGameEvent === "function") {
 }
 
 
+Object.assign(window, { playMordredRevealPresentation, playKingArthurRevealPresentation, playMerlinRevealPresentation, playLancelotRevealPresentation });
+
 document.addEventListener("pointerdown", startAmbience, { once: true });

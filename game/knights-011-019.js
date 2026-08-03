@@ -70,7 +70,12 @@
         const id = token?.dataset?.unitId;
         if (!id || !ids.has(id)) return;
         event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.();
-        const unit = list.find(candidate => String(candidate.id) === String(id));
+        const clicked = (state()?.units || []).find(candidate => String(candidate.id) === String(id));
+        const unit = list.find(candidate =>
+          String(candidate.id) === String(id) ||
+          String(candidate.mountedOn || "") === String(id) ||
+          String(clicked?.mountedOn || "") === String(candidate.id)
+        );
         if (source && unit) global.presentEffectActivation?.(source, { targets: [unit], impactText, fireworks: true, force: true });
         finish(unit || null);
       };
@@ -115,6 +120,7 @@
     if (!target) return false;
     target.mordredTemporaryControl = { originalController: controllerOf(target), sourceId: unit.id, turn: game.turn, controller: controllerOf(unit) };
     global.handleControlChange?.(target, controllerOf(unit), { source: unit, render: false });
+    global.playMordredRevealPresentation?.(unit);
     global.addLog?.(`${unit.name} takes control of ${target.name} until end of turn.`);
     global.renderGame?.();
     return true;
@@ -126,8 +132,8 @@
     if (!candidates.length) return false;
     const target = await selectBattlefieldUnit({ title: "Sir Percival — Reveal", message: "Select a Unit you control to remove all Damage Counters from.", candidates, source: unit, impactText: "HEAL" });
     if (!target) return false;
-    const max = global.getCurrentMaxHP?.(target) ?? target.maxHP ?? target.baseHP ?? target.hp;
-    target.currentHP = Number(max) || target.currentHP;
+    const max = global.getCurrentMaxHP?.(target) ?? target.printedHP ?? target.maxHP ?? target.baseHP ?? target.hp;
+    target.currentHP = Number.isFinite(Number(max)) ? Number(max) : target.currentHP;
     global.addLog?.(`${unit.name} removes all Damage Counters from ${target.name}.`);
     global.renderGame?.();
     return true;

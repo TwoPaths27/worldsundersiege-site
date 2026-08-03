@@ -158,6 +158,7 @@
     repairMountRelationships,
     normalizeUnitState,
     runStateBasedActions,
+    handleControlChange,
     handleUnitControlChange: handleControlChange,
   });
 })(window);
