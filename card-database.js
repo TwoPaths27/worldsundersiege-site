@@ -1128,7 +1128,7 @@ window.WUS_CARD_DATABASE = [
   },
   {
     "id": "BOA-044",
-    "name": "Rockoff",
+    "name": "Rokoff",
     "set": "Battle of Ages",
     "rarity": "Uncommon",
     "type": "Character",
@@ -1203,7 +1203,7 @@ window.WUS_CARD_DATABASE = [
   },
   {
     "id": "BOA-047",
-    "name": "The Monk",
+    "name": "The Abbot",
     "set": "Battle of Ages",
     "rarity": "Common",
     "type": "Character",
