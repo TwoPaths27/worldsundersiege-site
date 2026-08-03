@@ -793,7 +793,11 @@
     button.className = `pack-card${index >= 10 || currentPackIsGodPack ? " premium-card" : ""}${currentPackIsGodPack ? ` god-pack-card god-pack-${rarityClass}` : ""}`;
     button.dataset.rarity = card.rarity;
     button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-    button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${card._isNewPull ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : ''}</span></span>`;
+    const godPackGlow = currentPackIsGodPack
+      ? '<span class="god-pack-card-glow" aria-hidden="true"></span>'
+      : "";
+
+    button.innerHTML = `${godPackGlow}<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${card._isNewPull ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : ''}</span></span>`;
 
     const image = button.querySelector("img");
     const front = button.querySelector(".card-front");
