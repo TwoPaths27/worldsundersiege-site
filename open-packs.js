@@ -107,7 +107,7 @@
   let openingAllPacks = false;
   let currentPackIsGodPack = false;
 
-  const GOD_PACK_CHANCE = 0.001; // 0.1% = 1 in 1,000 packs
+  const GOD_PACK_CHANCE = 1; // 0.1% = 1 in 1,000 packs
 
   const soundPaths = Object.freeze({
     purchase: "sounds/drop-coin.mp3",
