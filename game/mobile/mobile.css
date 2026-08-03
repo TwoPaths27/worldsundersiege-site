@@ -457,3 +457,21 @@ body.mobile-battle #playerBanishZone {
 body.mobile-battle .mobile-toolbar > .mobile-button:not(:first-child):not(.mobile-chat-button):not(.mobile-button--end) {
   display: none !important;
 }
+
+
+/* 10k: dedicated mobile route must never inherit the desktop phone blocker. */
+@media (max-width: 760px) {
+  body.mobile-battle > * {
+    visibility: visible !important;
+  }
+
+  body.mobile-battle .pregame-lobby[hidden],
+  body.mobile-battle .coin-flip-modal[hidden],
+  body.mobile-battle .mulligan-modal[hidden],
+  body.mobile-battle .exit-modal[hidden],
+  body.mobile-battle .public-zone-modal[hidden],
+  body.mobile-battle #priorityDock[hidden],
+  body.mobile-battle #floatingStack[hidden] {
+    display: none !important;
+  }
+}

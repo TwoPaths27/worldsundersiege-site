@@ -12,66 +12,9 @@
   <title>Worlds Under Siege — Mobile Battle</title>
 
   <link rel="stylesheet" href="./game.css?v=19.9.7.9n">
-  <link rel="stylesheet" href="./mobile/mobile.css?v=19.9.7.10h">
+  <link rel="stylesheet" href="./mobile/mobile.css?v=19.9.7.10k">
 </head>
-<body>
-  <div
-  id="phoneDebug"
-  style="
-    position:fixed;
-    z-index:999999;
-    top:8px;
-    left:8px;
-    right:8px;
-    padding:10px;
-    background:#8b0000;
-    color:white;
-    font:14px monospace;
-  "
->
-  HTML loaded — JavaScript has not started.
-</div>
-
-<script>
-(function () {
-  var debug = document.getElementById("phoneDebug");
-
-  debug.textContent = "Inline JavaScript works.";
-
-  window.addEventListener("error", function (event) {
-    debug.style.background = "#8b0000";
-    debug.textContent =
-      "ERROR: " +
-      (event.message || "Unknown error") +
-      " | " +
-      (event.filename || "unknown file") +
-      ":" +
-      (event.lineno || 0);
-  });
-
-  window.addEventListener("unhandledrejection", function (event) {
-    debug.style.background = "#8b0000";
-    debug.textContent =
-      "PROMISE ERROR: " +
-      String(event.reason && event.reason.message
-        ? event.reason.message
-        : event.reason);
-  });
-
-  window.addEventListener("load", function () {
-    setTimeout(function () {
-      if (document.body.classList.contains("mobile-battle")) {
-        debug.style.background = "#176b35";
-        debug.textContent = "Mobile JavaScript initialized successfully.";
-      } else {
-        debug.style.background = "#8b5a00";
-        debug.textContent =
-          "Page loaded, but mobile.js did not initialize.";
-      }
-    }, 1500);
-  });
-})();
-</script>
+<body class="mobile-battle">
   <main class="game-layout">
     <aside class="side-panel">
       <section class="panel-card">
@@ -697,10 +640,6 @@
 <script src="./cards.js?v=19.9.7.9j"></script>
 <script src="./match.js?v=19.9.7.9o"></script>
 <script src="./game.js?v=19.9.6.4c"></script>
-<script
-  src="./mobile/mobile.js?v=19.9.7.10-phone-debug-1"
-  onload="document.getElementById('phoneDebug').textContent='mobile.js downloaded successfully';"
-  onerror="document.getElementById('phoneDebug').textContent='FAILED TO DOWNLOAD mobile.js';"
-></script>
+<script src="./mobile/mobile.js?v=19.9.7.10k"></script>
 </body>
 </html>
