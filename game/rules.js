@@ -79,7 +79,7 @@ function findAttackableUnits(unit, { ignoreAttackSpent = false } = {}) {
   }
 
   for (const candidate of GameState.units) {
-    if (candidate.owner === unit.owner) {
+    if (Number(candidate.controller ?? candidate.owner) === Number(unit.controller ?? unit.owner)) {
       continue;
     }
 
@@ -98,6 +98,7 @@ function findAttackableStronghold(unit, { ignoreAttackSpent = false } = {}) {
   if (!unit || !canAttack(unit) || (!ignoreAttackSpent && unit.hasAttacked) || GameState.gameOver) {
     return null;
   }
+  if (typeof isSirBors === "function" && isSirBors(unit) && unit.borsStrongholdAttackedThisTurn) return null;
 
   // During the turn Sir Lancelot is revealed, Charge Into Battle permits
   // attacks only against Units and Constructs, never a Stronghold.

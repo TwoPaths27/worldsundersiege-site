@@ -111,6 +111,12 @@
       return { resolved: false, skipped: true, reason: "condition-failed", effect };
     }
 
+    const resolvedTarget = resolveSubject(effect.target ?? "target", normalizedContext);
+    if (resolvedTarget && normalizedContext.source && typeof global.isProtectedBySirGareth === "function" &&
+        global.isProtectedBySirGareth(normalizedContext.source, resolvedTarget) && effect.targetsIndividually !== false) {
+      return { resolved: false, skipped: true, reason: "protected-by-sir-gareth", effect };
+    }
+
     const type = getEffectType(effect);
     const handler = handlers[type];
     if (!handler) {

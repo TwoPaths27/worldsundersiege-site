@@ -228,6 +228,51 @@ const BattlefieldAuraDefinitions = Object.freeze([
     },
   },
   {
+    id: "queen-guinevere-knights",
+    sourceMatches(source) {
+      return typeof window.isQueenGuinevere === "function" && window.isQueenGuinevere(source);
+    },
+    appliesTo(target, source) {
+      if (!target || !source || getControllerId(target) !== getControllerId(source)) return false;
+      const identities = getIdentitySet(target);
+      return identities.has("knight") || /\bSir\b/i.test(String(target.name || ""));
+    },
+    modify(context) {
+      context.range += 1;
+      context.speed += 1;
+    },
+  },
+  {
+    id: "sir-bors-items",
+    sourceMatches(source) {
+      return typeof window.isSirBors === "function" && window.isSirBors(source);
+    },
+    appliesTo(target, source) { return Boolean(target && source && target.id === source.id); },
+    modify(context, target, source) {
+      const count = typeof window.countItemsControlled === "function" ? window.countItemsControlled(getControllerId(source)) : 0;
+      context.attack += count;
+    },
+  },
+  {
+    id: "sir-tristan-item-weakening",
+    sourceMatches(source) {
+      return typeof window.isSirTristan === "function" && window.isSirTristan(source);
+    },
+    appliesTo(target, source) {
+      if (!target || !source || target.id === source.id) return false;
+      const a = source.mountedOn && typeof window.getMount === "function" ? window.getMount(source) || source : source;
+      const b = target.mountedOn && typeof window.getMount === "function" ? window.getMount(target) || target : target;
+      const distance = Math.abs(Number(a.x)-Number(b.x)) + Math.abs(Number(a.y)-Number(b.y));
+      const range = Number(source.currentRange ?? source.baseRange ?? source.range ?? 0);
+      const identities = getIdentitySet(target);
+      return distance > 0 && distance <= range && (identities.has("character") || identities.has("animal") || identities.has("army"));
+    },
+    modify(context, target, source) {
+      const count = typeof window.countItemsControlled === "function" ? window.countItemsControlled(getControllerId(source)) : 0;
+      context.attack -= count;
+    },
+  },
+  {
     id: "sir-gawain-hand-strength",
     sourceMatches(source) {
       return typeof window.isSirGawain === "function" && window.isSirGawain(source);

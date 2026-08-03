@@ -2483,12 +2483,12 @@ body.modal-open {
     overflow: hidden;
   }
 
-  body:not(.mobile-battle) > * {
+  body > * {
     visibility: hidden;
     pointer-events: none;
   }
 
-  body:not(.mobile-battle)::before {
+  body::before {
     content:
       "Worlds Under Siege\A\A"
       "Mobile play is not supported yet.\A\A"
@@ -8531,3 +8531,22 @@ body.is-game-animating .selected-unit-actions button {
 .public-zone-card-viewer__close { position:absolute; top:8px; right:10px; z-index:2; width:40px; height:40px; border-radius:50%; border:1px solid #e8cf82; background:#111927; color:#fff; font-size:28px; cursor:pointer; }
 .public-zone-card-viewer h2 { margin:0; color:#f5dfa0; font-family:Georgia,serif; text-align:center; }
 .bedivere-item-confirm__image { display:block; width:min(310px,70vw); max-height:58vh; object-fit:contain; margin:0 auto 12px; border-radius:12px; box-shadow:0 15px 42px rgba(0,0,0,.75); }
+
+/* V19.9.7.10 — Knights 011-019 and presentation fixes */
+.unit-token--concealed-back::after { content: none !important; }
+.battlefield-cell.cell-has-equipped-items.cell-enemy,
+.battlefield-cell.cell-has-equipped-items:has(.unit-token.unit-token--enemy) {
+  box-shadow: inset 0 0 0 3px rgba(226,49,49,.82), inset 0 -24px 34px rgba(28,134,255,.65), 0 0 18px rgba(226,49,49,.55) !important;
+}
+.battlefield-selection-banner {
+  position: fixed; z-index: 10050; top: 18px; left: 50%; transform: translateX(-50%);
+  width: min(680px, calc(100vw - 32px)); padding: 14px 18px; border: 2px solid #d2a93b;
+  border-radius: 14px; background: linear-gradient(180deg,#17202d,#090d14); color: #f7f1dc;
+  box-shadow: 0 18px 48px #000b, 0 0 28px #d5ad3766; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px;
+}
+.battlefield-selection-banner strong { color:#f0c95c; font-size:18px; }
+.battlefield-selection-banner span { grid-column:1; }
+.battlefield-selection-banner button { grid-column:2; grid-row:1 / span 2; min-width:92px; border:1px solid #8994a8; border-radius:8px; background:#353e4d; color:#fff; font-weight:800; }
+.argavain-revealed-hand { position:fixed; z-index:420; top:72px; right:14px; width:min(520px,42vw); padding:10px; border:1px solid #b58b30; border-radius:10px; background:#0c111bdd; box-shadow:0 10px 30px #000a; color:#f1d27a; }
+.argavain-revealed-hand__cards { display:flex; gap:5px; overflow-x:auto; padding-top:7px; }
+.argavain-revealed-hand__card { flex:0 0 64px; width:64px; height:90px; border:1px solid #78849a; border-radius:6px; background-size:cover; background-position:center; cursor:zoom-in; }

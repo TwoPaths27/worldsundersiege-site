@@ -350,6 +350,7 @@
     "isSecret": false,
     "gameplayId": "BOA-013",
     "copyLimit": 3,
+    "recruitAudio": {"voice":"../sounds/Mordred.mp3","music":"../sounds/Mordred 2.mp3","voiceVolume":1,"musicVolume":0.6,"duckBackgroundMusic":true},
     "effectText": "Whenever Mordred is revealed during your turn, you may take control of Target Character you don't control in Mordred's Range until the end of the turn."
   },
   {
