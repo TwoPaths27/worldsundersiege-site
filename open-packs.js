@@ -94,7 +94,8 @@
   const assetGateErrors = document.getElementById("assetGateErrors");
   const assetGateErrorList = document.getElementById("assetGateErrorList");
 
-  const allImagePaths = packCards.map(card => card.image);
+  const allImagePaths = window.WUSAssetManifest?.getRequiredCardImages()
+    || [...new Set(packCards.map(card => card.image).filter(Boolean))];
   let currentPack = [];
   let openingMode = "single";
   let boxSession = createEmptyBoxSession();
@@ -488,9 +489,11 @@
     const commons = sampleUnique(groups.Common, BOA_PACK_CONFIG.commonsPerPack);
     const uncommons = sampleUnique(groups.Uncommon, BOA_PACK_CONFIG.uncommonsPerPack);
     const premiums = [];
-    const premiumRarities = ["Rare", "Rare"];
-    const upgradeRoll = rollPremiumRarity();
-    if (upgradeRoll !== "Rare") premiumRarities[1] = upgradeRoll;
+    // Both final slots independently roll Rare or higher.
+    const premiumRarities = [
+      rollPremiumRarity(),
+      rollPremiumRarity()
+    ];
 
     for (const rarity of premiumRarities) {
       let card = randomItem(groups[rarity]);

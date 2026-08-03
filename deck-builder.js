@@ -253,7 +253,7 @@ function resetFilters(){
   renderPreview();
 }
 function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();}
-const allImagePaths=[...new Set(DB.flatMap(card=>[card.image,...(card.forms||[]).map(form=>form.image)].filter(Boolean)))];
+const allImagePaths=window.WUSAssetManifest?.getRequiredCardImages()||[...new Set(DB.flatMap(card=>[card.image,...(card.forms||[]).map(form=>form.image)].filter(Boolean)))];
 function lockPage(show){document.body.classList.toggle("builder-locked",show);}
 function showDeckManager(){els.assetGate.hidden=true;els.deckManagerModal.hidden=false;lockPage(true);populateSaved();}
 function closeDeckManager(){els.deckManagerModal.hidden=true;lockPage(false);}
