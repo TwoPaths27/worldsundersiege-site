@@ -313,9 +313,9 @@ const cards = [
   },
   {
     "id": "BOA-044",
-    "name": "Rockoff",
+    "name": "Rokoff",
     "type": "Character",
-    "image": "cards/BOA-044 Rockoff.jpg",
+    "image": "cards/BOA-044 Rokoff.jpg",
     "set": "BOA"
   },
   {
@@ -334,9 +334,9 @@ const cards = [
   },
   {
     "id": "BOA-047",
-    "name": "The Monk",
+    "name": "The Abbot",
     "type": "Character",
-    "image": "cards/BOA-047 The Monk.jpg",
+    "image": "cards/BOA-047 The Abbot.jpg",
     "set": "BOA"
   },
   {
