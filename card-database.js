@@ -1,4 +1,14 @@
-window.WUS_CARD_DATABASE = [
+"use strict";
+
+/*
+ * Worlds Under Siege — Unified Card Database v19.9.7
+ *
+ * This is the single authoritative card catalog used by the game and Deck Builder.
+ * It also owns normalization, indexed lookups, compatibility aliases, and startup
+ * validation so older engine modules can migrate without duplicating card data.
+ */
+(function initUnifiedCardDatabase(global) {
+  const SOURCE_CARDS = [
   {
     "id": "BOA-001",
     "name": "King Arthur",
@@ -23,6 +33,8 @@ window.WUS_CARD_DATABASE = [
     "image": "cards/BOA-001 King Arthur.jpg",
     "isSecret": false,
     "gameplayId": "BOA-001",
+    "sharedCardId": "KING_ARTHUR",
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."
   },
@@ -48,6 +60,8 @@ window.WUS_CARD_DATABASE = [
     "image": "cards/BOA-002 Merlin.jpg",
     "isSecret": false,
     "gameplayId": "BOA-002",
+    "sharedCardId": "MERLIN",
+    "recruitAudio": {"voice":"../sounds/Merlin.mp3","music":"../sounds/Merlin 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "copyLimit": 3,
     "effectText": "The first Action Merlin becomes the User of during your turns cost 0 to play."
   },
@@ -75,6 +89,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-003",
     "copyLimit": 3,
+    "recruitAudio": {"voice":"../sounds/Lancelot.mp3","music":"../sounds/Lancelot 2.mp3","voiceVolume":1,"musicVolume":0.6,"duckBackgroundMusic":true},
     "effectText": "Whenever Sir Lancelot is revealed, he gains +3 Speed until the end of the turn. He can only attack Units and Constructs during that turn."
   },
   {
@@ -335,6 +350,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-013",
     "copyLimit": 3,
+    "recruitAudio": {"voice":"../sounds/Mordred.mp3","music":"../sounds/Mordred 2.mp3","voiceVolume":1,"musicVolume":0.6,"duckBackgroundMusic":true},
     "effectText": "Whenever Mordred is revealed during your turn, you may take control of Target Character you don't control in Mordred's Range until the end of the turn."
   },
   {
@@ -1145,11 +1161,11 @@ window.WUS_CARD_DATABASE = [
     "types": [
       "Character"
     ],
-    "image": "cards/BOA-044 Rockoff.jpg",
+    "image": "cards/BOA-044 Rokoff.jpg",
     "isSecret": false,
     "gameplayId": "BOA-044",
     "copyLimit": 3,
-    "effectText": "Whenever Rockoff is revealed, choose and reveal Target players hand. Discard one card from that players hand."
+    "effectText": "Whenever Rokoff is revealed, choose and reveal Target players hand. Discard one card from that players hand."
   },
   {
     "id": "BOA-045",
@@ -1220,11 +1236,11 @@ window.WUS_CARD_DATABASE = [
     "types": [
       "Character"
     ],
-    "image": "cards/BOA-047 The Monk.jpg",
+    "image": "cards/BOA-047 The Abbot.jpg",
     "isSecret": false,
     "gameplayId": "BOA-047",
     "copyLimit": 3,
-    "effectText": "Opposing Characters in the Monks Range have their effects Negated."
+    "effectText": "Opposing Characters in The Abbot's Range have their effects Negated."
   },
   {
     "id": "BOA-048",
@@ -3599,9 +3615,7 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [
-      "Counter"
-    ],
+    "characteristics": [],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3611,7 +3625,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-141",
     "copyLimit": 3,
-    "effectText": "Play only when your opponent declares an attack. Characters you control take 0 Damage during this turn."
+    "effectText": "You can only activate this Action during an opponent's turn. Characters you control take 0 Damage during this turn."
   },
   {
     "id": "BOA-142",
@@ -3923,9 +3937,7 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [
-      "Counter"
-    ],
+    "characteristics": [],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3935,7 +3947,7 @@ window.WUS_CARD_DATABASE = [
     "isSecret": false,
     "gameplayId": "BOA-155",
     "copyLimit": 3,
-    "effectText": "Play only when this card's User is targeted by an opponent's effect. The User cannot be Targeted by your opponent's effects during this turn."
+    "effectText": "The User cannot be Targeted by your opponent's effects during this turn."
   },
   {
     "id": "BOA-156",
@@ -3948,9 +3960,7 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [
-      "Counter"
-    ],
+    "characteristics": [],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -3973,9 +3983,7 @@ window.WUS_CARD_DATABASE = [
     "hp": null,
     "range": null,
     "spd": null,
-    "characteristics": [
-      "Counter"
-    ],
+    "characteristics": [],
     "effectName": "",
     "setCode": "BOA",
     "types": [
@@ -4916,7 +4924,7 @@ window.WUS_CARD_DATABASE = [
     "name": "Vampire Bats",
     "set": "Battle of Ages",
     "rarity": "Common",
-    "type": "Army | Animal",
+    "type": "Army",
     "cost": 0,
     "atk": 0,
     "hp": null,
@@ -5646,6 +5654,8 @@ window.WUS_CARD_DATABASE = [
     "image": "cards/BOA-226 King Arthur.jpg",
     "isSecret": true,
     "gameplayId": "BOA-001",
+    "sharedCardId": "KING_ARTHUR",
+    "recruitAudio": {"voice":"../sounds/King Arthur.mp3","music":"../sounds/King Arthur 2.mp3","voiceVolume":1,"musicVolume":0.5,"duckBackgroundMusic":true},
     "variantOf": "BOA-001",
     "copyLimit": 3,
     "effectText": "Other Units you control gain +2 Attack and +1 Speed."
@@ -5756,3 +5766,141 @@ window.WUS_CARD_DATABASE = [
     "effectText": "Whenever Joan of Arc is revealed, reveal all Units on the Battlefield. As long as you control Joan of Arc, Units cannot be concealed."
   }
 ];
+
+  const VALID_TYPES = new Set([
+    "Character", "Army", "Animal", "Construct", "Item",
+    "Event", "Action", "Stronghold", "Unit"
+  ]);
+
+  function strings(value) {
+    const values = Array.isArray(value) ? value : value == null ? [] : [value];
+    return [...new Set(values.map(item => String(item).trim()).filter(Boolean))];
+  }
+
+  function normalizeEntry(source) {
+    const card = { ...source };
+    card.id = String(card.id || "").trim();
+    card.name = String(card.name || card.id || "Unnamed Card").trim();
+    card.types = strings(card.types?.length ? card.types : card.type);
+    card.type = card.type || card.types[0] || "Unit";
+    if (!card.types.includes(card.type)) card.types.unshift(card.type);
+    card.characteristics = strings(card.characteristics);
+    card.traits = strings(card.traits ?? card.trait);
+    card.keywords = strings(card.keywords); // legacy compatibility only
+    card.cost = Number(card.cost ?? 0);
+    if (card.types.some((type) => String(type).toLowerCase() === "army")) {
+      card.cost = 0;
+      card.energyCost = 0;
+      card.previewHideCost = true;
+    }
+    card.atk = Number(card.atk ?? card.attack ?? 0);
+    card.attack = card.atk;
+    card.hp = Number(card.hp ?? card.health ?? 0);
+    card.health = card.hp;
+    card.range = Number(card.range ?? 0);
+    card.spd = Number(card.spd ?? card.speed ?? 0);
+    card.speed = card.spd;
+    card.gameplayId = card.gameplayId || card.id;
+    card.databaseId = card.id;
+    card.effectText = String(card.effectText ?? "");
+    card.image = card.image ?? card.cardImage ?? null;
+    card.cardImage = card.cardImage ?? card.image;
+    card.copyLimit = Number.isFinite(Number(card.copyLimit)) ? Number(card.copyLimit) : 3;
+    return card;
+  }
+
+  const cards = SOURCE_CARDS.map(normalizeEntry);
+  const byId = new Map();
+  const byGameplayId = new Map();
+  const byName = new Map();
+
+  for (const card of cards) {
+    if (!byId.has(card.id)) byId.set(card.id, card);
+    if (!byGameplayId.has(card.gameplayId)) byGameplayId.set(card.gameplayId, card);
+    const key = card.name.toLowerCase();
+    if (!byName.has(key)) byName.set(key, []);
+    byName.get(key).push(card);
+  }
+
+  function getById(cardId) {
+    const id = String(cardId ?? "").trim();
+    return byId.get(id) ?? byGameplayId.get(id) ?? null;
+  }
+
+  function getByName(name, options = {}) {
+    const matches = byName.get(String(name ?? "").trim().toLowerCase()) ?? [];
+    return options.all ? [...matches] : matches[0] ?? null;
+  }
+
+  function getByType(type) {
+    const wanted = String(type ?? "").trim().toLowerCase();
+    return cards.filter(card => card.types.some(value => value.toLowerCase() === wanted));
+  }
+
+  function getByCharacteristic(characteristic) {
+    const wanted = String(characteristic ?? "").trim().toLowerCase();
+    return cards.filter(card => card.characteristics.some(value => value.toLowerCase() === wanted));
+  }
+
+  function validate(options = {}) {
+    const errors = [];
+    const warnings = [];
+    const seenIds = new Set();
+    const seenNames = new Map();
+
+    for (const [index, card] of cards.entries()) {
+      const label = card.id || `entry ${index + 1}`;
+      if (!card.id) errors.push(`Entry ${index + 1} is missing an id.`);
+      else if (seenIds.has(card.id)) errors.push(`Duplicate card id: ${card.id}`);
+      else seenIds.add(card.id);
+
+      const nameKey = card.name.toLowerCase();
+      if (seenNames.has(nameKey) && seenNames.get(nameKey) !== card.gameplayId) {
+        warnings.push(`Duplicate card name: ${card.name}`);
+      } else seenNames.set(nameKey, card.gameplayId);
+
+      if (!card.name) errors.push(`${label} is missing a name.`);
+      if (!card.types.length) errors.push(`${label} is missing a card type.`);
+      for (const type of card.types) {
+        if (!VALID_TYPES.has(type)) warnings.push(`${label} uses unknown type: ${type}`);
+      }
+      if (!Number.isFinite(card.cost) || card.cost < 0) errors.push(`${label} has invalid cost.`);
+      if (!card.image) warnings.push(`${label} is missing artwork.`);
+      if (["Character", "Animal", "Construct", "Army", "Unit"].some(type => card.types.includes(type))) {
+        for (const stat of ["atk", "hp", "range", "spd"]) {
+          if (!Number.isFinite(card[stat])) errors.push(`${label} has invalid ${stat}.`);
+        }
+      }
+    }
+
+    const report = { valid: errors.length === 0, cardCount: cards.length, errors, warnings };
+    if (options.log !== false) {
+      const method = report.valid ? "info" : "error";
+      console[method](`[WUS Card Database] ${cards.length} cards; ${errors.length} errors; ${warnings.length} warnings.`, report);
+    }
+    return report;
+  }
+
+  const api = Object.freeze({
+    version: "19.9.7",
+    cards,
+    getById,
+    getByName,
+    getByType,
+    getByCharacteristic,
+    normalizeEntry,
+    validate,
+  });
+
+  // Primary API and temporary compatibility exports used by older modules.
+  global.WUSCardDatabase = api;
+  global.WUS_CARD_DATABASE = cards;
+  global.getCardDatabaseEntry = getById;
+  global.getCardById = getById;
+  global.getCardByName = getByName;
+  global.getCardsByType = getByType;
+  global.getCardsByCharacteristic = getByCharacteristic;
+
+  // Validate once at startup. Missing asset files are intentionally not fetched here.
+  global.WUS_CARD_DATABASE_REPORT = validate();
+})(window);
