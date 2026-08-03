@@ -262,9 +262,9 @@ const BOA_PACK_CARDS = [
   },
   {
     "id": "BOA-044",
-    "name": "Rockoff",
+    "name": "Rokoff",
     "rarity": "Uncommon",
-    "image": "cards/BOA-044 Rockoff.jpg"
+    "image": "cards/BOA-044 Rokoff.jpg"
   },
   {
     "id": "BOA-045",
@@ -280,9 +280,9 @@ const BOA_PACK_CARDS = [
   },
   {
     "id": "BOA-047",
-    "name": "The Monk",
+    "name": "The Abbot",
     "rarity": "Common",
-    "image": "cards/BOA-047 The Monk.jpg"
+    "image": "cards/BOA-047 The Abbot.jpg"
   },
   {
     "id": "BOA-048",
