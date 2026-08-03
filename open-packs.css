@@ -336,12 +336,11 @@ body.asset-locked { overflow: hidden; }
 }
 
 .god-pack-card .card-back {
-  position: relative;
+  position: absolute;
+  inset: 0;
   overflow: visible;
-  background-image: url("card-back.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  isolation: isolate;
+  background: #070604 url("card-back.png") center / cover no-repeat;
   width: 100%;
   height: 100%;
 }
