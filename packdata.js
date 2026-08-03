@@ -1390,6 +1390,8 @@ const BOA_PACK_CONFIG = {
   commonsPerPack: 6,
   uncommonsPerPack: 4,
   premiumSlotsPerPack: 2,
+  // These are per-premium-slot odds. With two independent premium slots,
+  // they closely reproduce pack odds of 1/48 Secret, 1/6 Ultra, and 1/3 Super.
   premiumOdds: {
     secret: 1 / 95,
     ultraRare: 1 / 11.5,

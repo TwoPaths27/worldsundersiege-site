@@ -61,6 +61,8 @@
   const openAllStatus = document.getElementById("openAllStatus");
   const openAllProgressFill = document.getElementById("openAllProgressFill");
   const openAllProgressText = document.getElementById("openAllProgressText");
+  const godPackOverlay = document.getElementById("godPackOverlay");
+  const godPackFlash = document.getElementById("godPackFlash");
 
   const boxTotalCards = document.getElementById("boxTotalCards");
   const boxRarityStats = document.getElementById("boxRarityStats");
@@ -103,11 +105,15 @@
   let currentPackCollectionResult = null;
   let currentPackSaved = false;
   let openingAllPacks = false;
+  let currentPackIsGodPack = false;
+
+  const GOD_PACK_CHANCE = 0.001; // 0.1% = 1 in 1,000 packs
 
   const soundPaths = Object.freeze({
     purchase: "sounds/drop-coin.mp3",
     boxSummary: "sounds/box-summary.mp3",
     packRip: "sounds/pack-rip.mp3",
+    godPack: "sounds/god-pack.mp3",
     packPop: "sounds/card-flip.mp3",
     cardFlip: "sounds/card-flip.mp3",
     superRare: "sounds/super-rare.mp3",
@@ -200,6 +206,7 @@
       soundPaths.purchase,
       soundPaths.boxSummary,
       soundPaths.packRip,
+      soundPaths.godPack,
       soundPaths.packPop,
       soundPaths.cardFlip,
       soundPaths.superRare,
@@ -429,6 +436,7 @@
     if (opening.mode === "box") syncBoxSession(opening);
     if (opening.currentPack?.cardIds?.length) {
       currentPack = flagNewCardsForPendingPack(cardIdsToCards(opening.currentPack.cardIds), opening);
+      currentPackIsGodPack = isGodPack(currentPack);
       currentPackSaved = false;
       currentPackCollectionResult = null;
       if (opening.mode === "box") selectedBoxPack = opening.currentPack.packIndex;
@@ -485,7 +493,45 @@
     return "Rare";
   }
 
+  function shuffleCards(items) {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  function buildGodPack() {
+    const superRares = sampleUnique(groups["Super Rare"] || [], 6);
+    const ultraRares = sampleUnique(groups["Ultra Rare"] || [], 4);
+    const secretRares = sampleUnique(groups["Secret Rare"] || [], 2);
+
+    if (superRares.length < 6 || ultraRares.length < 4 || secretRares.length < 2) {
+      console.warn("God Pack could not be built because one or more rarity pools are too small.");
+      return null;
+    }
+
+    return shuffleCards([...superRares, ...ultraRares, ...secretRares]);
+  }
+
+  function isGodPack(pack) {
+    if (!Array.isArray(pack) || pack.length !== 12) return false;
+    const counts = pack.reduce((result, card) => {
+      result[card.rarity] = (result[card.rarity] || 0) + 1;
+      return result;
+    }, {});
+    return counts["Super Rare"] === 6
+      && counts["Ultra Rare"] === 4
+      && counts["Secret Rare"] === 2;
+  }
+
   function buildPack() {
+    if (Math.random() < GOD_PACK_CHANCE) {
+      const godPack = buildGodPack();
+      if (godPack) return godPack;
+    }
+
     const commons = sampleUnique(groups.Common, BOA_PACK_CONFIG.commonsPerPack);
     const uncommons = sampleUnique(groups.Uncommon, BOA_PACK_CONFIG.uncommonsPerPack);
     const premiums = [];
@@ -503,6 +549,39 @@
       premiums.push(card);
     }
     return [...commons, ...uncommons, ...premiums];
+  }
+
+  function runGodPackOpeningSequence() {
+    playSound(soundPaths.godPack, SOUND_VOLUME);
+    document.body.classList.add("god-pack-sequence");
+    boosterButton.classList.add("god-pack-shaking");
+    clickHint.textContent = "Something is happening…";
+
+    if (godPackOverlay) {
+      godPackOverlay.hidden = false;
+      godPackOverlay.classList.remove("is-active", "is-exploding");
+      void godPackOverlay.offsetWidth;
+      godPackOverlay.classList.add("is-active");
+    }
+
+    window.setTimeout(() => {
+      boosterButton.classList.remove("god-pack-shaking");
+      boosterButton.classList.add("god-pack-exploding");
+      godPackOverlay?.classList.add("is-exploding");
+      godPackFlash?.classList.add("is-active");
+
+      window.setTimeout(() => {
+        boosterButton.classList.remove("opening", "god-pack-exploding");
+        document.body.classList.remove("god-pack-sequence");
+        if (godPackOverlay) {
+          godPackOverlay.hidden = true;
+          godPackOverlay.classList.remove("is-active", "is-exploding");
+        }
+        godPackFlash?.classList.remove("is-active");
+        clickHint.textContent = "Click to open";
+        showStage(stages.reveal);
+      }, 900);
+    }, 5000);
   }
 
   function resetMobilePageZoom() {
@@ -710,7 +789,8 @@
   function createCard(card, index) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `pack-card${index >= 10 ? " premium-card" : ""}`;
+    const rarityClass = card.rarity.toLowerCase().replace(/\s+/g, "-");
+    button.className = `pack-card${index >= 10 || currentPackIsGodPack ? " premium-card" : ""}${currentPackIsGodPack ? ` god-pack-card god-pack-${rarityClass}` : ""}`;
     button.dataset.rarity = card.rarity;
     button.setAttribute("aria-label", `Reveal card ${index + 1}`);
     button.innerHTML = `<span class="card-inner"><span class="card-face card-back"></span><span class="card-face card-front"><img alt="${card.id} ${card.name}">${card._isNewPull ? '<span class="new-card-badge" aria-label="New card">NEW!</span>' : ''}</span></span>`;
@@ -727,10 +807,12 @@
 
   function renderPack(pack) {
     grid.replaceChildren(...pack.map(createCard));
-    status.textContent = "The cards are face down";
-    instruction.textContent = "Click any card to flip it. The final two cards are your Rare-or-higher slots.";
-    revealAllButton.hidden = false;
-    revealAllButton.disabled = false;
+    status.textContent = currentPackIsGodPack ? "GOD PACK — reveal every card" : "The cards are face down";
+    instruction.textContent = currentPackIsGodPack
+      ? "Every card is a premium hit. Select each glowing card individually to reveal it."
+      : "Click any card to flip it. The final two cards are your Rare-or-higher slots.";
+    revealAllButton.hidden = currentPackIsGodPack;
+    revealAllButton.disabled = currentPackIsGodPack;
     anotherButton.hidden = true;
     if (returnToPacksButton) returnToPacksButton.hidden = true;
     if (openNextPackButton) openNextPackButton.hidden = true;
@@ -977,9 +1059,16 @@
       WUSCollection.savePendingPack(opening.id, packIndex, currentPack.map(card => card.id));
     }
     selectedBoxPack = null;
+    currentPackIsGodPack = isGodPack(currentPack);
     renderPack(currentPack);
-    playSound(soundPaths.packRip, SOUND_VOLUME);
     boosterButton.classList.add("opening");
+
+    if (currentPackIsGodPack) {
+      runGodPackOpeningSequence();
+      return;
+    }
+
+    playSound(soundPaths.packRip, SOUND_VOLUME);
     clickHint.textContent = "Opening…";
     setTimeout(() => {
       boosterButton.classList.remove("opening");
@@ -989,6 +1078,7 @@
   });
 
   revealAllButton.addEventListener("click", () => {
+    if (currentPackIsGodPack) return;
     revealAllButton.disabled = true;
     [...grid.children].forEach((button, index) => {
       setTimeout(() => {

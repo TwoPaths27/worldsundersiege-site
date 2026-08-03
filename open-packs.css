@@ -274,3 +274,152 @@ body.asset-locked { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .new-card-badge { animation: none; }
 }
+
+/* God Pack opening sequence */
+.god-pack-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.god-pack-darkness,
+.god-pack-flash,
+.god-pack-rays {
+  position: absolute;
+  inset: 0;
+}
+
+.god-pack-darkness {
+  background: #000;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.god-pack-overlay.is-active .god-pack-darkness {
+  opacity: 1;
+}
+
+.god-pack-flash {
+  background: radial-gradient(circle at center, #fff 0 8%, #fff8c7 18%, rgba(255, 222, 93, 0.9) 32%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0;
+  transform: scale(0.05);
+}
+
+.god-pack-flash.is-active {
+  animation: god-pack-light-explosion 900ms cubic-bezier(.12,.72,.22,1) forwards;
+}
+
+.god-pack-rays {
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.95) 0 2deg, rgba(255,210,60,0) 3deg 10deg);
+  transform: scale(.2) rotate(0deg);
+}
+
+.god-pack-overlay.is-exploding .god-pack-rays {
+  animation: god-pack-rays 900ms ease-out forwards;
+}
+
+.god-pack-sequence .booster-button {
+  position: relative;
+  z-index: 1002;
+  filter: drop-shadow(0 0 24px rgba(255, 222, 77, .9));
+}
+
+.booster-button.god-pack-shaking {
+  animation: god-pack-shake 110ms linear infinite;
+}
+
+.booster-button.god-pack-exploding {
+  animation: god-pack-booster-explode 850ms ease-out forwards;
+}
+
+.god-pack-card .card-back {
+  position: relative;
+  overflow: visible;
+}
+
+.god-pack-card .card-back::before,
+.god-pack-card .card-back::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: .9;
+  filter: blur(9px);
+  animation: god-pack-card-pulse 1.35s ease-in-out infinite alternate;
+}
+
+.god-pack-super-rare .card-back::before,
+.god-pack-super-rare .card-back::after {
+  background: linear-gradient(135deg, #7a4e00, #ffd84d, #fff1a8, #b87500);
+  box-shadow: 0 0 22px #ffd84d, 0 0 48px rgba(255, 192, 0, .8);
+}
+
+.god-pack-ultra-rare .card-back::before,
+.god-pack-ultra-rare .card-back::after {
+  background: linear-gradient(135deg, #5d0000, #ff2525, #ff7a43, #8b0000);
+  box-shadow: 0 0 24px #ff2828, 0 0 52px rgba(255, 40, 40, .85);
+}
+
+.god-pack-secret-rare .card-back::before,
+.god-pack-secret-rare .card-back::after {
+  background: conic-gradient(from 0deg, #ff2d55, #ffcc00, #33ff99, #25b7ff, #9d4edd, #ff2d55);
+  box-shadow: 0 0 28px rgba(255,255,255,.95), 0 0 58px rgba(125, 220, 255, .9);
+  animation: god-pack-rainbow 1.1s linear infinite, god-pack-card-pulse 1.35s ease-in-out infinite alternate;
+}
+
+.god-pack-card.revealed .card-back::before,
+.god-pack-card.revealed .card-back::after {
+  opacity: 0;
+}
+
+@keyframes god-pack-shake {
+  0% { transform: translate(-3px, 1px) rotate(-1deg); }
+  25% { transform: translate(4px, -2px) rotate(1.2deg); }
+  50% { transform: translate(-4px, -1px) rotate(-1.4deg); }
+  75% { transform: translate(3px, 2px) rotate(1deg); }
+  100% { transform: translate(-3px, 1px) rotate(-1deg); }
+}
+
+@keyframes god-pack-booster-explode {
+  0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+  45% { transform: scale(1.18); opacity: 1; filter: brightness(4) saturate(1.8); }
+  100% { transform: scale(2.8); opacity: 0; filter: brightness(12) blur(10px); }
+}
+
+@keyframes god-pack-light-explosion {
+  0% { opacity: 0; transform: scale(.05); }
+  28% { opacity: 1; transform: scale(1.2); }
+  65% { opacity: 1; transform: scale(2.4); }
+  100% { opacity: 0; transform: scale(3.4); }
+}
+
+@keyframes god-pack-rays {
+  0% { opacity: 0; transform: scale(.15) rotate(0deg); }
+  25% { opacity: .95; }
+  100% { opacity: 0; transform: scale(2.8) rotate(28deg); }
+}
+
+@keyframes god-pack-card-pulse {
+  from { opacity: .62; transform: scale(.98); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes god-pack-rainbow {
+  to { filter: blur(9px) hue-rotate(360deg); transform: rotate(360deg) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booster-button.god-pack-shaking,
+  .booster-button.god-pack-exploding,
+  .god-pack-flash.is-active,
+  .god-pack-overlay.is-exploding .god-pack-rays,
+  .god-pack-card .card-back::before,
+  .god-pack-card .card-back::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
