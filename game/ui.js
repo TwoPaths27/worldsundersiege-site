@@ -341,6 +341,21 @@ function formatCoordinate(x, y) {
 }
 
 
+
+
+function closePublicZoneBrowser() {
+  if (!elements.publicZoneModal) return;
+  elements.publicZoneModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  if (elements.publicZoneTitle) elements.publicZoneTitle.textContent = "";
+  if (elements.publicZoneOwner) elements.publicZoneOwner.textContent = "";
+  if (elements.publicZoneCount) elements.publicZoneCount.textContent = "";
+  if (elements.publicZoneCards) elements.publicZoneCards.replaceChildren();
+  window.PublicZoneBrowser = window.PublicZoneBrowser || {};
+  window.PublicZoneBrowser.isOpen = false;
+  window.PublicZoneBrowser.playerId = null;
+  window.PublicZoneBrowser.zoneType = null;
+}
 function inspectDeckPile(playerId) {
   const player = GameState.players[playerId];
   if (!player) return;
