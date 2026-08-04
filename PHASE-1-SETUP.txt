@@ -1,0 +1,51 @@
+WORLDS UNDER SIEGE — PHASE 1 ACCOUNT SETUP
+
+FILES IN THIS ZIP
+- login.html
+- register.html
+- forgot-password.html
+- update-password.html
+- onboarding.html
+- auth.css
+- auth-pages.js
+- auth-common.js
+- auth-guard.js
+- auth-nav.js
+- supabase-config.js
+- index.html (updated)
+- supabase-phase1.sql
+- logo.png, banner.jpg, page-template.css
+
+BEFORE UPLOADING THE WEBSITE FILES
+1. Open your Supabase project.
+2. Go to SQL Editor.
+3. Create a new query.
+4. Paste the full contents of supabase-phase1.sql.
+5. Click Run.
+6. Confirm that the query finishes without an error.
+
+UPLOAD
+Upload the files in this ZIP to the root of the GitHub repository.
+Do not upload supabase-phase1.sql to the public site unless you want it stored there;
+it is included as an installation file.
+
+WELCOME VIDEO
+The login and registration pages look for:
+  welcome-video.mp4
+Place your future video in the site root using that exact filename.
+Until then, the pages show banner.jpg as the video poster.
+
+TEST ORDER
+1. Open register.html.
+2. Create a test account with a new username and email.
+3. Open the confirmation email.
+4. Confirm the address.
+5. Log in.
+6. The new account should reach onboarding.html.
+7. Log out and log back in.
+8. Because onboarding is unfinished, it should return to onboarding.html.
+
+IMPORTANT
+- The publishable key is included in supabase-config.js. This is expected for browser apps.
+- Never add a secret key, service_role key, or database password to website files.
+- Phase 2 will replace onboarding.html with the Download Images step.

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-login-page="login.html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script>document.documentElement.classList.add("auth-checking");</script>
+  <title>Account Ready - Worlds Under Siege</title>
+  <link rel="stylesheet" href="auth.css">
+  <script type="module" src="auth-guard.js"></script>
+</head>
+<body>
+  <div class="auth-shell">
+    <header class="auth-header"><img src="logo.png" class="auth-logo" alt="Worlds Under Siege"></header>
+    <main class="auth-main">
+      <section class="auth-form-card single-auth-card onboarding-card">
+        <div class="auth-eyebrow">Phase 1 Complete</div>
+        <h2>Your account is ready</h2>
+        <p class="auth-intro">Your next onboarding step will be downloading the card images. That screen will be connected in Phase 2.</p>
+        <div class="onboarding-actions">
+          <a class="auth-secondary" href="index.html">Continue to Main Site</a>
+          <button class="auth-submit" type="button" data-onboarding-logout>Log Out</button>
+        </div>
+      </section>
+    </main>
+    <footer class="auth-footer">© 2026 Worlds Under Siege™</footer>
+  </div>
+  <script type="module">
+    import { supabase } from "./supabase-config.js";
+    document.querySelector("[data-onboarding-logout]").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      location.replace("login.html");
+    });
+  </script>
+</body>
+</html>
