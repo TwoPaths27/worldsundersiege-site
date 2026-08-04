@@ -359,3 +359,44 @@ body::before{
   .auth-main{padding:20px 12px 34px}
   .auth-form-card,.auth-video-copy{padding:25px 22px}
 }
+
+
+/* Refined welcome panel copy and title styling */
+.auth-video-copy .auth-eyebrow{
+  display:block;
+  width:100%;
+  text-align:center;
+}
+
+.auth-video-copy h1{
+  font-family:"Copperplate","Copperplate Gothic Light","Palatino Linotype","Book Antiqua",Georgia,serif;
+  font-variant:small-caps;
+  letter-spacing:.035em;
+  line-height:1.02;
+  color:#ffe7ad;
+  text-shadow:
+    0 2px 0 #3a1907,
+    0 4px 12px rgba(0,0,0,.95),
+    0 0 18px rgba(201,126,31,.18);
+}
+
+.auth-video-copy p{
+  margin:0 0 18px;
+  color:#d7c39a;
+  line-height:1.72;
+  font-size:17px;
+}
+
+.auth-video-copy p:last-child{
+  margin-bottom:0;
+}
+
+.auth-video-copy .auth-closing-line{
+  margin-top:22px;
+  color:#f4cf7e;
+  font-weight:700;
+  font-style:italic;
+  text-align:center;
+  letter-spacing:.025em;
+  text-shadow:0 2px 6px #000;
+}
