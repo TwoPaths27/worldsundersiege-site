@@ -2,6 +2,7 @@ import { getSession, getProfile } from "./auth-common.js";
 
 const loginPage = document.documentElement.dataset.loginPage || "login.html";
 const shouldRequireOnboarding = document.documentElement.dataset.requireOnboarding === "complete";
+const DEVELOPER_EMAILS = new Set(['worldsundersiege@gmail.com']);
 
 async function guardPage() {
   try {
@@ -14,10 +15,16 @@ async function guardPage() {
     }
 
     if (shouldRequireOnboarding) {
-      const profile = await getProfile(session.user.id);
-      if (!profile.onboarding_complete) {
-        window.location.replace("onboarding.html");
-        return;
+      const isDeveloper = DEVELOPER_EMAILS.has(
+        String(session.user.email || "").toLowerCase()
+      );
+
+      if (!isDeveloper) {
+        const profile = await getProfile(session.user.id);
+        if (!profile.onboarding_complete) {
+          window.location.replace("onboarding.html");
+          return;
+        }
       }
     }
 

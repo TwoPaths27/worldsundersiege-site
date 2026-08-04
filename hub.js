@@ -1,6 +1,8 @@
 import { supabase } from "./supabase-config.js";
 import { getSession, getProfile } from "./auth-common.js";
 
+const DEVELOPER_EMAILS = new Set(['worldsundersiege@gmail.com']);
+
 const newsArticles = [
   {
     category: "Website Update",
@@ -45,6 +47,7 @@ const elements = {
   newsCategory: document.getElementById("newsCategory"),
   newsTitle: document.getElementById("newsTitle"),
   newsSummary: document.getElementById("newsSummary"),
+  developerPanel: document.getElementById("developerPanel"),
   newsDots: document.getElementById("newsDots"),
   previousNews: document.getElementById("previousNews"),
   nextNews: document.getElementById("nextNews")
@@ -71,6 +74,13 @@ async function loadPlayer() {
 
     const profile = await getProfile(session.user.id);
     const username = profile?.username || session.user.email || "Player";
+
+    const isDeveloper = DEVELOPER_EMAILS.has(
+      String(session.user.email || "").toLowerCase()
+    );
+    if (elements.developerPanel) {
+      elements.developerPanel.hidden = !isDeveloper;
+    }
     elements.username.textContent = username;
     elements.modalUsername.textContent = username;
 

@@ -376,3 +376,56 @@ button,a{font:inherit}
   .hub-button{font-size:18px}
   .primary-hub-button{font-size:24px}
 }
+
+
+.developer-panel{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:13px 16px;
+  border:1px solid rgba(217,164,65,.55);
+  border-radius:7px;
+  background:linear-gradient(145deg,rgba(53,32,15,.96),rgba(15,10,6,.98));
+  box-shadow:0 10px 26px rgba(0,0,0,.4),0 0 18px rgba(217,164,65,.10);
+}
+
+.developer-panel h2{
+  margin:4px 0 0;
+  color:#ffe7ad;
+  font-size:20px;
+}
+
+.developer-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+.developer-actions a{
+  color:#f7dfaa;
+  text-decoration:none;
+  border:1px solid #8e6328;
+  border-radius:5px;
+  padding:8px 11px;
+  background:#201309;
+  font:700 13px Arial,Helvetica,sans-serif;
+}
+
+.developer-actions a:hover{
+  color:#fff4cf;
+  border-color:#e2b85e;
+  background:#3a2410;
+}
+
+@media(max-width:700px){
+  .developer-panel{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .developer-actions{
+    justify-content:flex-start;
+  }
+}
