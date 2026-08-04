@@ -400,3 +400,21 @@ body::before{
   letter-spacing:.025em;
   text-shadow:0 2px 6px #000;
 }
+
+.video-frame{position:relative}
+.video-frame video{display:block;width:100%}
+.video-play-btn{
+position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:110px;height:110px;border-radius:50%;
+border:3px solid #e5c46d;
+background:radial-gradient(circle,#d7ae4e 0,#8a5d1d 70%,#5d3a10 100%);
+color:#fff4d2;font-size:46px;font-weight:bold;
+display:flex;align-items:center;justify-content:center;
+cursor:pointer;z-index:5;
+box-shadow:0 0 30px rgba(233,185,77,.45), inset 0 2px 0 rgba(255,255,255,.35);
+transition:.2s;
+}
+.video-play-btn:hover{
+transform:translate(-50%,-50%) scale(1.08);
+box-shadow:0 0 45px rgba(255,211,106,.8);
+}
