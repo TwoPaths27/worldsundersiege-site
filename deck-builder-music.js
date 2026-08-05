@@ -3,7 +3,7 @@
   const ENABLED_KEY = "wus-menu-music-enabled";
   const VOLUME_KEY = "wus-menu-music-volume";
   const DEFAULT_VOLUME = 0.136;
-  const DECK_BUILDER_VOLUME_MULTIPLIER = 0.8;
+  const DECK_BUILDER_VOLUME_MULTIPLIER = 0.68;
 
   const music = new Audio(MUSIC_PATH);
   music.loop = true;

@@ -37,24 +37,21 @@ body > :not(#mainHubAtmosphere):not(script){
 .main-hub-embers{
   position:absolute;
   inset:0;
-  opacity:.9;
+  opacity:.75;
 }
 
-.main-hub-ember{
-  --size:4px;
+ .main-hub-ember{
+  --size:2px;
   position:absolute;
   left:var(--left);
-  bottom:-20px;
+  bottom:-18px;
   width:var(--size);
-  height:var(--size);
-  border-radius:50%;
-  background:#ffb04a;
-  box-shadow:
-    0 0 7px rgba(255,176,74,.98),
-    0 0 18px rgba(255,103,26,.92),
-    0 0 34px rgba(255,61,0,.58);
-  animation:mainHubEmberRise var(--duration) linear infinite;
-  animation-delay:var(--delay);
+  height:calc(var(--size) * 1.8);
+  border-radius:40% 60% 60% 40%;
+  background:linear-gradient(to top,#8b1e00,#ff6a00 65%,#ffd08a);
+  box-shadow:0 0 3px rgba(255,90,0,.55),0 0 8px rgba(255,120,20,.25);
+  opacity:var(--alpha);
+  animation:mainHubEmberRise var(--duration) linear infinite,mainHubEmberWobble calc(var(--duration)/5) ease-in-out infinite;
 }
 
 @keyframes mainHubFogDrift{
@@ -62,13 +59,14 @@ body > :not(#mainHubAtmosphere):not(script){
   to{transform:translate3d(12%,-3%,0) scale(1.1)}
 }
 
+@keyframes mainHubEmberWobble{0%,100%{margin-left:-2px}50%{margin-left:2px}}
 @keyframes mainHubEmberRise{
   0%{
     transform:translate3d(0,0,0) scale(.55);
     opacity:0;
   }
-  12%{opacity:.95}
-  72%{opacity:.65}
+  12%{opacity:var(--alpha)}
+  72%{opacity:calc(var(--alpha) * .55)}
   100%{
     transform:translate3d(var(--drift),-112vh,0) scale(1.2);
     opacity:0;
@@ -77,9 +75,19 @@ body > :not(#mainHubAtmosphere):not(script){
 
 @media(prefers-reduced-motion:reduce){
   .main-hub-fog,
-  .main-hub-ember{
-    animation:none!important;
-  }
+   .main-hub-ember{
+  --size:2px;
+  position:absolute;
+  left:var(--left);
+  bottom:-18px;
+  width:var(--size);
+  height:calc(var(--size) * 1.8);
+  border-radius:40% 60% 60% 40%;
+  background:linear-gradient(to top,#8b1e00,#ff6a00 65%,#ffd08a);
+  box-shadow:0 0 3px rgba(255,90,0,.55),0 0 8px rgba(255,120,20,.25);
+  opacity:var(--alpha);
+  animation:mainHubEmberRise var(--duration) linear infinite,mainHubEmberWobble calc(var(--duration)/5) ease-in-out infinite;
+}
 
   .main-hub-embers{
     display:none;
