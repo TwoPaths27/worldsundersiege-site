@@ -1,0 +1,14 @@
+OPEN PACKS BATCH 3
+
+Included:
+- Store landing screen: Starter Decks / Set 1 Battle of Ages
+- Full Starter Deck Armory with the three supplied package images and descriptions
+- SD1 commander showcase cards
+- 1,000 Gold local purchases, one purchase per deck, owned gray-out
+- Starter cards added through the existing WUSCollection system
+- Battle of Ages booster prices set to 200 / 4,400 with 4,800 sale strikethrough
+- Compact header with Home only
+- Global sounds/mouse-click.mp3 UI click sound hook
+- Gold shimmer and responsive armory styling
+
+Note: Starter ownership is saved locally in this batch. Supabase cloud ownership is a later backend pass.

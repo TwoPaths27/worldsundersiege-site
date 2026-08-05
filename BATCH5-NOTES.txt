@@ -1,0 +1,20 @@
+OPEN PACKS — BATCH 5
+
+ADDED
+- Starter Deck purchase now transitions into a dedicated reveal screen.
+- Every Starter Deck card appears face-down and can be revealed individually.
+- Reveal All flips the full deck in sequence.
+- The SD1 commander card has a special seal, glow, and reveal treatment.
+- Revealed cards can be clicked again to open the existing card zoom viewer.
+- Completion summary shows:
+  - cards added,
+  - duplicate conversions,
+  - Gold earned from extras,
+  - unlocked commander portrait.
+- Commander portrait unlock is stored locally under:
+  wus-unlocked-profile-portraits-v1
+- Continue returns to the Starter Deck Armory.
+
+UNCHANGED
+- Starter ownership and collection are still local browser storage.
+- Supabase account syncing remains for a later batch.

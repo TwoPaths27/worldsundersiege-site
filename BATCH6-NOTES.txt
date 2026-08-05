@@ -1,0 +1,25 @@
+OPEN PACKS — BATCH 6: CLOUD STARTER DECKS
+
+THIS BATCH ADDS
+- Supabase-backed starter deck ownership.
+- Supabase-backed player Gold wallet.
+- Supabase-backed player card quantities.
+- Supabase-backed permanent commander portrait unlocks.
+- A secure database purchase function.
+- Cloud state mirrors into the existing local collection store so current pages keep working.
+- Local fallback remains available before the SQL is installed.
+
+INSTALL BEFORE TESTING CLOUD PURCHASES
+1. Supabase → SQL Editor → New query.
+2. Paste all of supabase-batch6-starter-decks.sql.
+3. Click Run.
+4. Give your test account Gold in the player_wallets table.
+
+FILES CHANGED
+- open-packs.html
+- open-packs.js
+- collection-store.js
+
+FILES ADDED
+- starter-cloud.js
+- supabase-batch6-starter-decks.sql

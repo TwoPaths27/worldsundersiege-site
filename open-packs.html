@@ -7,44 +7,99 @@
   <link rel="stylesheet" href="open-packs.css?v=godpack-1">
 </head>
 <body>
-  <header class="site-header">
+  <header class="site-header compact-store-header">
     <a href="index.html" class="brand"><img src="logo.png" alt="Worlds Under Siege"></a>
-    <nav aria-label="Main navigation">
-      <a href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a class="active" href="open-packs.html">Open Packs</a>
-    </nav>
+    <nav aria-label="Main navigation"><a href="index.html">Home</a></nav>
   </header>
 
   <main class="pack-app">
-    <section id="introStage" class="stage intro-stage">
+    <section id="storeStage" class="stage store-stage">
+      <section class="store-landing panel">
+        <p class="eyebrow">Worlds Under Siege Armory</p>
+        <h1>Choose What to Open</h1>
+        <p class="lead">Expand your forces with a complete Starter Deck or open boosters from a card set.</p>
+        <div class="store-choice-grid">
+          <button id="chooseStarterDecks" class="store-choice starter-choice" type="button">
+            <span class="store-choice-art starter-choice-art">
+              <img src="Legends of Camelot.png" alt="Starter Decks">
+            </span>
+            <span class="store-choice-copy"><small>Complete Decks</small><strong>Starter Decks</strong><span>Claim the two armies you did not choose during onboarding.</span></span>
+          </button>
+          <button id="chooseBattleOfAges" class="store-choice set-choice" type="button">
+            <span class="store-choice-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster set"></span>
+            <span class="store-choice-copy"><small>Set 1</small><strong>Battle of Ages</strong><span>Buy a single booster or a full 24-pack booster box.</span></span>
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <section id="starterDeckStage" class="stage starter-deck-stage" hidden>
+      <section class="starter-armory-panel panel">
+        <div class="store-stage-heading">
+          <button id="starterBackButton" class="text-button store-back-button" type="button">← Back</button>
+          <div><p class="eyebrow">Starter Deck Armory</p><h1>Choose Your Next Army</h1><p class="lead">Each Starter Deck may be obtained once. Select a deck to inspect its commander.</p></div>
+          <div class="stage-wallet compact"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
+        </div>
+        <div id="starterArmory" class="starter-armory"></div>
+        <p id="starterPurchaseMessage" class="economy-note" role="status"></p>
+      </section>
+    </section>
+
+
+    <section id="starterRevealStage" class="stage starter-reveal-stage" hidden aria-live="polite">
+      <section class="starter-reveal-panel panel">
+        <div class="starter-reveal-heading">
+          <div>
+            <p class="eyebrow">Starter Deck Unlocked</p>
+            <h1 id="starterRevealTitle">Your Starter Deck</h1>
+            <p id="starterRevealSubtitle" class="lead">Reveal the cards now added to your collection.</p>
+          </div>
+          <button id="starterRevealAllButton" class="secondary-button" type="button">Reveal All</button>
+        </div>
+
+        <div class="starter-commander-banner">
+          <div>
+            <span>Featured Commander</span>
+            <strong id="starterCommanderName">Commander</strong>
+            <small id="starterCommanderId"></small>
+          </div>
+          <img id="starterCommanderImage" src="card-back.png" alt="Starter deck commander">
+        </div>
+
+        <div id="starterRevealGrid" class="starter-reveal-grid" aria-label="Starter deck cards"></div>
+
+        <div id="starterRevealResult" class="collection-result" hidden></div>
+
+        <div class="starter-reveal-actions">
+          <button id="starterRevealContinueButton" class="primary-button" type="button" hidden>
+            Return to Starter Decks
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <section id="introStage" class="stage intro-stage" hidden>
+      <button id="setBackButton" class="text-button floating-store-back" type="button">← Sets</button>
       <div class="intro-art"><img src="battle-of-ages-set.png" alt="Battle of Ages booster display and booster pack"></div>
       <div class="intro-copy panel">
-        <p class="eyebrow">Battle of Ages</p>
+        <p class="eyebrow">Set 1 · Battle of Ages</p>
         <h1>Open Battle of Ages</h1>
         <p class="lead">Open a single booster or break the seal on a full 24-pack booster box.</p>
         <div class="contents" aria-label="Pack contents">
           <span><strong>6</strong> Commons</span><span><strong>4</strong> Uncommons</span><span><strong>2</strong> Rare or Higher</span>
         </div>
         <div class="asset-box" id="assetBox">
-          <div>
-            <strong>Battle of Ages Card Images</strong>
-            <p id="assetStatus">Checking image pack…</p>
-          </div>
-          <div class="asset-actions">
-            <button id="downloadAssetsButton" class="secondary-button" type="button">Download Images</button>
-            <button id="repairAssetsButton" class="text-button" type="button">Repair</button>
-          </div>
-          <div class="asset-progress" id="assetProgress" hidden>
-            <div class="asset-progress-bar"><span id="assetProgressFill"></span></div>
-            <span id="assetProgressText">0 / 227</span>
-          </div>
+          <div><strong>Battle of Ages Card Images</strong><p id="assetStatus">Checking image pack…</p></div>
+          <div class="asset-actions"><button id="downloadAssetsButton" class="secondary-button" type="button">Download Images</button><button id="repairAssetsButton" class="text-button" type="button">Repair</button></div>
+          <div class="asset-progress" id="assetProgress" hidden><div class="asset-progress-bar"><span id="assetProgressFill"></span></div><span id="assetProgressText">0 / 227</span></div>
           <details id="assetErrors" class="asset-errors" hidden><summary>Files that could not be downloaded</summary><pre id="assetErrorList"></pre></details>
         </div>
         <div class="stage-wallet" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
         <div class="opening-choices">
-          <button id="beginButton" class="primary-button" type="button">Open One Booster <span>Costs 200 Gold</span></button>
-          <button id="beginBoxButton" class="secondary-button" type="button">Open Booster Box <span>Costs 4,200 Gold · 24 Packs</span></button>
+          <button id="beginButton" class="primary-button purchase-shimmer" type="button">Open One Booster <span>Costs 200 Gold</span></button>
+          <button id="beginBoxButton" class="secondary-button sale-purchase-button purchase-shimmer" type="button"><span class="sale-badge">SALE!</span>Open Booster Box <span><strong>4,400 Gold</strong> · <s>4,800</s> · 24 Packs</span></button>
         </div>
-        <p id="economyMessage" class="economy-note" role="status">A booster costs 200 Gold. A 24-pack booster box costs 4,200 Gold.</p>
+        <p id="economyMessage" class="economy-note" role="status">A booster costs 200 Gold. The 24-pack booster box is on sale for 4,400 Gold.</p>
       </div>
     </section>
 
@@ -137,10 +192,10 @@
         <div id="boxAllPulls" class="box-all-pulls" hidden></div>
         <div class="reveal-purchase-bar summary-purchase-bar">
           <div class="stage-wallet compact" aria-label="Current gold balance"><span>Current Gold</span><strong data-gold-balance>0</strong></div>
-          <p>Another booster box costs <strong>4,200 Gold</strong>.</p>
+          <p>Another booster box costs <strong>4,400 Gold</strong> while the Set 1 sale is active.</p>
         </div>
         <div class="box-summary-actions">
-          <button id="openAnotherBoxButton" class="primary-button" type="button">Open Another Box · 4,200 Gold</button>
+          <button id="openAnotherBoxButton" class="primary-button" type="button">Open Another Box · 4,400 Gold</button>
           <a class="secondary-button button-link" href="deck-builder.html">Go to Deck Builder</a>
           <button id="backToSelectionButton" class="secondary-button" type="button">Back to Pack Selection</button>
         </div>
@@ -190,6 +245,7 @@
   <script src="asset-cache.js"></script>
   <script src="asset-manifest.js"></script>
   <script src="collection-store.js"></script>
-  <script src="open-packs.js?v=godpack-1"></script>
+  <script type="module" src="starter-cloud.js"></script>
+  <script src="open-packs.js?v=cloud-starters-1"></script>
 </body>
 </html>

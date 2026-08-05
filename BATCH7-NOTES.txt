@@ -1,0 +1,24 @@
+BATCH 7 — CLOUD MAIN HUB PROFILE
+
+ADDED
+- Main Hub Gold now loads from player_wallets when available.
+- Clicking the username or portrait opens an owned-card portrait chooser.
+- Owned cards and portrait_unlocks both populate the chooser.
+- Choosing a portrait saves selected_portrait_card_id to the player's profile.
+- Portrait choice follows the account across devices.
+- Unit Tile paths are attempted first.
+- Card artwork is used automatically as a fallback if a Unit Tile path is unavailable.
+- A database trigger permanently unlocks portraits whenever a card is owned.
+
+RUN BEFORE TESTING
+Supabase → SQL Editor → New query
+Paste and run:
+supabase-batch7-profile-portraits.sql
+
+FILES CHANGED
+- index.html
+- hub.js
+- hub.css
+
+FILE ADDED
+- supabase-batch7-profile-portraits.sql

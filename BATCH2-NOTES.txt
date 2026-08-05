@@ -1,0 +1,1 @@
+Batch2 starter groundwork added. CSS classes and global click hook included. Continue integrating UI.

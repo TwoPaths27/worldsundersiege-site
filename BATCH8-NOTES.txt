@@ -1,0 +1,28 @@
+BATCH 8 — CLOUD DECK SAVING
+
+ADDED
+- Save decks to Supabase.
+- Load decks on any logged-in device.
+- Rename and delete cloud decks.
+- Favorite/unfavorite decks.
+- Favorite decks appear first in saved-deck lists.
+- Automatic migration of existing local decks when the cloud account has no decks.
+- Maximum of 10 decks enforced in JavaScript and Supabase.
+- Local fallback remains available while testing.
+- Existing deck validation, import/export, sounds, and Deck Builder behavior remain intact.
+
+INSTALL
+1. Supabase → SQL Editor → New query.
+2. Paste all of supabase-batch8-cloud-decks.sql.
+3. Click Run.
+4. Upload the website files.
+5. Log in and open Deck Builder.
+
+FILES CHANGED
+- deck-builder.html
+- deck-builder.js
+- deck-builder.css
+
+FILES ADDED
+- deck-cloud.js
+- supabase-batch8-cloud-decks.sql

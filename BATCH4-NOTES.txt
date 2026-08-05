@@ -1,0 +1,1 @@
+Batch4 groundwork: local starter purchase API, gold deduction, owned starters, card injection stub. Ready for Supabase wiring.

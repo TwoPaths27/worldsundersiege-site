@@ -114,14 +114,32 @@
       <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
       <span class="panel-eyebrow">Commander Profile</span>
       <h2 id="profileModalTitle">Your Profile</h2>
+
       <div class="profile-preview">
         <span class="portrait-frame portrait-frame-large">
           <img id="profileModalPortrait" src="logo.png" alt="Current profile portrait">
         </span>
-        <strong id="profileModalUsername">Player</strong>
+        <div class="profile-preview-copy">
+          <strong id="profileModalUsername">Player</strong>
+          <span id="profileGoldLabel">0 Gold</span>
+        </div>
       </div>
-      <p>Your profile portrait will be selectable from card tiles you have unlocked by owning those cards.</p>
-      <p class="modal-note">The tile selector will be connected when collections move from browser storage to the player account.</p>
+
+      <section class="portrait-picker" aria-labelledby="portraitPickerTitle">
+        <div class="portrait-picker-heading">
+          <div>
+            <h3 id="portraitPickerTitle">Choose Your Portrait</h3>
+            <p>Every owned card unlocks its framed Unit Tile as a profile portrait.</p>
+          </div>
+          <span id="portraitUnlockCount">0 unlocked</span>
+        </div>
+
+        <div id="portraitPickerStatus" class="portrait-picker-status" role="status">
+          Loading unlocked portraits…
+        </div>
+        <div id="portraitGrid" class="portrait-grid" hidden></div>
+      </section>
+
       <button class="modal-main-button" type="button" data-close-modal>Close</button>
     </section>
   </div>
@@ -155,7 +173,8 @@
     </section>
   </div>
 
+  <script src="cards.js"></script>
   <script src="collection-store.js"></script>
-  <script type="module" src="hub.js"></script>
+  <script type="module" src="hub.js?v=cloud-profile-1"></script>
 </body>
 </html>

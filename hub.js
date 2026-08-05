@@ -37,6 +37,10 @@ const elements = {
   portrait: document.getElementById("profilePortrait"),
   modalPortrait: document.getElementById("profileModalPortrait"),
   modalUsername: document.getElementById("profileModalUsername"),
+  profileGoldLabel: document.getElementById("profileGoldLabel"),
+  portraitGrid: document.getElementById("portraitGrid"),
+  portraitPickerStatus: document.getElementById("portraitPickerStatus"),
+  portraitUnlockCount: document.getElementById("portraitUnlockCount"),
   profileButton: document.getElementById("profileButton"),
   settingsButton: document.getElementById("settingsButton"),
   logoutButton: document.getElementById("logoutButton"),
@@ -61,6 +65,13 @@ const elements = {
 let newsIndex = 0;
 let newsTimer = null;
 
+let currentSession = null;
+let currentProfile = null;
+let currentGold = 0;
+let selectedPortraitCardId = null;
+let unlockedPortraitCardIds = [];
+let cloudProfileAvailable = false;
+
 const MENU_MUSIC_ENABLED_KEY = "wus-menu-music-enabled";
 const MENU_MUSIC_VOLUME_KEY = "wus-menu-music-volume";
 const DEFAULT_MUSIC_VOLUME = 0.22;
@@ -77,7 +88,7 @@ initialize();
 
 async function initialize() {
   await loadPlayer();
-  loadGold();
+  await loadGold();
   initializeMenuMusic();
   buildNewsDots();
   showNews(0);
@@ -87,44 +98,156 @@ async function initialize() {
 
 async function loadPlayer() {
   try {
-    const session = await getSession();
-    if (!session) return;
+    currentSession = await getSession();
+    if (!currentSession) return;
 
-    const profile = await getProfile(session.user.id);
-    const username = profile?.username || session.user.email || "Player";
+    currentProfile = await getProfile(currentSession.user.id);
+    const username =
+      currentProfile?.username ||
+      currentSession.user.email ||
+      "Player";
 
     const isDeveloper = DEVELOPER_EMAILS.has(
-      String(session.user.email || "").toLowerCase()
+      String(currentSession.user.email || "").toLowerCase()
     );
+
     if (elements.developerPanel) {
       elements.developerPanel.hidden = !isDeveloper;
     }
+
     elements.username.textContent = username;
     elements.modalUsername.textContent = username;
 
-    // Phase 1 uses the logo as a temporary portrait.
-    // A card-tile path will replace this after cloud collections are connected.
-    const storedPortrait = localStorage.getItem("wus-selected-profile-portrait");
-    if (storedPortrait) {
-      elements.portrait.src = storedPortrait;
-      elements.modalPortrait.src = storedPortrait;
-    }
+    await loadCloudPortraits();
   } catch (error) {
     console.error("Could not load the player profile:", error);
     elements.username.textContent = "Player";
     elements.modalUsername.textContent = "Player";
+    applyPortraitImage(elements.portrait, null);
+    applyPortraitImage(elements.modalPortrait, null);
   }
 }
 
-function loadGold() {
-  const update = () => {
-    const gold = window.WUSCollection?.load?.().gold ?? 0;
-    elements.gold.textContent = Number(gold).toLocaleString();
+async function loadCloudPortraits() {
+  if (!currentSession) return;
+
+  elements.portraitPickerStatus.hidden = false;
+  elements.portraitPickerStatus.textContent = "Loading unlocked portraits…";
+  elements.portraitGrid.hidden = true;
+
+  try {
+    const [profileResponse, unlockResponse, cardsResponse] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("selected_portrait_card_id")
+        .eq("user_id", currentSession.user.id)
+        .single(),
+      supabase
+        .from("portrait_unlocks")
+        .select("card_id")
+        .eq("user_id", currentSession.user.id)
+        .order("unlocked_at", { ascending: true }),
+      supabase
+        .from("player_cards")
+        .select("card_id, quantity")
+        .eq("user_id", currentSession.user.id)
+        .gt("quantity", 0)
+    ]);
+
+    if (profileResponse.error) throw profileResponse.error;
+    if (unlockResponse.error) throw unlockResponse.error;
+    if (cardsResponse.error) throw cardsResponse.error;
+
+    selectedPortraitCardId =
+      profileResponse.data?.selected_portrait_card_id || null;
+
+    const unlocked = new Set(
+      (unlockResponse.data || []).map(row => row.card_id)
+    );
+
+    // Any currently owned card is also immediately usable as a portrait.
+    (cardsResponse.data || []).forEach(row => unlocked.add(row.card_id));
+
+    unlockedPortraitCardIds = [...unlocked];
+    cloudProfileAvailable = true;
+
+    const selectedCard = findCard(selectedPortraitCardId);
+    applyPortraitImage(elements.portrait, selectedCard);
+    applyPortraitImage(elements.modalPortrait, selectedCard);
+    renderPortraitGrid();
+  } catch (error) {
+    console.warn("Cloud portraits are unavailable; using local portrait.", error);
+    cloudProfileAvailable = false;
+
+    const storedPath = localStorage.getItem("wus-selected-profile-portrait");
+    if (storedPath) {
+      elements.portrait.src = storedPath;
+      elements.modalPortrait.src = storedPath;
+    } else {
+      applyPortraitImage(elements.portrait, null);
+      applyPortraitImage(elements.modalPortrait, null);
+    }
+
+    const localUnlocks = readLocalPortraitUnlocks();
+    unlockedPortraitCardIds = localUnlocks;
+    renderPortraitGrid();
+  }
+}
+
+async function loadGold() {
+  const display = gold => {
+    currentGold = Math.max(0, Number(gold) || 0);
+    elements.gold.textContent = currentGold.toLocaleString();
+    elements.profileGoldLabel.textContent =
+      `${currentGold.toLocaleString()} Gold`;
   };
 
-  update();
-  window.addEventListener("wus-player-data-changed", update);
-  window.addEventListener("storage", update);
+  try {
+    if (!currentSession) currentSession = await getSession();
+
+    if (currentSession) {
+      const { data, error } = await supabase
+        .from("player_wallets")
+        .select("gold")
+        .eq("user_id", currentSession.user.id)
+        .single();
+
+      if (!error && data) {
+        display(data.gold);
+        window.WUSCollection?.replaceFromCloud?.({
+          gold: data.gold,
+          cards: window.WUSCollection?.load?.().cards || {}
+        });
+      } else {
+        display(window.WUSCollection?.load?.().gold ?? 0);
+      }
+    } else {
+      display(window.WUSCollection?.load?.().gold ?? 0);
+    }
+  } catch (error) {
+    console.warn("Could not load cloud Gold:", error);
+    display(window.WUSCollection?.load?.().gold ?? 0);
+  }
+
+  window.addEventListener("wus-player-data-changed", () => {
+    const localGold = window.WUSCollection?.load?.().gold;
+    if (Number.isFinite(Number(localGold))) display(localGold);
+  });
+
+  window.addEventListener("wus-cloud-starter-changed", event => {
+    if (event.detail && Number.isFinite(Number(event.detail.gold))) {
+      display(event.detail.gold);
+    } else {
+      loadGold();
+    }
+  });
+
+  window.addEventListener("storage", event => {
+    if (!event.key || event.key.includes("player")) {
+      const localGold = window.WUSCollection?.load?.().gold;
+      if (Number.isFinite(Number(localGold))) display(localGold);
+    }
+  });
 }
 
 function bindEvents() {
@@ -132,7 +255,11 @@ function bindEvents() {
   elements.closePlayDrawer.addEventListener("click", closePlayDrawer);
   elements.playDrawerBackdrop.addEventListener("click", closePlayDrawer);
 
-  elements.profileButton.addEventListener("click", () => openModal(elements.profileModal));
+  elements.profileButton.addEventListener("click", async () => {
+    openModal(elements.profileModal);
+    await loadCloudPortraits();
+    await loadGold();
+  });
   elements.settingsButton.addEventListener("click", () => openModal(elements.settingsModal));
 
   elements.musicEnabled.addEventListener("change", () => {
@@ -199,6 +326,173 @@ function bindEvents() {
   newsPanel.addEventListener("mouseleave", startNewsRotation);
   newsPanel.addEventListener("focusin", stopNewsRotation);
   newsPanel.addEventListener("focusout", startNewsRotation);
+}
+
+function getCardDatabase() {
+  return Array.isArray(window.cards)
+    ? window.cards
+    : (typeof cards !== "undefined" && Array.isArray(cards) ? cards : []);
+}
+
+function findCard(cardId) {
+  if (!cardId) return null;
+  return getCardDatabase().find(card => card.id === cardId) || null;
+}
+
+function readLocalPortraitUnlocks() {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem("wus-unlocked-profile-portraits-v1") || "[]"
+    );
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function portraitCandidates(card) {
+  if (!card) return ["logo.png"];
+
+  const imageFile = String(card.image || "")
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop();
+
+  const base = imageFile.replace(/\.[^.]+$/, "");
+
+  return [
+    `tiles/${base}.png`,
+    `Tiles/${base}.png`,
+    `unit-tiles/${base}.png`,
+    `Unit Tiles/${base}.png`,
+    card.image,
+    "logo.png"
+  ];
+}
+
+function applyPortraitImage(image, card) {
+  const candidates = portraitCandidates(card);
+  let candidateIndex = 0;
+
+  image.onerror = () => {
+    candidateIndex += 1;
+    if (candidateIndex < candidates.length) {
+      image.src = candidates[candidateIndex];
+    } else {
+      image.onerror = null;
+      image.src = "logo.png";
+    }
+  };
+
+  image.src = candidates[0];
+  image.alt = card ? `${card.name} profile portrait` : "Default profile portrait";
+}
+
+function renderPortraitGrid() {
+  const cardsById = new Map(
+    getCardDatabase().map(card => [card.id, card])
+  );
+
+  const availableCards = unlockedPortraitCardIds
+    .map(cardId => cardsById.get(cardId))
+    .filter(Boolean)
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  elements.portraitUnlockCount.textContent =
+    `${availableCards.length.toLocaleString()} unlocked`;
+
+  if (!availableCards.length) {
+    elements.portraitPickerStatus.hidden = false;
+    elements.portraitPickerStatus.textContent =
+      "Portraits unlock when cards are added to your account.";
+    elements.portraitGrid.hidden = true;
+    elements.portraitGrid.replaceChildren();
+    return;
+  }
+
+  elements.portraitPickerStatus.hidden = true;
+  elements.portraitGrid.hidden = false;
+  elements.portraitGrid.replaceChildren(
+    ...availableCards.map(createPortraitChoice)
+  );
+}
+
+function createPortraitChoice(card) {
+  const button = document.createElement("button");
+  const selected = card.id === selectedPortraitCardId;
+
+  button.type = "button";
+  button.className = `portrait-choice${selected ? " selected" : ""}`;
+  button.dataset.cardId = card.id;
+  button.setAttribute(
+    "aria-label",
+    selected
+      ? `${card.name}, current portrait`
+      : `Use ${card.name} as profile portrait`
+  );
+  button.innerHTML = `
+    <span class="portrait-choice-frame">
+      <img src="logo.png" alt="">
+    </span>
+    <strong>${escapeHtml(card.name)}</strong>
+    <small>${selected ? "Selected" : card.id}</small>
+  `;
+
+  applyPortraitImage(button.querySelector("img"), card);
+
+  button.addEventListener("click", () => selectPortrait(card, button));
+  return button;
+}
+
+async function selectPortrait(card, button) {
+  if (!card || card.id === selectedPortraitCardId) return;
+
+  const previousText = button.querySelector("small")?.textContent;
+  button.disabled = true;
+  if (button.querySelector("small")) {
+    button.querySelector("small").textContent = "Saving…";
+  }
+
+  try {
+    if (cloudProfileAvailable && currentSession) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ selected_portrait_card_id: card.id })
+        .eq("user_id", currentSession.user.id);
+
+      if (error) throw error;
+    }
+
+    selectedPortraitCardId = card.id;
+
+    const chosenPath = portraitCandidates(card)[0];
+    localStorage.setItem("wus-selected-profile-portrait", chosenPath);
+    localStorage.setItem("wus-selected-profile-card-id", card.id);
+
+    applyPortraitImage(elements.portrait, card);
+    applyPortraitImage(elements.modalPortrait, card);
+    renderPortraitGrid();
+
+    window.dispatchEvent(new CustomEvent("wus-profile-portrait-changed", {
+      detail: { cardId: card.id, name: card.name }
+    }));
+  } catch (error) {
+    console.error("Could not save profile portrait:", error);
+    button.disabled = false;
+    if (button.querySelector("small")) {
+      button.querySelector("small").textContent =
+        previousText || card.id;
+    }
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function initializeMenuMusic() {

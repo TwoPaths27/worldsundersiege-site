@@ -23,8 +23,13 @@
       <button id="pasteDeckBtn" class="secondary-btn" type="button">Paste Deck</button>
       <button id="saveAsDeckBtn" class="secondary-btn">Save As</button>
       <button id="renameDeckBtn" class="secondary-btn" disabled>Rename</button>
+      <button id="favoriteDeckBtn" class="secondary-btn favorite-deck-btn" type="button" disabled
+              aria-pressed="false">☆ Favorite</button>
       <select id="savedDecks" aria-label="Saved decks"><option value="">Load saved deck…</option></select>
       <button id="deleteDeckBtn" class="danger-btn" disabled>Delete</button>
+    </div>
+    <div id="cloudDeckStatus" class="cloud-deck-status" role="status" aria-live="polite">
+      Connecting to cloud decks…
     </div>
   </section>
 
@@ -160,5 +165,6 @@
 <script src="collection-store.js"></script>
 <script src="card-database.js"></script>
 <script src="asset-manifest.js"></script>
-<script src="deck-builder.js"></script>
+<script type="module" src="deck-cloud.js"></script>
+<script src="deck-builder.js?v=cloud-decks-1"></script>
 </body></html>
