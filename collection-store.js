@@ -111,24 +111,10 @@
     return{ok:true,result,opening:clone(data.activeOpening),completedOpening:opening.mode==="single"?clone(opening):null};
   }
   function clearActiveOpening(openingId) { const data=loadRaw(); if(!data.activeOpening || (openingId&&data.activeOpening.id!==openingId))return false; data.activeOpening=null; save(data); return true; }
-  function replaceFromCloud(snapshot) {
-    const data = loadRaw();
-    data.gold = Math.max(0, Math.floor(Number(snapshot?.gold) || 0));
-    data.cards = snapshot?.cards && typeof snapshot.cards === "object"
-      ? Object.fromEntries(
-          Object.entries(snapshot.cards)
-            .map(([id, quantity]) => [id, Math.max(0, Math.floor(Number(quantity) || 0))])
-            .filter(([, quantity]) => quantity > 0)
-        )
-      : {};
-    save(data);
-    return getSnapshot(data);
-  }
-
   function reset() { const data=defaultData(); save(data); return getSnapshot(data); }
 
   window.WUSCollection=Object.freeze({
     STORAGE_KEY,GOLD_BY_RARITY,load:()=>getSnapshot(),addCards,getOwned,getLimit,getGoldValue,addGold,spendGold,purchaseCard,
-    purchaseOpening,getActiveOpening,savePendingPack,settlePendingPack,clearActiveOpening,replaceFromCloud,reset
+    purchaseOpening,getActiveOpening,savePendingPack,settlePendingPack,clearActiveOpening,reset
   });
 })();

@@ -2,42 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1100">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Deck Builder - Worlds Under Siege</title>
   <link rel="stylesheet" href="page-template.css">
   <link rel="stylesheet" href="deck-builder.css">
-  <link rel="stylesheet" href="fog.css">
-  <link rel="stylesheet" href="deck-builder-header-update.css">
 </head>
 <body>
-<header class="site-header deck-builder-header">
-  <div class="deck-builder-header-inner">
-    <a class="deck-builder-logo-link" href="index.html" aria-label="Worlds Under Siege Home">
-      <img src="logo.png" alt="Worlds Under Siege" class="deck-builder-header-logo">
+<header class="deck-builder-site-header">
+  <div class="deck-builder-site-header-inner">
+    <a href="index.html" class="deck-builder-logo-link" aria-label="Worlds Under Siege Home">
+      <img src="logo.png" class="deck-builder-site-logo" alt="Worlds Under Siege">
     </a>
-    <nav class="deck-builder-header-nav" aria-label="Deck Builder navigation">
-      <a href="index.html" class="deck-builder-home-link">Home</a>
-    </nav>
+    <a href="index.html" class="deck-builder-home-button">Home</a>
   </div>
 </header>
 <main class="builder-page">
   <section class="builder-toolbar">
-    <div><span class="eyebrow">Battle of Ages</span><h1>Deck Builder</h1></div>
-    <div class="toolbar-actions">
-      <label class="deck-name-label">Deck Name<input id="deckName" maxlength="48" value="New Deck"></label>
-      <button id="newDeckBtn" class="secondary-btn">New</button>
-      <button id="saveDeckBtn" class="primary-btn">Save Deck</button>
+    <div class="builder-title-block">
+      <h1>Deck Builder</h1>
+      <p>Create, organize, and save your Worlds Under Siege decks.</p>
+    </div>
+
+    <div class="toolbar-actions" aria-label="Deck controls">
+      <label class="deck-name-label">
+        <span>Deck Name</span>
+        <input id="deckName" maxlength="48" value="New Deck">
+      </label>
+
+      <button id="newDeckBtn" class="secondary-btn" type="button">New Deck</button>
+      <button id="saveDeckBtn" class="primary-btn" type="button">Save Deck</button>
+      <button id="saveAsDeckBtn" class="secondary-btn" type="button">Save As</button>
+      <button id="renameDeckBtn" class="secondary-btn" type="button" disabled>Rename</button>
+
+      <select id="savedDecks" aria-label="Saved decks">
+        <option value="">Load saved deck…</option>
+      </select>
+
       <button id="exportDeckBtn" class="secondary-btn" type="button">Export Deck</button>
       <button id="pasteDeckBtn" class="secondary-btn" type="button">Paste Deck</button>
-      <button id="saveAsDeckBtn" class="secondary-btn">Save As</button>
-      <button id="renameDeckBtn" class="secondary-btn" disabled>Rename</button>
-      <button id="favoriteDeckBtn" class="secondary-btn favorite-deck-btn" type="button" disabled
-              aria-pressed="false">☆ Favorite</button>
-      <select id="savedDecks" aria-label="Saved decks"><option value="">Load saved deck…</option></select>
-      <button id="deleteDeckBtn" class="danger-btn" disabled>Delete</button>
-    </div>
-    <div id="cloudDeckStatus" class="cloud-deck-status" role="status" aria-live="polite">
-      Connecting to cloud decks…
+      <button id="clearDeckBtn" class="secondary-btn" type="button">Clear Deck</button>
+      <button id="deleteDeckBtn" class="danger-btn" type="button" disabled>Delete Deck</button>
     </div>
   </section>
 
@@ -57,7 +61,7 @@
     </aside>
 
     <section class="deck-panel panel-dark">
-      <div class="panel-heading deck-heading"><div><h2>Current Deck</h2><p id="deckSummary">0 total cards · 0 unique</p></div><button id="clearDeckBtn" class="secondary-btn">Clear</button></div>
+      <div class="panel-heading deck-heading"><div><h2>Current Deck</h2><p id="deckSummary">0 total cards · 0 unique</p></div></div>
       <div id="deckStatus" class="deck-status invalid">Build a 60-card deck, choose 1 Stronghold, and optionally choose up to 3 different Armies.</div>
 
       <section class="special-card-section">
@@ -173,8 +177,6 @@
 <script src="collection-store.js"></script>
 <script src="card-database.js"></script>
 <script src="asset-manifest.js"></script>
-<script type="module" src="deck-cloud.js"></script>
-<script src="deck-builder.js?v=cloud-decks-1"></script>
-  <script src="fog.js"></script>
+<script src="deck-builder.js"></script>
   <script src="global-click-sound.js"></script>
 </body></html>

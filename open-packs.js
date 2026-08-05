@@ -25,7 +25,6 @@
   const stages = {
     store: document.getElementById("storeStage"),
     starterDecks: document.getElementById("starterDeckStage"),
-    starterReveal: document.getElementById("starterRevealStage"),
     intro: document.getElementById("introStage"),
     booster: document.getElementById("boosterStage"),
     boxPacks: document.getElementById("boxPacksStage"),
@@ -39,15 +38,6 @@
   const setBackButton = document.getElementById("setBackButton");
   const starterArmory = document.getElementById("starterArmory");
   const starterPurchaseMessage = document.getElementById("starterPurchaseMessage");
-  const starterRevealTitle = document.getElementById("starterRevealTitle");
-  const starterRevealSubtitle = document.getElementById("starterRevealSubtitle");
-  const starterCommanderName = document.getElementById("starterCommanderName");
-  const starterCommanderId = document.getElementById("starterCommanderId");
-  const starterCommanderImage = document.getElementById("starterCommanderImage");
-  const starterRevealGrid = document.getElementById("starterRevealGrid");
-  const starterRevealAllButton = document.getElementById("starterRevealAllButton");
-  const starterRevealContinueButton = document.getElementById("starterRevealContinueButton");
-  const starterRevealResult = document.getElementById("starterRevealResult");
   const beginButton = document.getElementById("beginButton");
   const beginBoxButton = document.getElementById("beginBoxButton");
   const boosterButton = document.getElementById("boosterButton");
@@ -124,9 +114,6 @@
   let currentPackSaved = false;
   let openingAllPacks = false;
   let currentPackIsGodPack = false;
-  let activeStarterRevealDeck = null;
-  let starterRevealCards = [];
-  let starterRevealCount = 0;
 
   const GOD_PACK_CHANCE = .002; // 0.2% = 1 in 500 packs
 
@@ -155,7 +142,6 @@
   const SECRET_LAYER_VOLUME = 0.29;
   const STARTER_DECK_PRICE = 1000;
   const STARTER_OWNERSHIP_KEY = "wus-owned-starter-decks-v1";
-  const PORTRAIT_UNLOCKS_KEY = "wus-unlocked-profile-portraits-v1";
   const STARTER_DECKS = Object.freeze([
     {
       id: "eternal-night", name: "Eternal Night", image: "Eternal Night.png", commanderId: "SD1-002",
@@ -269,60 +255,14 @@
 
   preloadSounds();
 
-  function loadStarterDeckPurchaseCounts() {
-    const counts = {};
-
-    try {
-      const raw = JSON.parse(
-        localStorage.getItem(STARTER_OWNERSHIP_KEY) || "{}"
-      );
-
-      if (Array.isArray(raw)) {
-        raw.forEach(id => {
-          counts[id] = Math.max(1, Number(counts[id] || 0));
-        });
-      } else if (raw && typeof raw === "object") {
-        Object.entries(raw).forEach(([id, count]) => {
-          counts[id] = Math.max(0, Math.min(3, Number(count) || 0));
-        });
-      }
-    } catch {}
-
-    const cloudCounts =
-      window.WUSCloudStarters?.getPurchaseCounts?.() || {};
-
-    Object.entries(cloudCounts).forEach(([id, count]) => {
-      counts[id] = Math.max(
-        Number(counts[id] || 0),
-        Math.max(0, Math.min(3, Number(count) || 0))
-      );
-    });
-
-    return counts;
+  function loadOwnedStarterDecks() {
+    try { return new Set(JSON.parse(localStorage.getItem(STARTER_OWNERSHIP_KEY) || "[]")); }
+    catch { return new Set(); }
   }
 
-  function saveStarterDeckPurchaseCounts(counts) {
-    const normalized = Object.fromEntries(
-      Object.entries(counts || {}).map(([id, count]) => [
-        id,
-        Math.max(0, Math.min(3, Number(count) || 0))
-      ])
-    );
-
-    localStorage.setItem(
-      STARTER_OWNERSHIP_KEY,
-      JSON.stringify(normalized)
-    );
+  function saveOwnedStarterDecks(owned) {
+    localStorage.setItem(STARTER_OWNERSHIP_KEY, JSON.stringify([...owned]));
   }
-
-  function getStarterDeckPurchaseCount(deckId) {
-    return Number(loadStarterDeckPurchaseCounts()[deckId] || 0);
-  }
-
-  function getStarterDeckRemaining(deckId) {
-    return Math.max(0, 3 - getStarterDeckPurchaseCount(deckId));
-  }
-
 
   function starterCardObjects(deck) {
     return deck.cardIds.map(id => siteCardsById.get(id) || packCards.find(card => card.id === id) || {
@@ -335,272 +275,40 @@
     starterPurchaseMessage.classList.toggle("economy-error", isError);
   }
 
-  async function purchaseStarterDeck(deck) {
+  function purchaseStarterDeck(deck) {
     if (!window.WUSCollection) return;
-
-    const purchasedCount = getStarterDeckPurchaseCount(deck.id);
-    if (purchasedCount >= 3) return;
-
-    const button = starterArmory?.querySelector(
-      `.starter-deck-product[data-deck-id="${deck.id}"] .starter-buy-button`
-    );
-    const originalLabel = button?.textContent || "";
-
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Purchasing…";
-    }
-
-    try {
-      if (window.WUSCloudStarters?.isAvailable?.()) {
-        const cloudResult = await window.WUSCloudStarters.purchase(deck.id);
-
-        if (!cloudResult.ok) {
-          const message = cloudResult.reason === "insufficient-gold"
-            ? `Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${Number(cloudResult.gold || 0).toLocaleString()}.`
-            : cloudResult.reason === "sold-out"
-              ? `${deck.name} is sold out for this account.`
-              : cloudResult.message || "The starter deck purchase could not be completed.";
-
-          showStarterMessage(message, true);
-          await window.WUSCloudStarters.syncLocalMirror();
-          refreshGold();
-          renderStarterArmory();
-          return;
-        }
-
-        const cardsToReveal = starterCardObjects(deck);
-        const revealResult = {
-          added: Number(cloudResult.added || 0),
-          converted: Number(cloudResult.converted || 0),
-          goldEarned: Number(cloudResult.gold_earned || 0)
-        };
-
-        const counts = loadStarterDeckPurchaseCounts();
-        counts[deck.id] = Math.max(
-          Number(counts[deck.id] || 0),
-          Number(cloudResult.purchase_count || purchasedCount + 1)
-        );
-        saveStarterDeckPurchaseCounts(counts);
-
-        playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
-        showGoldSpendAnimation(STARTER_DECK_PRICE);
-
-        await window.WUSCloudStarters.syncLocalMirror();
-        refreshGold();
-        renderStarterArmory();
-        beginStarterDeckReveal(deck, cardsToReveal, revealResult);
-        return;
-      }
-
-      // Local fallback for offline testing.
-      const spend = WUSCollection.spendGold(STARTER_DECK_PRICE);
-      if (!spend.ok) {
-        showStarterMessage(
-          `Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${spend.gold.toLocaleString()}.`,
-          true
-        );
-        refreshGold();
-        return;
-      }
-
-      const cardsToGrant = starterCardObjects(deck);
-      const result = WUSCollection.addCards(cardsToGrant);
-
-      const counts = loadStarterDeckPurchaseCounts();
-      counts[deck.id] = Math.min(3, purchasedCount + 1);
-      saveStarterDeckPurchaseCounts(counts);
-      unlockStarterPortrait(deck);
-
-      playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
-      showGoldSpendAnimation(STARTER_DECK_PRICE);
+    const owned = loadOwnedStarterDecks();
+    if (owned.has(deck.id)) return;
+    const spend = WUSCollection.spendGold(STARTER_DECK_PRICE);
+    if (!spend.ok) {
+      showStarterMessage(`Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${spend.gold.toLocaleString()}.`, true);
       refreshGold();
-      renderStarterArmory();
-      beginStarterDeckReveal(deck, cardsToGrant, result);
-    } catch (error) {
-      console.error("Starter purchase failed:", error);
-      showStarterMessage(
-        "The purchase could not be completed. Check your connection and try again.",
-        true
-      );
-
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalLabel;
-      }
+      return;
     }
-  }
-
-  function unlockStarterPortrait(deck) {
-    let unlocked = [];
-
-    try {
-      unlocked = JSON.parse(
-        localStorage.getItem(PORTRAIT_UNLOCKS_KEY) || "[]"
-      );
-      if (!Array.isArray(unlocked)) unlocked = [];
-    } catch {
-      unlocked = [];
-    }
-
-    if (!unlocked.includes(deck.commanderId)) {
-      unlocked.push(deck.commanderId);
-      localStorage.setItem(
-        PORTRAIT_UNLOCKS_KEY,
-        JSON.stringify(unlocked)
-      );
-    }
-  }
-
-  function beginStarterDeckReveal(deck, cards, result) {
-    activeStarterRevealDeck = deck;
-    starterRevealCards = cards;
-    starterRevealCount = 0;
-
-    starterRevealTitle.textContent = deck.name;
-    starterRevealSubtitle.textContent =
-      `${cards.length} cards were added to your collection. Reveal them to inspect your new army.`;
-
-    starterCommanderName.textContent = deck.commanderName;
-    starterCommanderId.textContent = deck.commanderId;
-    starterCommanderImage.src = deck.commanderImage;
-    starterCommanderImage.alt = deck.commanderName;
-
-    starterRevealAllButton.hidden = false;
-    starterRevealAllButton.disabled = false;
-    starterRevealContinueButton.hidden = true;
-    starterRevealResult.hidden = true;
-    starterRevealResult.textContent = "";
-
-    starterRevealResult.dataset.added = String(result.added || 0);
-    starterRevealResult.dataset.converted = String(result.converted || 0);
-    starterRevealResult.dataset.goldEarned = String(result.goldEarned || 0);
-
-    starterRevealGrid.replaceChildren(
-      ...cards.map((card, index) =>
-        createStarterRevealCard(card, index, deck)
-      )
-    );
-
-    showStage(stages.starterReveal);
-  }
-
-  function createStarterRevealCard(card, index, deck) {
-    const button = document.createElement("button");
-    const isCommander = card.id === deck.commanderId;
-
-    button.type = "button";
-    button.className =
-      `starter-reveal-card${isCommander ? " is-commander" : ""}`;
-    button.dataset.index = String(index);
-    button.dataset.revealed = "false";
-    button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-
-    button.innerHTML = `
-      <span class="starter-card-inner">
-        <span class="starter-card-back">
-          <img src="card-back.png" alt="">
-          ${isCommander
-            ? '<span class="commander-seal">Commander</span>'
-            : ""}
-        </span>
-        <span class="starter-card-front">
-          <img src="${card.image}" alt="${card.name || card.id}">
-          ${isCommander
-            ? '<span class="commander-glow" aria-hidden="true"></span>'
-            : ""}
-        </span>
-      </span>
-    `;
-
-    button.addEventListener("click", () => {
-      if (button.dataset.revealed === "true") return;
-
-      button.dataset.revealed = "true";
-      button.classList.add("revealed");
-      button.setAttribute(
-        "aria-label",
-        `Enlarge ${card.name || card.id}`
-      );
-
-      starterRevealCount += 1;
-
-      if (isCommander) {
-        playRaritySound(card.rarity || "Ultra Rare");
-        button.classList.add("commander-revealed");
-      } else {
-        playSound(
-          soundPaths.cardFlip,
-          SOUND_VOLUME,
-          .98 + Math.random() * .04
-        );
-      }
-
-      if (starterRevealCount >= starterRevealCards.length) {
-        finishStarterReveal();
-      }
-    });
-
-    return button;
-  }
-
-  function revealAllStarterCards() {
-    starterRevealAllButton.disabled = true;
-
-    const unrevealed = [
-      ...starterRevealGrid.querySelectorAll(".starter-reveal-card")
-    ].filter(card => card.dataset.revealed !== "true");
-
-    unrevealed.forEach((button, index) => {
-      window.setTimeout(() => button.click(), Math.min(index * 45, 2200));
-    });
-  }
-
-  function finishStarterReveal() {
-    starterRevealAllButton.hidden = true;
-    starterRevealContinueButton.hidden = false;
-
-    const added = Number(starterRevealResult.dataset.added || 0);
-    const converted =
-      Number(starterRevealResult.dataset.converted || 0);
-    const goldEarned =
-      Number(starterRevealResult.dataset.goldEarned || 0);
-
-    starterRevealResult.innerHTML = `
-      <strong>${activeStarterRevealDeck.name} is ready!</strong>
-      <span>${added} cards added to your collection.</span>
-      ${converted
-        ? `<span>${converted} extra cards became ${goldEarned.toLocaleString()} Gold.</span>`
-        : ""}
-      <span>${activeStarterRevealDeck.commanderName} is unlocked as a profile portrait.</span>
-    `;
-
-    starterRevealResult.hidden = false;
+    const result = WUSCollection.addCards(starterCardObjects(deck));
+    owned.add(deck.id);
+    saveOwnedStarterDecks(owned);
+    playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
+    showGoldSpendAnimation(STARTER_DECK_PRICE);
+    showStarterMessage(`${deck.name} was added to your collection. ${result.added} cards added${result.converted ? ` and ${result.converted} extras converted into ${result.goldEarned} Gold` : ""}.`);
+    refreshGold();
+    renderStarterArmory();
   }
 
   function renderStarterArmory() {
     if (!starterArmory) return;
-    const purchaseCounts = loadStarterDeckPurchaseCounts();
+    const owned = loadOwnedStarterDecks();
     const gold = window.WUSCollection?.load?.().gold || 0;
     starterArmory.replaceChildren(...STARTER_DECKS.map(deck => {
-      const purchaseCount = Number(purchaseCounts[deck.id] || 0);
-      const remaining = Math.max(0, 3 - purchaseCount);
-      const isSoldOut = remaining === 0;
+      const isOwned = owned.has(deck.id);
       const article = document.createElement("article");
-      article.className = `starter-deck-product${isSoldOut ? " is-owned is-sold-out" : ""}`;
-      article.dataset.deckId = deck.id;
+      article.className = `starter-deck-product${isOwned ? " is-owned" : ""}`;
       article.innerHTML = `
-        <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">${isSoldOut ? "SOLD OUT" : `${remaining} LEFT`}</span></div>
+        <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">OWNED</span></div>
         <div class="starter-product-copy">
           <p class="eyebrow">Starter Deck</p><h2>${deck.name}</h2><p>${deck.description}</p>
           <div class="commander-showcase"><img src="${deck.commanderImage}" alt="${deck.commanderName}"><div><small>Showcase Card</small><strong>${deck.commanderName}</strong><span>${deck.commanderId}</span></div></div>
-          <div class="starter-stock-status ${isSoldOut ? "sold-out" : ""}">
-            ${isSoldOut ? "SOLD OUT" : `${remaining} remaining`}
-          </div>
-          <button class="primary-button starter-buy-button purchase-shimmer" type="button"
-                  ${isSoldOut || gold < STARTER_DECK_PRICE ? "disabled" : ""}>
-            ${isSoldOut ? "SOLD OUT" : "Buy Starter Deck · 1,000 Gold"}
-          </button>
+          <button class="primary-button starter-buy-button purchase-shimmer" type="button" ${isOwned || gold < STARTER_DECK_PRICE ? "disabled" : ""}>${isOwned ? "Owned" : "Buy Starter Deck · 1,000 Gold"}</button>
         </div>`;
       article.querySelector('.starter-buy-button').addEventListener('click', () => purchaseStarterDeck(deck));
       return article;
@@ -609,7 +317,7 @@
 
   function installGlobalClickSound() {
     document.addEventListener("click", event => {
-      if (!event.target.closest("button, a, [role='button'], .pack-card, .summary-card, .starter-reveal-card")) return;
+      if (!event.target.closest("button, a, [role='button'], .pack-card, .summary-card")) return;
       playSound(soundPaths.click, .28, .98 + Math.random() * .04);
     }, true);
   }
@@ -1253,10 +961,7 @@
       } else {
         anotherButton.hidden = false;
         anotherButton.textContent = "Open Another Pack · 200 Gold";
-        if (returnToPacksButton) {
-          returnToPacksButton.hidden = false;
-          returnToPacksButton.textContent = "Back to Pack Selector";
-        }
+        if (returnToPacksButton) returnToPacksButton.hidden = true;
         if (openNextPackButton) openNextPackButton.hidden = true;
       }
     } else {
@@ -1434,27 +1139,9 @@
     await refreshAssetStatus();
   }
 
-  window.addEventListener("wus-cloud-starter-ready", () => {
-    refreshGold();
-    renderStarterArmory();
-  });
-
-  window.addEventListener("wus-cloud-starter-changed", () => {
-    refreshGold();
-    renderStarterArmory();
-  });
-
   chooseStarterDecks.addEventListener("click", () => { renderStarterArmory(); showStage(stages.starterDecks); });
   chooseBattleOfAges.addEventListener("click", () => showStage(stages.intro));
   starterBackButton.addEventListener("click", () => showStage(stages.store));
-  starterRevealAllButton.addEventListener("click", revealAllStarterCards);
-  starterRevealContinueButton.addEventListener("click", () => {
-    activeStarterRevealDeck = null;
-    starterRevealCards = [];
-    starterRevealCount = 0;
-    renderStarterArmory();
-    showStage(stages.starterDecks);
-  });
   setBackButton.addEventListener("click", () => showStage(stages.store));
   beginButton.addEventListener("click", () => purchaseOpening("single"));
   beginBoxButton.addEventListener("click", () => purchaseOpening("box"));
@@ -1520,16 +1207,9 @@
 
   if (returnToPacksButton) {
     returnToPacksButton.addEventListener("click", () => {
-      if (
-        openingMode === "box" &&
-        boxSession.openedPacks < BOX_PACK_COUNT
-      ) {
-        renderBoxPacks();
-        showStage(stages.boxPacks);
-        return;
-      }
-
-      showStage(stages.intro);
+      if (openingMode !== "box" || boxSession.openedPacks >= BOX_PACK_COUNT) return;
+      renderBoxPacks();
+      showStage(stages.boxPacks);
     });
   }
 
@@ -1602,24 +1282,8 @@ if (__zoomModal) {
     const summaryGroup = image?.closest("#bestPullCard, #boxPremiumGrid, #boxAllPulls");
     if (summaryGroup) return [...summaryGroup.querySelectorAll(".summary-card img")];
 
-    const starterGroup = image?.closest("#starterRevealGrid");
-    if (starterGroup) {
-      return [
-        ...starterGroup.querySelectorAll(
-          ".starter-reveal-card.revealed .starter-card-front img"
-        )
-      ];
-    }
-
-    const revealed = [
-      ...document.querySelectorAll(
-        ".card-grid .pack-card.revealed img"
-      )
-    ];
-
-    return revealed.length
-      ? revealed
-      : [...document.querySelectorAll(".card-grid img")];
+    const revealed = [...document.querySelectorAll(".card-grid .pack-card.revealed img")];
+    return revealed.length ? revealed : [...document.querySelectorAll(".card-grid img")];
   }
 
   function __showZoomCard(index) {
@@ -1649,7 +1313,7 @@ if (__zoomModal) {
 
   document.addEventListener("click", event => {
     const image = event.target.closest(
-      ".card-grid .pack-card.revealed img, #starterRevealGrid .starter-reveal-card.revealed .starter-card-front img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
+      ".card-grid .pack-card.revealed img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
     );
     if (!image) return;
     __openZoom(image);
@@ -1697,34 +1361,3 @@ document.addEventListener('click',e=>{
   a.play().catch(()=>{});
  }catch(e){}
 });
-
-
-// Batch4 starter purchase groundwork
-window.WUSStarterDecks = window.WUSStarterDecks || {};
-window.WUSStarterDecks.DECK_PRICE = 1000;
-window.WUSStarterDecks.purchaseStarterDeck = function(deckId, deckCards){
-  const store = window.WUSCollection?.load?.() || {gold:0,cards:{}};
-  if((store.gold||0) < 1000){
-    alert("You need 1,000 Gold to purchase this Starter Deck.");
-    return false;
-  }
-  store.gold -= 1000;
-  store.ownedStarters = store.ownedStarters || {};
-  if(store.ownedStarters[deckId]){
-    alert("You already own this Starter Deck.");
-    return false;
-  }
-  store.ownedStarters[deckId]=true;
-  store.cards = store.cards || {};
-  (deckCards||[]).forEach(c=>{
-    store.cards[c]=(store.cards[c]||0)+1;
-  });
-  if(window.WUSCollection?.save){
-    window.WUSCollection.save(store);
-  }else{
-    localStorage.setItem("wus-collection",JSON.stringify(store));
-  }
-  window.dispatchEvent(new Event("wus-player-data-changed"));
-  alert("Starter Deck added to your collection!");
-  return true;
-};

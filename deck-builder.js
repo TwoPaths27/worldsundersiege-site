@@ -34,7 +34,7 @@ function playDeckSound(sound){
   }catch{}
 }
 const $ = id => document.getElementById(id);
-const ids = ["deckName","newDeckBtn","saveDeckBtn","exportDeckBtn","pasteDeckBtn","saveAsDeckBtn","renameDeckBtn","favoriteDeckBtn","savedDecks","deleteDeckBtn","cloudDeckStatus","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","buySingles","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage","pasteDeckModal","pasteDeckText","pasteDeckStatus","cancelPasteDeckBtn","importPastedDeckBtn","missingCardsModal","missingCardsList","closeMissingCardsBtn"];
+const ids = ["deckName","newDeckBtn","saveDeckBtn","exportDeckBtn","pasteDeckBtn","saveAsDeckBtn","renameDeckBtn","savedDecks","deleteDeckBtn","deckSort","goldBalance","previewImage","formTabs","previewName","previewOwned","previewMeta","previewStats","previewCharacteristics","previewEffect","previewEffectName","previewEffectText","purchasePanel","deckSummary","deckStatus","deckList","emptyDeck","clearDeckBtn","strongholdSlot","armySlots","searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly","buySingles","resetFilters","cardBrowser","emptyBrowser","visibleCount","assetGate","assetGateStatus","assetGateDownload","assetGateProgress","assetGateProgressFill","assetGateProgressText","assetGateErrors","assetGateErrorList","deckManagerModal","managerNewDeck","managerDeckSelect","managerLoadDeck","managerEmptyMessage","pasteDeckModal","pasteDeckText","pasteDeckStatus","cancelPasteDeckBtn","importPastedDeckBtn","missingCardsModal","missingCardsList","closeMissingCardsBtn"];
 const els = Object.fromEntries(ids.map(id=>[id,$(id)]));
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const owned=id=>window.WUSCollection?.getOwned(id)||0;
@@ -59,29 +59,6 @@ function currentState(){return {mainDeck:{...mainDeck},stronghold,armies:[...arm
 function loadDecks(){try{const v=JSON.parse(localStorage.getItem(DECKS_KEY));if(v)return v;const legacy=JSON.parse(localStorage.getItem(LEGACY_DECKS_KEY))||{};return Object.fromEntries(Object.entries(legacy).map(([id,d])=>[id,{...d,...normalizedState(d.cards||d.deck||{}),cards:undefined,deck:undefined}]));}catch{return {};}}
 function storeDecks(v){localStorage.setItem(DECKS_KEY,JSON.stringify(v));}
 function saveActive(){localStorage.setItem(ACTIVE_KEY,JSON.stringify({name:els.deckName.value,...currentState()}));}
-
-function cloudDecksReady(){
-  return Boolean(window.WUSCloudDecks?.isReady?.());
-}
-
-function setCloudDeckStatus(message,type="info"){
-  if(!els.cloudDeckStatus)return;
-  els.cloudDeckStatus.textContent=message;
-  els.cloudDeckStatus.dataset.type=type;
-}
-
-function favoriteDeckState(){
-  if(!activeDeckId)return false;
-  return Boolean(loadDecks()[activeDeckId]?.isFavorite);
-}
-
-function updateFavoriteButton(){
-  if(!els.favoriteDeckBtn)return;
-  const favorite=favoriteDeckState();
-  els.favoriteDeckBtn.disabled=!activeDeckId;
-  els.favoriteDeckBtn.setAttribute("aria-pressed",String(favorite));
-  els.favoriteDeckBtn.textContent=favorite?"★ Favorited":"☆ Favorite";
-}
 function populateFilters(){
   [...new Set(DB.flatMap(c=>c.types))].sort().forEach(v=>els.typeFilter.add(new Option(v,v)));
   ["Common","Uncommon","Rare","Super Rare","Ultra Rare","Secret Rare"].forEach(v=>els.rarityFilter.add(new Option(v,v)));
@@ -95,21 +72,13 @@ function populateFilters(){
 }
 function populateSaved(){
   const decks=loadDecks();
-  const sorted=Object.entries(decks).sort((a,b)=>{
-    const favoriteDifference=Number(Boolean(b[1].isFavorite))-Number(Boolean(a[1].isFavorite));
-    return favoriteDifference||((b[1].updated||0)-(a[1].updated||0));
-  });
+  const sorted=Object.entries(decks).sort((a,b)=>(b[1].updated||0)-(a[1].updated||0));
   els.savedDecks.innerHTML='<option value="">Load saved deck…</option>';
   els.managerDeckSelect.innerHTML='<option value="">Choose a saved deck…</option>';
-  sorted.forEach(([id,d])=>{
-    const label=`${d.isFavorite?"★ ":""}${d.name}`;
-    els.savedDecks.add(new Option(label,id));
-    els.managerDeckSelect.add(new Option(label,id));
-  });
+  sorted.forEach(([id,d])=>{els.savedDecks.add(new Option(d.name,id));els.managerDeckSelect.add(new Option(d.name,id));});
   els.savedDecks.value=activeDeckId||"";
   els.deleteDeckBtn.disabled=!activeDeckId;
   els.renameDeckBtn.disabled=!activeDeckId;
-  updateFavoriteButton();
   els.managerEmptyMessage.hidden=sorted.length!==0;
   els.managerDeckSelect.disabled=sorted.length===0;
   els.managerLoadDeck.disabled=true;
@@ -283,7 +252,7 @@ function resetFilters(){
   renderBrowser();
   renderPreview();
 }
-function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();setCloudDeckStatus(cloudDecksReady()?"New unsaved deck.":"Local testing mode.","info");}
+function newDeck(){mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';saveActive();populateSaved();renderDeck();renderBrowser();}
 const allImagePaths=window.WUSAssetManifest?.getRequiredCardImages()||[...new Set(DB.flatMap(card=>[card.image,...(card.forms||[]).map(form=>form.image)].filter(Boolean)))];
 function lockPage(show){document.body.classList.toggle("builder-locked",show);}
 function showDeckManager(){els.assetGate.hidden=true;els.deckManagerModal.hidden=false;lockPage(true);populateSaved();}
@@ -399,144 +368,26 @@ function importPastedDeck(){
   if(missing.length)showMissingCards(missing);else{lockPage(false);alert("Deck pasted successfully.");}
 }
 
-async function saveDeck({forceNew=false,nameOverride=null}={}){
+function saveDeck({forceNew=false,nameOverride=null}={}){
+  const decks=loadDecks();
+  const id=forceNew||!activeDeckId?`deck-${Date.now()}`:activeDeckId;
   const name=(nameOverride??els.deckName.value).trim()||"Untitled Deck";
-  const state=currentState();
-  const existingDecks=loadDecks();
-
-  if((forceNew||!activeDeckId)&&Object.keys(existingDecks).length>=10){
-    alert("You can save a maximum of 10 decks. Delete a deck before creating another.");
-    return;
-  }
-
-  els.saveDeckBtn.disabled=true;
-  setCloudDeckStatus("Saving deck…","working");
-
-  try{
-    if(cloudDecksReady()){
-      const result=await window.WUSCloudDecks.save({
-        id:forceNew?null:activeDeckId,
-        name,
-        state,
-        isFavorite:forceNew?false:favoriteDeckState()
-      });
-
-      if(!result.ok)throw new Error(result.message||"Cloud save failed.");
-
-      activeDeckId=result.deck.id;
-      els.deckName.value=result.deck.name;
-      await window.WUSCloudDecks.refresh();
-      populateSaved();
-      saveActive();
-      setCloudDeckStatus("Saved to your account.","success");
-      return;
-    }
-
-    const id=forceNew||!activeDeckId?`deck-${Date.now()}`:activeDeckId;
-    existingDecks[id]={
-      name,
-      ...state,
-      isFavorite:existingDecks[id]?.isFavorite||false,
-      updated:Date.now()
-    };
-    storeDecks(existingDecks);
-    activeDeckId=id;
-    els.deckName.value=name;
-    saveActive();
-    populateSaved();
-    setCloudDeckStatus("Saved on this device only.","warning");
-  }catch(error){
-    console.error("Deck save failed:",error);
-    alert(error.message||"The deck could not be saved.");
-    setCloudDeckStatus("Deck save failed.","error");
-  }finally{
-    els.saveDeckBtn.disabled=false;
-  }
+  decks[id]={name,...currentState(),updated:Date.now()};
+  storeDecks(decks);activeDeckId=id;els.deckName.value=name;saveActive();populateSaved();
 }
-
-async function saveDeckAs(){
+function saveDeckAs(){
   const suggested=els.deckName.value.trim()||"Untitled Deck";
   const name=prompt("Save this deck as:",suggested);
   if(name===null)return;
-  await saveDeck({forceNew:true,nameOverride:name});
+  saveDeck({forceNew:true,nameOverride:name});
 }
-
-async function renameDeck(){
+function renameDeck(){
   if(!activeDeckId)return;
-  const current=loadDecks()[activeDeckId];
-  if(!current)return;
+  const decks=loadDecks(),current=decks[activeDeckId];if(!current)return;
   const name=prompt("Rename this deck:",current.name||els.deckName.value||"Untitled Deck");
   if(name===null||!name.trim())return;
-
-  try{
-    if(cloudDecksReady()){
-      const result=await window.WUSCloudDecks.rename(activeDeckId,name.trim());
-      if(!result.ok)throw new Error(result.message||"Rename failed.");
-      await window.WUSCloudDecks.refresh();
-    }else{
-      const decks=loadDecks();
-      decks[activeDeckId]={...current,name:name.trim(),updated:Date.now()};
-      storeDecks(decks);
-    }
-
-    els.deckName.value=name.trim();
-    saveActive();
-    populateSaved();
-    setCloudDeckStatus(cloudDecksReady()?"Deck renamed in your account.":"Deck renamed on this device.","success");
-  }catch(error){
-    console.error(error);
-    alert(error.message||"The deck could not be renamed.");
-  }
+  current.name=name.trim();current.updated=Date.now();decks[activeDeckId]=current;storeDecks(decks);els.deckName.value=current.name;saveActive();populateSaved();
 }
-
-async function toggleFavoriteDeck(){
-  if(!activeDeckId)return;
-  const nextFavorite=!favoriteDeckState();
-
-  try{
-    if(cloudDecksReady()){
-      const result=await window.WUSCloudDecks.setFavorite(activeDeckId,nextFavorite);
-      if(!result.ok)throw new Error(result.message||"Favorite update failed.");
-      await window.WUSCloudDecks.refresh();
-    }else{
-      const decks=loadDecks();
-      if(!decks[activeDeckId])return;
-      decks[activeDeckId].isFavorite=nextFavorite;
-      decks[activeDeckId].updated=Date.now();
-      storeDecks(decks);
-    }
-
-    populateSaved();
-    setCloudDeckStatus(nextFavorite?"Deck marked as favorite.":"Deck removed from favorites.","success");
-  }catch(error){
-    console.error(error);
-    alert(error.message||"Favorite status could not be changed.");
-  }
-}
-
-async function deleteActiveDeck(){
-  if(!activeDeckId||!confirm("Delete this saved deck?"))return;
-  const deletingId=activeDeckId;
-
-  try{
-    if(cloudDecksReady()){
-      const result=await window.WUSCloudDecks.remove(deletingId);
-      if(!result.ok)throw new Error(result.message||"Delete failed.");
-      await window.WUSCloudDecks.refresh();
-    }else{
-      const decks=loadDecks();
-      delete decks[deletingId];
-      storeDecks(decks);
-    }
-
-    newDeck();
-    setCloudDeckStatus(cloudDecksReady()?"Deck deleted from your account.":"Deck deleted from this device.","success");
-  }catch(error){
-    console.error(error);
-    alert(error.message||"The deck could not be deleted.");
-  }
-}
-
 els.newDeckBtn.onclick=newDeck;
 els.clearDeckBtn.onclick=()=>{if(confirm('Remove the main deck, Stronghold, and all Armies?')){mainDeck={};stronghold=null;armies=[];saveActive();renderDeck();renderBrowser();}};
 els.saveDeckBtn.onclick=()=>saveDeck();
@@ -549,47 +400,12 @@ els.pasteDeckModal.addEventListener("click",e=>{if(e.target===els.pasteDeckModal
 els.missingCardsModal.addEventListener("click",e=>{if(e.target===els.missingCardsModal)closeMissingCardsModal();});
 els.saveAsDeckBtn.onclick=saveDeckAs;
 els.renameDeckBtn.onclick=renameDeck;
-els.favoriteDeckBtn.onclick=toggleFavoriteDeck;
 els.savedDecks.onchange=()=>{const id=els.savedDecks.value;if(id)loadDeckById(id);};
-els.deleteDeckBtn.onclick=deleteActiveDeck;
+els.deleteDeckBtn.onclick=()=>{if(!activeDeckId||!confirm('Delete this saved deck?'))return;const decks=loadDecks();delete decks[activeDeckId];storeDecks(decks);newDeck();};
 els.deckSort.addEventListener("change",renderDeck);["searchCards","typeFilter","rarityFilter","setFilter","costFilter","atkFilter","hpFilter","rangeFilter","spdFilter","ownedOnly"].forEach(id=>{
   els[id].addEventListener(id==="searchCards"?"input":"change",renderBrowser);
 });els.buySingles.addEventListener("change",()=>{renderBrowser();renderPreview();});els.resetFilters.onclick=resetFilters;window.addEventListener('wus-player-data-changed',()=>{els.goldBalance.textContent=`${WUSCollection.load().gold.toLocaleString()} Gold`;renderDeck();renderBrowser();renderPreview();});
-function initializeCloudDeckEvents(){
-  window.addEventListener("wus-cloud-decks-ready",event=>{
-    populateSaved();
-    setCloudDeckStatus(
-      event.detail?.available
-        ? `${event.detail.count||0} cloud deck${event.detail.count===1?"":"s"} loaded.`
-        : "Cloud decks unavailable. Using local testing mode.",
-      event.detail?.available?"success":"warning"
-    );
-  });
-
-  window.addEventListener("wus-cloud-decks-changed",event=>{
-    populateSaved();
-    setCloudDeckStatus(
-      `${event.detail?.count||0} deck${event.detail?.count===1?"":"s"} synced.`,
-      "success"
-    );
-  });
-}
-
-function init(){
-  initializeCloudDeckEvents();
-  populateFilters();
-  populateSaved();
-  mainDeck={};
-  stronghold=null;
-  armies=[];
-  activeDeckId=null;
-  els.deckName.value='New Deck';
-  els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;
-  renderDeck();
-  renderBrowser();
-  if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);
-  checkAssetsBeforeEntry();
-}
+function init(){populateFilters();populateSaved();mainDeck={};stronghold=null;armies=[];activeDeckId=null;els.deckName.value='New Deck';els.goldBalance.textContent=`${(WUSCollection?.load().gold||0).toLocaleString()} Gold`;renderDeck();renderBrowser();if(DB.length)selectCard(DB.find(c=>owned(c.id)>0&&!c.isSecret)||DB[0]);checkAssetsBeforeEntry();}
 init();
 
 /* Keep the center and right columns exactly as tall as the natural left preview. */

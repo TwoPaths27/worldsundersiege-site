@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Open Packs - Worlds Under Siege</title>
   <link rel="stylesheet" href="open-packs.css?v=godpack-1">
-  <link rel="stylesheet" href="fog.css">
 </head>
 <body>
   <header class="site-header compact-store-header">
@@ -43,39 +42,6 @@
         </div>
         <div id="starterArmory" class="starter-armory"></div>
         <p id="starterPurchaseMessage" class="economy-note" role="status"></p>
-      </section>
-    </section>
-
-
-    <section id="starterRevealStage" class="stage starter-reveal-stage" hidden aria-live="polite">
-      <section class="starter-reveal-panel panel">
-        <div class="starter-reveal-heading">
-          <div>
-            <p class="eyebrow">Starter Deck Unlocked</p>
-            <h1 id="starterRevealTitle">Your Starter Deck</h1>
-            <p id="starterRevealSubtitle" class="lead">Reveal the cards now added to your collection.</p>
-          </div>
-          <button id="starterRevealAllButton" class="secondary-button" type="button">Reveal All</button>
-        </div>
-
-        <div class="starter-commander-banner">
-          <div>
-            <span>Featured Commander</span>
-            <strong id="starterCommanderName">Commander</strong>
-            <small id="starterCommanderId"></small>
-          </div>
-          <img id="starterCommanderImage" src="card-back.png" alt="Starter deck commander">
-        </div>
-
-        <div id="starterRevealGrid" class="starter-reveal-grid" aria-label="Starter deck cards"></div>
-
-        <div id="starterRevealResult" class="collection-result" hidden></div>
-
-        <div class="starter-reveal-actions">
-          <button id="starterRevealContinueButton" class="primary-button" type="button" hidden>
-            Return to Starter Decks
-          </button>
-        </div>
       </section>
     </section>
 
@@ -166,7 +132,7 @@
         </div>
         <div class="pack-actions">
           <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack · 200 Gold</button>
-          <button id="returnToPacksButton" class="secondary-button" type="button" hidden>Back to Pack Selector</button>
+          <button id="returnToPacksButton" class="secondary-button" type="button" hidden>Return to Packs</button>
           <button id="openNextPackButton" class="primary-button" type="button" hidden>Open Next Pack</button>
         </div>
       </section>
@@ -246,9 +212,7 @@
   <script src="asset-cache.js"></script>
   <script src="asset-manifest.js"></script>
   <script src="collection-store.js"></script>
-  <script type="module" src="starter-cloud.js"></script>
-  <script src="open-packs.js?v=cloud-starters-1"></script>
-  <script src="fog.js"></script>
+  <script src="open-packs.js?v=godpack-1"></script>
   <script src="global-click-sound.js"></script>
 </body>
 </html>

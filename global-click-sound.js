@@ -1,9 +1,22 @@
 (() => {
   const SOUND_PATH = "sounds/mouse-click.mp3";
-  const SOUND_EFFECTS_VOLUME_KEY = "wus-sfx-volume";
+  const SFX_VOLUME_KEY = "wus-sfx-volume";
 
-  function getClickVolume() {
-    const stored = Number(localStorage.getItem(SOUND_EFFECTS_VOLUME_KEY));
+  // Open Packs has its own complete sound design. The generic UI click is
+  // disabled for the entire page after navigating there.
+  const isOpenPacksPage =
+    /(^|\/)open-packs\.html$/i.test(window.location.pathname) ||
+    document.body?.classList.contains("open-packs-page");
+
+  if (isOpenPacksPage) return;
+
+  let audioContext = null;
+  let clickBuffer = null;
+  let loadPromise = null;
+  let fallbackAudio = null;
+
+  function getVolume() {
+    const stored = Number(localStorage.getItem(SFX_VOLUME_KEY));
     const percent = Number.isFinite(stored)
       ? Math.max(0, Math.min(100, stored))
       : 100;
@@ -11,45 +24,8 @@
     return percent / 100;
   }
 
-  let audioContext = null;
-  let audioBuffer = null;
-  let htmlAudioFallback = null;
-  let loadingPromise = null;
-  let unlocked = false;
-
-  if (localStorage.getItem(SOUND_EFFECTS_VOLUME_KEY) === null) {
-    localStorage.setItem(SOUND_EFFECTS_VOLUME_KEY, "100");
-  }
-
-  function isValidClick(event) {
-    if (event.defaultPrevented) return false;
-    if (event.button !== undefined && event.button !== 0) return false;
-
-    const target = event.target;
+  function isClickable(target) {
     if (!(target instanceof Element)) return false;
-
-    // These controls already use dedicated pack-opening/card-reveal sounds.
-    if (
-      target.closest(
-        [
-          "#beginButton",
-          "#openPackButton",
-          "#openBoxButton",
-          "#openNextPackButton",
-          "#revealAllButton",
-          "#starterRevealAllButton",
-          ".pack-card",
-          ".starter-reveal-card",
-          ".box-pack",
-          ".pack-wrapper",
-          ".booster-pack",
-          "[data-pack-index]",
-          "[data-card-index]"
-        ].join(",")
-      )
-    ) {
-      return false;
-    }
 
     return Boolean(
       target.closest(
@@ -65,8 +41,6 @@
           "[role='button']",
           "[tabindex]:not([tabindex='-1'])",
           ".card",
-          ".summary-card",
-          ".starter-deck-product",
           ".portrait-choice",
           ".news-dot"
         ].join(",")
@@ -74,7 +48,7 @@
     );
   }
 
-  async function createAudioContext() {
+  async function getContext() {
     if (audioContext) return audioContext;
 
     const AudioContextClass =
@@ -86,141 +60,95 @@
     return audioContext;
   }
 
-  async function loadClickBuffer() {
-    if (audioBuffer) return audioBuffer;
-    if (loadingPromise) return loadingPromise;
+  async function loadBuffer() {
+    if (clickBuffer) return clickBuffer;
+    if (loadPromise) return loadPromise;
 
-    loadingPromise = (async () => {
+    loadPromise = (async () => {
       try {
-        const context = await createAudioContext();
+        const context = await getContext();
         if (!context) return null;
 
         const response = await fetch(SOUND_PATH, { cache: "force-cache" });
-        if (!response.ok) {
-          throw new Error(`Click sound returned HTTP ${response.status}`);
-        }
+        if (!response.ok) return null;
 
-        const arrayBuffer = await response.arrayBuffer();
-        audioBuffer = await context.decodeAudioData(arrayBuffer.slice(0));
-        return audioBuffer;
-      } catch (error) {
-        console.warn("Could not preload mouse-click.mp3:", error);
+        const bytes = await response.arrayBuffer();
+        clickBuffer = await context.decodeAudioData(bytes.slice(0));
+        return clickBuffer;
+      } catch {
         return null;
       }
     })();
 
-    return loadingPromise;
+    return loadPromise;
   }
 
-  function getFallbackAudio() {
-    if (!htmlAudioFallback) {
-      htmlAudioFallback = new Audio(SOUND_PATH);
-      htmlAudioFallback.preload = "auto";
-      htmlAudioFallback.volume = getClickVolume();
-    }
+  async function playClick() {
+    const volume = getVolume();
+    if (volume <= 0) return;
 
-    return htmlAudioFallback;
-  }
-
-  async function unlockAudio() {
     try {
-      const context = await createAudioContext();
+      const context = await getContext();
+      const buffer = await loadBuffer();
 
-      if (context?.state === "suspended") {
-        await context.resume();
+      if (context && buffer) {
+        if (context.state === "suspended") {
+          await context.resume();
+        }
+
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+
+        source.buffer = buffer;
+        gain.gain.value = volume;
+        source.connect(gain);
+        gain.connect(context.destination);
+        source.start(0);
+        return;
       }
-
-      await loadClickBuffer();
-      unlocked = true;
-    } catch {
-      unlocked = false;
-    }
-  }
-
-  async function playWithWebAudio() {
-    const context = await createAudioContext();
-    const buffer = await loadClickBuffer();
-
-    if (!context || !buffer) return false;
-
-    if (context.state === "suspended") {
-      await context.resume();
-    }
-
-    const source = context.createBufferSource();
-    const gain = context.createGain();
-
-    source.buffer = buffer;
-    gain.gain.value = getClickVolume();
-
-    source.connect(gain);
-    gain.connect(context.destination);
-    source.start(0);
-
-    return true;
-  }
-
-  async function playFallback() {
-    const audio = getFallbackAudio();
-
-    try {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = getClickVolume();
-      await audio.play();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async function playClickSound() {
-    try {
-      if (await playWithWebAudio()) return;
     } catch {}
 
-    await playFallback();
+    try {
+      if (!fallbackAudio) {
+        fallbackAudio = new Audio(SOUND_PATH);
+        fallbackAudio.preload = "auto";
+      }
+
+      fallbackAudio.pause();
+      fallbackAudio.currentTime = 0;
+      fallbackAudio.volume = volume;
+      await fallbackAudio.play();
+    } catch {}
   }
 
   document.addEventListener(
     "pointerdown",
-    async event => {
-      if (!unlocked) {
-        await unlockAudio();
+    event => {
+      if (
+        event.defaultPrevented ||
+        (event.button !== undefined && event.button !== 0) ||
+        !isClickable(event.target)
+      ) {
+        return;
       }
 
-      if (!isValidClick(event)) return;
-      playClickSound();
+      playClick();
     },
     { capture: true }
   );
 
   document.addEventListener(
     "keydown",
-    async event => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-
-      const active = document.activeElement;
-      if (!(active instanceof Element)) return;
-
-      if (!isValidClick({
-        target: active,
-        defaultPrevented: false,
-        button: 0
-      })) {
-        return;
+    event => {
+      if (
+        (event.key === "Enter" || event.key === " ") &&
+        isClickable(document.activeElement)
+      ) {
+        playClick();
       }
-
-      if (!unlocked) {
-        await unlockAudio();
-      }
-
-      playClickSound();
     },
     { capture: true }
   );
 
-  window.addEventListener("pageshow", () => {
-    loadClickBuffer();
-  });
+  loadBuffer();
 })();

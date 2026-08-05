@@ -487,48 +487,272 @@ body.builder-locked{overflow:hidden}
 
 
 
-/* Batch 8: cloud deck saving */
-.builder-toolbar{
-  position:relative;
+/* =========================================================
+   Deck Builder scrolling and spacious toolbar update
+   ========================================================= */
+
+html{
+  min-height:100%;
+  height:auto;
+  overflow-x:hidden;
+  overflow-y:auto;
+  scroll-behavior:smooth;
 }
 
-.cloud-deck-status{
-  flex-basis:100%;
-  margin-top:8px;
-  padding:8px 11px;
-  border:1px solid rgba(255,255,255,.12);
+body{
+  min-height:100%;
+  height:auto!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+
+body:not(.builder-locked){
+  overflow-y:auto!important;
+}
+
+.builder-page{
+  width:min(1800px,100%);
+  max-width:1800px;
+  min-height:100vh;
+  height:auto!important;
+  margin:0 auto;
+  padding:30px 26px 90px;
+  overflow:visible!important;
+}
+
+.deck-builder-site-header{
+  position:sticky;
+  top:0;
+  z-index:80;
+  width:100%;
+  min-height:72px;
+  border-bottom:1px solid rgba(213,163,67,.45);
+  background:rgba(5,4,3,.96);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+
+.deck-builder-site-header-inner{
+  width:min(1800px,100%);
+  min-height:72px;
+  margin:0 auto;
+  padding:8px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+}
+
+.deck-builder-logo-link{
+  display:flex;
+  align-items:center;
+  text-decoration:none;
+}
+
+.deck-builder-site-logo{
+  display:block;
+  width:auto;
+  max-width:165px;
+  max-height:55px;
+  object-fit:contain;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.65));
+}
+
+.deck-builder-home-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:96px;
+  padding:10px 18px;
+  border:1px solid #9d6b27;
   border-radius:7px;
+  color:#f5ddb0;
+  background:linear-gradient(180deg,#482a14,#1c110a);
+  text-decoration:none;
+  font-weight:800;
+  box-shadow:
+    inset 0 1px rgba(255,229,164,.12),
+    0 5px 12px rgba(0,0,0,.3);
+}
+
+.deck-builder-home-button:hover{
+  border-color:#e2b550;
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+}
+
+.builder-toolbar{
+  display:grid;
+  grid-template-columns:minmax(220px,320px) minmax(0,1fr);
+  align-items:center;
+  gap:28px;
+  margin:0 0 24px;
+  padding:22px;
+  border:1px solid rgba(232,185,79,.22);
+  border-radius:14px;
+  background:linear-gradient(
+    145deg,
+    rgba(20,29,45,.96),
+    rgba(7,12,21,.96)
+  );
+  box-shadow:0 12px 36px rgba(0,0,0,.28);
+}
+
+.builder-title-block{
+  min-width:0;
+}
+
+.builder-title-block h1{
+  margin:0;
+  color:#f5d98f;
+  font-size:clamp(32px,4vw,48px);
+  line-height:1;
+}
+
+.builder-title-block p{
+  margin:9px 0 0;
   color:var(--muted);
-  background:#111a29;
-  font-size:12px;
+  line-height:1.45;
 }
 
-.cloud-deck-status[data-type="success"]{
-  color:#b9efc7;
-  border-color:#3d7d50;
-  background:#102117;
+.toolbar-actions{
+  display:grid!important;
+  grid-template-columns:
+    minmax(180px,1.55fr)
+    repeat(4,minmax(105px,.8fr));
+  align-items:end!important;
+  justify-content:stretch!important;
+  gap:12px!important;
+  width:100%;
 }
 
-.cloud-deck-status[data-type="warning"]{
-  color:#f4d39c;
-  border-color:#8e672c;
-  background:#291d0c;
+.toolbar-actions > *{
+  width:100%;
+  min-width:0;
+  margin:0;
 }
 
-.cloud-deck-status[data-type="working"]{
-  color:#c9dcff;
-  border-color:#476899;
+.deck-name-label{
+  grid-row:span 1;
+  display:grid;
+  gap:6px;
 }
 
-.cloud-deck-status[data-type="error"]{
-  color:#ffc1c1;
-  border-color:#954848;
-  background:#2a1114;
+.deck-name-label span{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
 }
 
-.favorite-deck-btn[aria-pressed="true"]{
-  color:#1a1003;
-  border-color:#ffe18a;
-  background:linear-gradient(180deg,#e4bd60,#a46f22);
-  box-shadow:0 0 12px rgba(228,189,96,.34);
+.deck-name-label input,
+.toolbar-actions select{
+  width:100%!important;
+  max-width:none!important;
+  min-height:42px;
+}
+
+.toolbar-actions button{
+  min-height:42px;
+  padding:9px 12px;
+  white-space:nowrap;
+}
+
+.builder-layout{
+  min-height:0!important;
+  height:auto!important;
+  align-items:start;
+  overflow:visible!important;
+}
+
+.preview-panel,
+.deck-panel,
+.browser-panel{
+  height:auto!important;
+  max-height:none!important;
+}
+
+.cloud-deck-status,
+.cloud-decks,
+.cloud-deck-panel,
+[id*="cloudDeck"],
+[class*="cloud-deck"]{
+  display:none!important;
+}
+
+/* Internal card/deck lists can still scroll, while the whole page also scrolls. */
+.deck-list,
+.card-browser{
+  overscroll-behavior:contain;
+}
+
+@media(max-width:1450px){
+  .builder-toolbar{
+    grid-template-columns:1fr;
+  }
+
+  .toolbar-actions{
+    grid-template-columns:
+      minmax(190px,1.5fr)
+      repeat(3,minmax(110px,1fr));
+  }
+}
+
+@media(max-width:1050px){
+  .toolbar-actions{
+    grid-template-columns:repeat(3,minmax(130px,1fr));
+  }
+
+  .deck-name-label{
+    grid-column:span 2;
+  }
+}
+
+@media(max-width:700px){
+  .deck-builder-site-header-inner{
+    min-height:62px;
+    padding:6px 12px;
+  }
+
+  .deck-builder-site-logo{
+    max-width:135px;
+    max-height:48px;
+  }
+
+  .deck-builder-home-button{
+    min-width:78px;
+    padding:8px 13px;
+  }
+
+  .builder-page{
+    padding:18px 10px 70px;
+  }
+
+  .builder-toolbar{
+    padding:16px;
+    gap:18px;
+  }
+
+  .toolbar-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .deck-name-label{
+    grid-column:1/-1;
+  }
+
+  .toolbar-actions select{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:430px){
+  .toolbar-actions{
+    grid-template-columns:1fr;
+  }
+
+  .deck-name-label,
+  .toolbar-actions select{
+    grid-column:auto;
+  }
 }

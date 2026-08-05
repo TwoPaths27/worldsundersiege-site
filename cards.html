@@ -120,6 +120,46 @@
       box-shadow: 0 16px 32px rgba(0,0,0,.35);
     }
 
+    .card.not-owned {
+      filter: grayscale(1) brightness(.46);
+      opacity: .72;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .card.not-owned:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .card.not-owned .card-image-wrap {
+      cursor: not-allowed;
+    }
+
+    .card.not-owned .card-image-wrap img {
+      transform: none !important;
+    }
+
+    .ownership-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: #d9e6f4;
+      background: rgba(255,255,255,.08);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .card.not-owned .ownership-badge {
+      color: #d6c8b4;
+      background: rgba(0,0,0,.32);
+    }
+
     .card-image-wrap {
       background: #0f172a;
       aspect-ratio: 63 / 88;
@@ -439,21 +479,24 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="fog.css">
-  <link rel="stylesheet" href="collection-header-update.css">
 </head>
 
 <body>
-  <header class="site-header collection-header">
-  <div class="collection-header-inner">
-    <a class="collection-logo-link" href="index.html" aria-label="Worlds Under Siege Home">
-      <img src="logo.png" alt="Worlds Under Siege" class="collection-header-logo">
-    </a>
-    <nav class="collection-header-nav" aria-label="Collection navigation">
-      <a href="index.html" class="collection-home-link">Home</a>
-    </nav>
-  </div>
-</header>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html"><img src="logo.png" alt="Worlds Under Siege" class="top-logo"></a>
+
+      <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="cards.html">Cards</a>
+        <a href="deck-builder.html">Deck Builder</a>
+        <a href="play-online.html">Play Online</a>
+        <a href="rules.html">Rules</a>
+        <a href="news.html">News</a>
+        <a href="open-packs.html">Open Packs</a>
+      </nav>
+    </div>
+  </header>
 
   <section class="page-header">
     <h1>Card Library</h1>
@@ -496,6 +539,8 @@
 
   <script src="cards.js"></script>
   <script src="lore.js"></script>
+  <script src="collection-store.js"></script>
+  <script type="module" src="collection-cloud.js"></script>
 
   <script>
     const grid = document.getElementById("cardGrid");
@@ -508,6 +553,20 @@
     const modalTitle = document.getElementById("modalTitle");
     const modalBody = document.getElementById("modalBody");
     const modalClose = document.getElementById("modalClose");
+
+    function ownedQuantity(cardId) {
+      const cloudQuantity =
+        window.WUSCloudCollection?.getQuantity?.(cardId);
+
+      if (Number.isFinite(Number(cloudQuantity))) {
+        return Math.max(0, Number(cloudQuantity) || 0);
+      }
+
+      return Math.max(
+        0,
+        Number(window.WUSCollection?.getQuantity?.(cardId)) || 0
+      );
+    }
 
     function encodePath(path) {
       return encodeURI(path);
@@ -674,10 +733,30 @@
           ? card.type.includes("Stronghold")
           : card.type === "Stronghold";
 
-        wrapper.className = isStronghold ? "card stronghold-card" : "card";
-        wrapper.tabIndex = 0;
-        wrapper.setAttribute("role", "button");
-        wrapper.setAttribute("aria-label", `View ${card.name} card details and lore`);
+        const quantity = ownedQuantity(card.id);
+        const isOwned = quantity > 0;
+
+        wrapper.className = [
+          "card",
+          isStronghold ? "stronghold-card" : "",
+          isOwned ? "owned-card" : "not-owned"
+        ].filter(Boolean).join(" ");
+
+        if (isOwned) {
+          wrapper.tabIndex = 0;
+          wrapper.setAttribute("role", "button");
+          wrapper.setAttribute(
+            "aria-label",
+            `View ${card.name} card details and lore. Owned: ${quantity}.`
+          );
+        } else {
+          wrapper.removeAttribute("tabindex");
+          wrapper.setAttribute("aria-disabled", "true");
+          wrapper.setAttribute(
+            "aria-label",
+            `${card.name}. You do not own this card.`
+          );
+        }
 
         const typeLabel = Array.isArray(card.type)
           ? card.type.join(" • ")
@@ -693,18 +772,31 @@
             <div class="card-meta">
               <span class="card-type">${escapeHTML(typeLabel)}</span>
               <span class="card-set">${escapeHTML(card.set)}</span>
+              <span class="ownership-badge">
+                ${isOwned ? `Owned ×${quantity}` : "Not Owned"}
+              </span>
             </div>
-            <div class="card-hint">${card.backImage ? "View both sides and lore" : "View card lore"}</div>
+            <div class="card-hint">
+              ${
+                isOwned
+                  ? (card.backImage
+                      ? "View both sides and lore"
+                      : "View card lore")
+                  : "Acquire this card to inspect it"
+              }
+            </div>
           </div>
         `;
 
-        wrapper.addEventListener("click", () => openModal(card));
-        wrapper.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openModal(card);
-          }
-        });
+        if (isOwned) {
+          wrapper.addEventListener("click", () => openModal(card));
+          wrapper.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openModal(card);
+            }
+          });
+        }
 
         grid.appendChild(wrapper);
       });
@@ -741,12 +833,23 @@
 
     renderCards();
 
+    window.addEventListener(
+      "wus-cloud-collection-ready",
+      renderCards
+    );
+
+    window.addEventListener(
+      "wus-player-data-changed",
+      renderCards
+    );
+
     if (requestedCard) {
       const selectedCard = cards.find(card => card.id === requestedCard);
-      if (selectedCard) openModal(selectedCard);
+      if (selectedCard && ownedQuantity(selectedCard.id) > 0) {
+        openModal(selectedCard);
+      }
     }
   </script>
-  <script src="fog.js"></script>
   <script src="global-click-sound.js"></script>
 </body>
 </html>
