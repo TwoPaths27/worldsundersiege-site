@@ -482,3 +482,116 @@ body.asset-locked { overflow: hidden; }
 @keyframes starterFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes purchaseShimmer{0%,70%{left:-35%}100%{left:135%}}
 @media(max-width:1000px){.starter-armory{grid-template-columns:1fr}.starter-deck-product{display:grid;grid-template-columns:minmax(250px,.85fr) 1.15fr}.starter-package-wrap{min-height:330px}.store-stage-heading{grid-template-columns:1fr}.store-stage-heading .stage-wallet{justify-self:center}.store-back-button{justify-self:start}}
 @media(max-width:720px){.store-choice-grid{grid-template-columns:1fr}.store-choice{grid-template-rows:auto auto}.store-choice-art{min-height:220px}.starter-deck-product{display:flex}.store-landing,.starter-armory-panel{padding:20px}.floating-store-back{position:static;margin:10px 14px}.compact-store-header .brand img{height:34px!important}}
+
+
+/* Single booster return action */
+.pack-actions #returnToPacksButton{
+  min-width:210px;
+}
+
+/* Starter Deck purchase confirmation */
+.starter-purchase-modal{
+  position:fixed;
+  inset:0;
+  z-index:250;
+  display:grid;
+  place-items:center;
+  padding:22px;
+}
+
+.starter-purchase-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(5px);
+}
+
+.starter-purchase-card{
+  position:relative;
+  z-index:1;
+  width:min(520px,100%);
+  padding:28px;
+  text-align:center;
+}
+
+.starter-purchase-card h2{
+  margin:4px 0 16px;
+  color:#f6dda2;
+  font-size:clamp(30px,5vw,46px);
+}
+
+.starter-purchase-card > img{
+  display:block;
+  width:min(260px,70%);
+  max-height:340px;
+  margin:0 auto 18px;
+  object-fit:contain;
+  filter:drop-shadow(0 14px 20px rgba(0,0,0,.7));
+}
+
+.starter-purchase-card > p{
+  color:#d8c7a4;
+  line-height:1.55;
+}
+
+.starter-purchase-summary{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin:20px 0;
+}
+
+.starter-purchase-summary span{
+  padding:12px;
+  border:1px solid rgba(218,174,82,.34);
+  border-radius:8px;
+  background:rgba(8,6,4,.65);
+  color:#d8c7a4;
+}
+
+.starter-purchase-summary strong{
+  display:block;
+  color:#f5d68e;
+  font-size:24px;
+}
+
+.starter-modal-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:38px;
+  height:38px;
+  border:1px solid #8d632b;
+  border-radius:50%;
+  color:#f4dfb1;
+  background:#1a1008;
+  cursor:pointer;
+}
+
+body.starter-modal-open{
+  overflow:hidden;
+}
+
+.starter-stock-status{
+  margin:10px 0 8px;
+  color:#f0d18a;
+  font-weight:900;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.starter-stock-status.sold-out{
+  color:#c7bcaa;
+}
+
+.starter-deck-product.is-sold-out{
+  filter:grayscale(.92) brightness(.48);
+  opacity:.74;
+}
+
+@media(max-width:520px){
+  .starter-purchase-summary{
+    grid-template-columns:1fr;
+  }
+}

@@ -132,7 +132,7 @@
         </div>
         <div class="pack-actions">
           <button id="anotherPackButton" class="primary-button" type="button" hidden>Open Another Pack · 200 Gold</button>
-          <button id="returnToPacksButton" class="secondary-button" type="button" hidden>Return to Packs</button>
+          <button id="returnToPacksButton" class="secondary-button" type="button" hidden>Return to Pack Selection</button>
           <button id="openNextPackButton" class="primary-button" type="button" hidden>Open Next Pack</button>
         </div>
       </section>
@@ -188,6 +188,26 @@
   </div>
 
 
+  
+  <div id="starterPurchaseModal" class="starter-purchase-modal" hidden
+       role="dialog" aria-modal="true" aria-labelledby="starterPurchaseModalTitle">
+    <div class="starter-purchase-backdrop" data-close-starter-modal></div>
+    <section class="starter-purchase-card panel">
+      <button id="starterPurchaseModalClose" class="starter-modal-close"
+              type="button" aria-label="Close">✕</button>
+      <p class="eyebrow">Starter Deck Acquired</p>
+      <h2 id="starterPurchaseModalTitle">Starter Deck Added</h2>
+      <img id="starterPurchaseModalImage" src="logo.png" alt="">
+      <p id="starterPurchaseModalText"></p>
+      <div class="starter-purchase-summary">
+        <span><strong id="starterPurchaseCardsAdded">0</strong> cards added</span>
+        <span><strong id="starterPurchaseCopiesRemaining">0</strong> remaining</span>
+      </div>
+      <button id="starterPurchaseModalContinue" class="primary-button"
+              type="button">Return to Starter Decks</button>
+    </section>
+  </div>
+
   <div id="godPackOverlay" class="god-pack-overlay" hidden aria-hidden="true">
     <div class="god-pack-darkness"></div>
     <div id="godPackFlash" class="god-pack-flash"></div>
@@ -212,7 +232,7 @@
   <script src="asset-cache.js"></script>
   <script src="asset-manifest.js"></script>
   <script src="collection-store.js"></script>
-  <script src="open-packs.js?v=no-ui-clicks-3"></script>
+  <script src="open-packs.js?v=starter-purchase-fix-4"></script>
   <script src="global-click-sound.js?v=no-open-packs-clicks-3"></script>
 </body>
 </html>

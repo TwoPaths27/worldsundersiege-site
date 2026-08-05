@@ -39,6 +39,14 @@ window.WUS_UI_CLICKS_ENABLED = false;
   const setBackButton = document.getElementById("setBackButton");
   const starterArmory = document.getElementById("starterArmory");
   const starterPurchaseMessage = document.getElementById("starterPurchaseMessage");
+  const starterPurchaseModal = document.getElementById("starterPurchaseModal");
+  const starterPurchaseModalClose = document.getElementById("starterPurchaseModalClose");
+  const starterPurchaseModalContinue = document.getElementById("starterPurchaseModalContinue");
+  const starterPurchaseModalTitle = document.getElementById("starterPurchaseModalTitle");
+  const starterPurchaseModalImage = document.getElementById("starterPurchaseModalImage");
+  const starterPurchaseModalText = document.getElementById("starterPurchaseModalText");
+  const starterPurchaseCardsAdded = document.getElementById("starterPurchaseCardsAdded");
+  const starterPurchaseCopiesRemaining = document.getElementById("starterPurchaseCopiesRemaining");
   const beginButton = document.getElementById("beginButton");
   const beginBoxButton = document.getElementById("beginBoxButton");
   const boosterButton = document.getElementById("boosterButton");
@@ -255,13 +263,43 @@ window.WUS_UI_CLICKS_ENABLED = false;
 
   preloadSounds();
 
-  function loadOwnedStarterDecks() {
-    try { return new Set(JSON.parse(localStorage.getItem(STARTER_OWNERSHIP_KEY) || "[]")); }
-    catch { return new Set(); }
+  function loadStarterPurchaseCounts() {
+    try {
+      const raw = JSON.parse(
+        localStorage.getItem(STARTER_OWNERSHIP_KEY) || "{}"
+      );
+
+      // Backward compatibility with the older array format.
+      if (Array.isArray(raw)) {
+        return Object.fromEntries(raw.map(id => [id, 1]));
+      }
+
+      if (raw && typeof raw === "object") {
+        return Object.fromEntries(
+          Object.entries(raw).map(([id, count]) => [
+            id,
+            Math.max(0, Math.min(3, Number(count) || 0))
+          ])
+        );
+      }
+    } catch {}
+
+    return {};
   }
 
-  function saveOwnedStarterDecks(owned) {
-    localStorage.setItem(STARTER_OWNERSHIP_KEY, JSON.stringify([...owned]));
+  function saveStarterPurchaseCounts(counts) {
+    localStorage.setItem(
+      STARTER_OWNERSHIP_KEY,
+      JSON.stringify(counts)
+    );
+  }
+
+  function starterPurchasesFor(deckId) {
+    return Number(loadStarterPurchaseCounts()[deckId] || 0);
+  }
+
+  function starterCopiesRemaining(deckId) {
+    return Math.max(0, 3 - starterPurchasesFor(deckId));
   }
 
   function starterCardObjects(deck) {
@@ -275,44 +313,139 @@ window.WUS_UI_CLICKS_ENABLED = false;
     starterPurchaseMessage.classList.toggle("economy-error", isError);
   }
 
+  function showStarterPurchaseModal(deck, result, remaining) {
+    if (!starterPurchaseModal) return;
+
+    starterPurchaseModalTitle.textContent = `${deck.name} Added`;
+    starterPurchaseModalImage.src = deck.image;
+    starterPurchaseModalImage.alt = `${deck.name} Starter Deck`;
+    starterPurchaseModalText.textContent =
+      `${deck.commanderName} and the complete ${deck.name} deck were added to your collection.`;
+
+    starterPurchaseCardsAdded.textContent =
+      Number(result.added || 0).toLocaleString();
+    starterPurchaseCopiesRemaining.textContent =
+      Number(remaining).toLocaleString();
+
+    starterPurchaseModal.hidden = false;
+    document.body.classList.add("starter-modal-open");
+  }
+
+  function closeStarterPurchaseModal() {
+    if (!starterPurchaseModal) return;
+    starterPurchaseModal.hidden = true;
+    document.body.classList.remove("starter-modal-open");
+  }
+
   function purchaseStarterDeck(deck) {
-    if (!window.WUSCollection) return;
-    const owned = loadOwnedStarterDecks();
-    if (owned.has(deck.id)) return;
+    if (!window.WUSCollection) {
+      showStarterMessage(
+        "The collection system is still loading. Please try again.",
+        true
+      );
+      return;
+    }
+
+    const counts = loadStarterPurchaseCounts();
+    const currentCount = Number(counts[deck.id] || 0);
+
+    if (currentCount >= 3) {
+      showStarterMessage(`${deck.name} is SOLD OUT.`, true);
+      renderStarterArmory();
+      return;
+    }
+
     const spend = WUSCollection.spendGold(STARTER_DECK_PRICE);
+
     if (!spend.ok) {
-      showStarterMessage(`Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${spend.gold.toLocaleString()}.`, true);
+      showStarterMessage(
+        `Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${spend.gold.toLocaleString()}.`,
+        true
+      );
       refreshGold();
       return;
     }
-    const result = WUSCollection.addCards(starterCardObjects(deck));
-    owned.add(deck.id);
-    saveOwnedStarterDecks(owned);
+
+    const cards = starterCardObjects(deck);
+    const result = WUSCollection.addCards(cards);
+
+    counts[deck.id] = currentCount + 1;
+    saveStarterPurchaseCounts(counts);
+
     playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
     showGoldSpendAnimation(STARTER_DECK_PRICE);
-    showStarterMessage(`${deck.name} was added to your collection. ${result.added} cards added${result.converted ? ` and ${result.converted} extras converted into ${result.goldEarned} Gold` : ""}.`);
+
+    const remaining = Math.max(0, 3 - counts[deck.id]);
+
+    showStarterMessage(
+      `${deck.name} added. ${remaining > 0 ? `${remaining} remaining.` : "SOLD OUT."}`
+    );
+
     refreshGold();
     renderStarterArmory();
+    showStarterPurchaseModal(deck, result, remaining);
   }
 
   function renderStarterArmory() {
     if (!starterArmory) return;
-    const owned = loadOwnedStarterDecks();
+
+    const counts = loadStarterPurchaseCounts();
     const gold = window.WUSCollection?.load?.().gold || 0;
-    starterArmory.replaceChildren(...STARTER_DECKS.map(deck => {
-      const isOwned = owned.has(deck.id);
-      const article = document.createElement("article");
-      article.className = `starter-deck-product${isOwned ? " is-owned" : ""}`;
-      article.innerHTML = `
-        <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">OWNED</span></div>
-        <div class="starter-product-copy">
-          <p class="eyebrow">Starter Deck</p><h2>${deck.name}</h2><p>${deck.description}</p>
-          <div class="commander-showcase"><img src="${deck.commanderImage}" alt="${deck.commanderName}"><div><small>Showcase Card</small><strong>${deck.commanderName}</strong><span>${deck.commanderId}</span></div></div>
-          <button class="primary-button starter-buy-button purchase-shimmer" type="button" ${isOwned || gold < STARTER_DECK_PRICE ? "disabled" : ""}>${isOwned ? "Owned" : "Buy Starter Deck · 1,000 Gold"}</button>
-        </div>`;
-      article.querySelector('.starter-buy-button').addEventListener('click', () => purchaseStarterDeck(deck));
-      return article;
-    }));
+
+    starterArmory.replaceChildren(
+      ...STARTER_DECKS.map(deck => {
+        const purchased = Number(counts[deck.id] || 0);
+        const remaining = Math.max(0, 3 - purchased);
+        const isSoldOut = remaining === 0;
+
+        const article = document.createElement("article");
+        article.className =
+          `starter-deck-product${isSoldOut ? " is-owned is-sold-out" : ""}`;
+
+        article.innerHTML = `
+          <div class="starter-package-wrap">
+            <img class="starter-package" src="${deck.image}"
+                 alt="${deck.name} Starter Deck">
+            <span class="starter-owned-ribbon">
+              ${isSoldOut ? "SOLD OUT" : `${remaining} LEFT`}
+            </span>
+          </div>
+
+          <div class="starter-product-copy">
+            <p class="eyebrow">Starter Deck</p>
+            <h2>${deck.name}</h2>
+            <p>${deck.description}</p>
+
+            <div class="commander-showcase">
+              <img src="${deck.commanderImage}" alt="${deck.commanderName}">
+              <div>
+                <small>Showcase Card</small>
+                <strong>${deck.commanderName}</strong>
+                <span>${deck.commanderId}</span>
+              </div>
+            </div>
+
+            <div class="starter-stock-status ${isSoldOut ? "sold-out" : ""}">
+              ${isSoldOut ? "SOLD OUT" : `${remaining} remaining`}
+            </div>
+
+            <button class="primary-button starter-buy-button purchase-shimmer"
+                    type="button"
+                    ${isSoldOut || gold < STARTER_DECK_PRICE ? "disabled" : ""}>
+              ${isSoldOut ? "SOLD OUT" : "Buy Starter Deck · 1,000 Gold"}
+            </button>
+          </div>
+        `;
+
+        const button = article.querySelector(".starter-buy-button");
+
+        if (!isSoldOut) {
+          button.addEventListener("click", () => purchaseStarterDeck(deck));
+        }
+
+        return article;
+      })
+    );
   }
 
   function createEmptyBoxSession() {
@@ -954,7 +1087,12 @@ window.WUS_UI_CLICKS_ENABLED = false;
       } else {
         anotherButton.hidden = false;
         anotherButton.textContent = "Open Another Pack · 200 Gold";
-        if (returnToPacksButton) returnToPacksButton.hidden = true;
+
+        if (returnToPacksButton) {
+          returnToPacksButton.hidden = false;
+          returnToPacksButton.textContent = "Return to Pack Selection";
+        }
+
         if (openNextPackButton) openNextPackButton.hidden = true;
       }
     } else {
@@ -1132,7 +1270,32 @@ window.WUS_UI_CLICKS_ENABLED = false;
     await refreshAssetStatus();
   }
 
-  chooseStarterDecks.addEventListener("click", () => { renderStarterArmory(); showStage(stages.starterDecks); });
+  if (starterPurchaseModalClose) {
+    starterPurchaseModalClose.addEventListener(
+      "click",
+      closeStarterPurchaseModal
+    );
+  }
+
+  if (starterPurchaseModalContinue) {
+    starterPurchaseModalContinue.addEventListener(
+      "click",
+      closeStarterPurchaseModal
+    );
+  }
+
+  if (starterPurchaseModal) {
+    starterPurchaseModal.addEventListener("click", event => {
+      if (event.target.matches("[data-close-starter-modal]")) {
+        closeStarterPurchaseModal();
+      }
+    });
+  }
+
+  chooseStarterDecks.addEventListener("click", () => {
+    renderStarterArmory();
+    showStage(stages.starterDecks);
+  });
   chooseBattleOfAges.addEventListener("click", () => showStage(stages.intro));
   starterBackButton.addEventListener("click", () => showStage(stages.store));
   setBackButton.addEventListener("click", () => showStage(stages.store));
@@ -1200,9 +1363,18 @@ window.WUS_UI_CLICKS_ENABLED = false;
 
   if (returnToPacksButton) {
     returnToPacksButton.addEventListener("click", () => {
-      if (openingMode !== "box" || boxSession.openedPacks >= BOX_PACK_COUNT) return;
-      renderBoxPacks();
-      showStage(stages.boxPacks);
+      if (
+        openingMode === "box" &&
+        boxSession.openedPacks < BOX_PACK_COUNT
+      ) {
+        renderBoxPacks();
+        showStage(stages.boxPacks);
+        return;
+      }
+
+      openingMode = "single";
+      currentPack = [];
+      showStage(stages.intro);
     });
   }
 
