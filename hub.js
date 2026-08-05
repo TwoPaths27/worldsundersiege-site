@@ -41,9 +41,14 @@ const elements = {
   settingsButton: document.getElementById("settingsButton"),
   logoutButton: document.getElementById("logoutButton"),
   playButton: document.getElementById("playMenuButton"),
-  playMenu: document.getElementById("playMenu"),
+  playDrawer: document.getElementById("playDrawer"),
+  playDrawerBackdrop: document.getElementById("playDrawerBackdrop"),
+  closePlayDrawer: document.getElementById("closePlayDrawer"),
   profileModal: document.getElementById("profileModal"),
   settingsModal: document.getElementById("settingsModal"),
+  musicEnabled: document.getElementById("musicEnabled"),
+  musicVolume: document.getElementById("musicVolume"),
+  musicVolumeValue: document.getElementById("musicVolumeValue"),
   newsCategory: document.getElementById("newsCategory"),
   newsTitle: document.getElementById("newsTitle"),
   newsSummary: document.getElementById("newsSummary"),
@@ -56,11 +61,24 @@ const elements = {
 let newsIndex = 0;
 let newsTimer = null;
 
+const MENU_MUSIC_ENABLED_KEY = "wus-menu-music-enabled";
+const MENU_MUSIC_VOLUME_KEY = "wus-menu-music-volume";
+const DEFAULT_MUSIC_VOLUME = 0.22;
+
+const menuMusic = new Audio("sounds/menu.mp3");
+menuMusic.loop = true;
+menuMusic.preload = "auto";
+menuMusic.volume = 0;
+
+let musicFadeFrame = null;
+let musicStarted = false;
+
 initialize();
 
 async function initialize() {
   await loadPlayer();
   loadGold();
+  initializeMenuMusic();
   buildNewsDots();
   showNews(0);
   startNewsRotation();
@@ -110,14 +128,32 @@ function loadGold() {
 }
 
 function bindEvents() {
-  elements.playButton.addEventListener("click", () => {
-    const open = elements.playButton.getAttribute("aria-expanded") === "true";
-    elements.playButton.setAttribute("aria-expanded", String(!open));
-    elements.playMenu.hidden = open;
-  });
+  elements.playButton.addEventListener("click", openPlayDrawer);
+  elements.closePlayDrawer.addEventListener("click", closePlayDrawer);
+  elements.playDrawerBackdrop.addEventListener("click", closePlayDrawer);
 
   elements.profileButton.addEventListener("click", () => openModal(elements.profileModal));
   elements.settingsButton.addEventListener("click", () => openModal(elements.settingsModal));
+
+  elements.musicEnabled.addEventListener("change", () => {
+    localStorage.setItem(MENU_MUSIC_ENABLED_KEY, String(elements.musicEnabled.checked));
+
+    if (elements.musicEnabled.checked) {
+      startMenuMusic();
+    } else {
+      fadeMenuMusicTo(0, 500, () => menuMusic.pause());
+    }
+  });
+
+  elements.musicVolume.addEventListener("input", () => {
+    const value = Number(elements.musicVolume.value);
+    localStorage.setItem(MENU_MUSIC_VOLUME_KEY, String(value));
+    elements.musicVolumeValue.textContent = `${value}%`;
+
+    if (elements.musicEnabled.checked && !menuMusic.paused) {
+      fadeMenuMusicTo(value / 100, 120);
+    }
+  });
 
   document.querySelectorAll("[data-close-modal]").forEach(button => {
     button.addEventListener("click", closeAllModals);
@@ -130,7 +166,22 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeAllModals();
+    if (event.key === "Escape") {
+      closePlayDrawer();
+      closeAllModals();
+    }
+  });
+
+  document.querySelectorAll('a[href]').forEach(link => {
+    link.addEventListener("click", event => {
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || link.target === "_blank") return;
+
+      event.preventDefault();
+      fadeMenuMusicTo(0, 350, () => {
+        window.location.href = href;
+      });
+    });
   });
 
   elements.logoutButton.addEventListener("click", async () => {
@@ -148,6 +199,104 @@ function bindEvents() {
   newsPanel.addEventListener("mouseleave", startNewsRotation);
   newsPanel.addEventListener("focusin", stopNewsRotation);
   newsPanel.addEventListener("focusout", startNewsRotation);
+}
+
+function initializeMenuMusic() {
+  const storedEnabled = localStorage.getItem(MENU_MUSIC_ENABLED_KEY);
+  const storedVolume = Number(localStorage.getItem(MENU_MUSIC_VOLUME_KEY));
+
+  const enabled = storedEnabled === null ? true : storedEnabled === "true";
+  const volumePercent = Number.isFinite(storedVolume) && storedVolume >= 0
+    ? Math.min(100, storedVolume)
+    : Math.round(DEFAULT_MUSIC_VOLUME * 100);
+
+  elements.musicEnabled.checked = enabled;
+  elements.musicVolume.value = String(volumePercent);
+  elements.musicVolumeValue.textContent = `${volumePercent}%`;
+
+  const attemptStart = () => {
+    if (elements.musicEnabled.checked) startMenuMusic();
+  };
+
+  document.addEventListener("pointerdown", attemptStart, { once: true });
+  document.addEventListener("keydown", attemptStart, { once: true });
+
+  // Try immediately in case the browser allows playback because of an earlier interaction.
+  attemptStart();
+
+  window.addEventListener("pageshow", () => {
+    if (elements.musicEnabled.checked) startMenuMusic();
+  });
+
+  window.addEventListener("pagehide", () => {
+    menuMusic.pause();
+  });
+}
+
+function getTargetMusicVolume() {
+  return Math.max(0, Math.min(1, Number(elements.musicVolume.value) / 100));
+}
+
+function startMenuMusic() {
+  const targetVolume = getTargetMusicVolume();
+
+  menuMusic.play()
+    .then(() => {
+      musicStarted = true;
+      fadeMenuMusicTo(targetVolume, 1800);
+    })
+    .catch(() => {
+      // Browser will allow playback after the next user gesture.
+    });
+}
+
+function fadeMenuMusicTo(target, duration = 600, onComplete = null) {
+  if (musicFadeFrame) {
+    window.cancelAnimationFrame(musicFadeFrame);
+    musicFadeFrame = null;
+  }
+
+  const startVolume = menuMusic.volume;
+  const clampedTarget = Math.max(0, Math.min(1, target));
+  const startTime = performance.now();
+
+  const step = now => {
+    const progress = duration <= 0 ? 1 : Math.min(1, (now - startTime) / duration);
+    menuMusic.volume = startVolume + (clampedTarget - startVolume) * progress;
+
+    if (progress < 1) {
+      musicFadeFrame = window.requestAnimationFrame(step);
+    } else {
+      musicFadeFrame = null;
+      onComplete?.();
+    }
+  };
+
+  musicFadeFrame = window.requestAnimationFrame(step);
+}
+
+function openPlayDrawer() {
+  elements.playButton.setAttribute("aria-expanded", "true");
+  elements.playDrawer.hidden = false;
+  elements.playDrawerBackdrop.hidden = false;
+  document.body.classList.add("play-drawer-open");
+  window.requestAnimationFrame(() => {
+    elements.playDrawer.classList.add("open");
+    elements.playDrawerBackdrop.classList.add("open");
+  });
+  elements.closePlayDrawer.focus();
+}
+
+function closePlayDrawer() {
+  if (!elements.playDrawer || elements.playDrawer.hidden) return;
+  elements.playButton.setAttribute("aria-expanded", "false");
+  elements.playDrawer.classList.remove("open");
+  elements.playDrawerBackdrop.classList.remove("open");
+  document.body.classList.remove("play-drawer-open");
+  window.setTimeout(() => {
+    elements.playDrawer.hidden = true;
+    elements.playDrawerBackdrop.hidden = true;
+  }, 220);
 }
 
 function openModal(modal) {
