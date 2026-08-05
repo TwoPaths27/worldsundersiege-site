@@ -175,12 +175,37 @@ function bindEvents() {
   document.querySelectorAll('a[href]').forEach(link => {
     link.addEventListener("click", event => {
       const href = link.getAttribute("href");
-      if (!href || href.startsWith("#") || link.target === "_blank") return;
+
+      if (
+        !href ||
+        href.startsWith("#") ||
+        link.target === "_blank" ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
 
       event.preventDefault();
-      fadeMenuMusicTo(0, 350, () => {
-        window.location.href = href;
-      });
+
+      let navigated = false;
+      const navigate = () => {
+        if (navigated) return;
+        navigated = true;
+        window.location.assign(href);
+      };
+
+      // The timeout guarantees navigation even if requestAnimationFrame is
+      // suspended while restoring the page from browser history.
+      window.setTimeout(navigate, 420);
+
+      try {
+        fadeMenuMusicTo(0, 280, navigate);
+      } catch {
+        navigate();
+      }
     });
   });
 
@@ -225,6 +250,30 @@ function initializeMenuMusic() {
   attemptStart();
 
   window.addEventListener("pageshow", () => {
+    document.body.classList.remove(
+      "play-drawer-open",
+      "modal-open",
+      "starter-modal-open"
+    );
+
+    if (elements.playDrawer) {
+      elements.playDrawer.classList.remove("open");
+      elements.playDrawer.hidden = true;
+    }
+
+    if (elements.playDrawerBackdrop) {
+      elements.playDrawerBackdrop.classList.remove("open");
+      elements.playDrawerBackdrop.hidden = true;
+    }
+
+    document.querySelectorAll(".hub-modal").forEach(modal => {
+      modal.hidden = true;
+    });
+
+    if (elements.playButton) {
+      elements.playButton.setAttribute("aria-expanded", "false");
+    }
+
     if (elements.musicEnabled.checked) startMenuMusic();
   });
 
@@ -262,7 +311,13 @@ function fadeMenuMusicTo(target, duration = 600, onComplete = null) {
 
   const step = now => {
     const progress = duration <= 0 ? 1 : Math.min(1, (now - startTime) / duration);
-    menuMusic.volume = startVolume + (clampedTarget - startVolume) * progress;
+    menuMusic.volume = Math.max(
+      0,
+      Math.min(
+        1,
+        startVolume + (clampedTarget - startVolume) * progress
+      )
+    );
 
     if (progress < 1) {
       musicFadeFrame = window.requestAnimationFrame(step);

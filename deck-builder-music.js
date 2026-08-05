@@ -2,7 +2,8 @@
   const MUSIC_PATH = "sounds/Deck-Builder.mp3";
   const ENABLED_KEY = "wus-menu-music-enabled";
   const VOLUME_KEY = "wus-menu-music-volume";
-  const DEFAULT_VOLUME = 0.17;
+  const DEFAULT_VOLUME = 0.136;
+  const DECK_BUILDER_VOLUME_MULTIPLIER = 0.8;
 
   const music = new Audio(MUSIC_PATH);
   music.loop = true;
@@ -11,7 +12,10 @@
   function configuredVolume() {
     const stored = Number(localStorage.getItem(VOLUME_KEY));
     if (Number.isFinite(stored)) {
-      return Math.max(0, Math.min(1, stored / 100));
+      return Math.max(
+        0,
+        Math.min(1, (stored / 100) * DECK_BUILDER_VOLUME_MULTIPLIER)
+      );
     }
     return DEFAULT_VOLUME;
   }
@@ -40,7 +44,10 @@
   window.addEventListener("wus-menu-volume-changed", event => {
     const value = Number(event.detail?.value);
     if (Number.isFinite(value)) {
-      music.volume = Math.max(0, Math.min(1, value / 100));
+      music.volume = Math.max(
+        0,
+        Math.min(1, (value / 100) * DECK_BUILDER_VOLUME_MULTIPLIER)
+      );
     }
   });
 

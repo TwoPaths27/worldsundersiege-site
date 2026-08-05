@@ -1,0 +1,87 @@
+/* Main Hub atmospheric fog and embers */
+#mainHubAtmosphere{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+body > :not(#mainHubAtmosphere):not(script){
+  position:relative;
+  z-index:2;
+}
+
+.main-hub-fog{
+  position:absolute;
+  inset:-20%;
+  width:140%;
+  height:140%;
+  opacity:.46;
+  filter:blur(32px);
+  mix-blend-mode:screen;
+  background:
+    radial-gradient(ellipse at 12% 72%,rgba(214,220,222,.28),transparent 36%),
+    radial-gradient(ellipse at 48% 30%,rgba(171,182,188,.24),transparent 34%),
+    radial-gradient(ellipse at 82% 65%,rgba(225,228,229,.25),transparent 38%);
+  animation:mainHubFogDrift 95s ease-in-out infinite alternate;
+}
+
+.main-hub-fog.fog-two{
+  opacity:.31;
+  transform:scale(1.15);
+  animation-duration:145s;
+  animation-direction:alternate-reverse;
+}
+
+.main-hub-embers{
+  position:absolute;
+  inset:0;
+  opacity:.9;
+}
+
+.main-hub-ember{
+  --size:4px;
+  position:absolute;
+  left:var(--left);
+  bottom:-20px;
+  width:var(--size);
+  height:var(--size);
+  border-radius:50%;
+  background:#ffb04a;
+  box-shadow:
+    0 0 7px rgba(255,176,74,.98),
+    0 0 18px rgba(255,103,26,.92),
+    0 0 34px rgba(255,61,0,.58);
+  animation:mainHubEmberRise var(--duration) linear infinite;
+  animation-delay:var(--delay);
+}
+
+@keyframes mainHubFogDrift{
+  from{transform:translate3d(-5%,2%,0) scale(1.02)}
+  to{transform:translate3d(12%,-3%,0) scale(1.1)}
+}
+
+@keyframes mainHubEmberRise{
+  0%{
+    transform:translate3d(0,0,0) scale(.55);
+    opacity:0;
+  }
+  12%{opacity:.95}
+  72%{opacity:.65}
+  100%{
+    transform:translate3d(var(--drift),-112vh,0) scale(1.2);
+    opacity:0;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .main-hub-fog,
+  .main-hub-ember{
+    animation:none!important;
+  }
+
+  .main-hub-embers{
+    display:none;
+  }
+}
