@@ -28,6 +28,29 @@
     const target = event.target;
     if (!(target instanceof Element)) return false;
 
+    // These controls already use dedicated pack-opening/card-reveal sounds.
+    if (
+      target.closest(
+        [
+          "#beginButton",
+          "#openPackButton",
+          "#openBoxButton",
+          "#openNextPackButton",
+          "#revealAllButton",
+          "#starterRevealAllButton",
+          ".pack-card",
+          ".starter-reveal-card",
+          ".box-pack",
+          ".pack-wrapper",
+          ".booster-pack",
+          "[data-pack-index]",
+          "[data-card-index]"
+        ].join(",")
+      )
+    ) {
+      return false;
+    }
+
     return Boolean(
       target.closest(
         [
@@ -42,9 +65,7 @@
           "[role='button']",
           "[tabindex]:not([tabindex='-1'])",
           ".card",
-          ".pack-card",
           ".summary-card",
-          ".starter-reveal-card",
           ".starter-deck-product",
           ".portrait-choice",
           ".news-dot"
