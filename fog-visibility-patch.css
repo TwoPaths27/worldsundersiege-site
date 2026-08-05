@@ -1,0 +1,44 @@
+/* Worlds Under Siege - Stronger Fog & Embers */
+
+/* Increase overall visibility */
+#wus-fog-layer{
+  opacity:0.92;
+}
+
+/* Make fog layers denser */
+.wus-fog{
+  opacity:0.42 !important;
+  filter:blur(28px);
+}
+
+.wus-fog-one{
+  opacity:0.46 !important;
+}
+
+.wus-fog-two{
+  opacity:0.38 !important;
+}
+
+.wus-fog-three{
+  opacity:0.34 !important;
+}
+
+/* Brighter, easier-to-see embers */
+#wus-fog-layer .wus-embers{
+  opacity:0.82 !important;
+}
+
+#wus-fog-layer .wus-ember{
+  width:5px !important;
+  height:5px !important;
+  background:#ffb347 !important;
+  box-shadow:
+    0 0 8px rgba(255,180,71,.95),
+    0 0 18px rgba(255,120,25,.9),
+    0 0 32px rgba(255,80,0,.65) !important;
+}
+
+/* Slightly slower for a cinematic feel */
+#wus-fog-layer .wus-ember{
+  animation-duration:32s !important;
+}
