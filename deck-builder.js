@@ -1,6 +1,8 @@
 (() => {
 "use strict";
-const DB = window.WUS_CARD_DATABASE || [];
+const BASE_DB = window.WUS_CARD_DATABASE || [];
+const STARTER_DECK_DB = window.WUS_STARTER_DECK_CARDS || [];
+const DB = [...BASE_DB, ...STARTER_DECK_DB];
 const byId = Object.fromEntries(DB.map(card => [card.id, card]));
 const DECKS_KEY = "wus-saved-decks-v2";
 const LEGACY_DECKS_KEY = "wus-saved-decks-v1";
@@ -62,7 +64,24 @@ function saveActive(){localStorage.setItem(ACTIVE_KEY,JSON.stringify({name:els.d
 function populateFilters(){
   [...new Set(DB.flatMap(c=>c.types))].sort().forEach(v=>els.typeFilter.add(new Option(v,v)));
   ["Common","Uncommon","Rare","Super Rare","Ultra Rare","Secret Rare"].forEach(v=>els.rarityFilter.add(new Option(v,v)));
-  [...new Set(DB.map(c=>c.set).filter(Boolean))].sort().forEach(v=>els.setFilter.add(new Option(v,v)));
+  const setOrder = ["BOA", "SD1"];
+  [...new Set(DB.map(c=>c.set).filter(Boolean))]
+    .sort((left, right) => {
+      const leftIndex = setOrder.indexOf(left);
+      const rightIndex = setOrder.indexOf(right);
+      if (leftIndex !== -1 || rightIndex !== -1) {
+        return (leftIndex === -1 ? 999 : leftIndex) -
+               (rightIndex === -1 ? 999 : rightIndex);
+      }
+      return left.localeCompare(right);
+    })
+    .forEach(value => {
+      const label =
+        value === "BOA" ? "Battle of Ages" :
+        value === "SD1" ? "Starter Deck 1 (SD1)" :
+        value;
+      els.setFilter.add(new Option(label, value));
+    });
   const addRange=(el,max,label)=>{for(let i=0;i<=max;i++)el.add(new Option(`${label} ${i}`,String(i)));};
   addRange(els.costFilter,10,"Cost");
   addRange(els.atkFilter,14,"ATK");

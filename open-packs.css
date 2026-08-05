@@ -802,3 +802,97 @@ body.starter-modal-open{
     gap:7px;
   }
 }
+
+
+/* Starter reveal sizing repair — match the booster reveal presentation */
+.starter-reveal-panel{
+  width:min(1420px,100%)!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+}
+
+.starter-commander-banner{
+  min-height:72px!important;
+  padding:10px 14px!important;
+  margin-bottom:18px!important;
+}
+
+.starter-commander-banner img{
+  display:block!important;
+  width:52px!important;
+  min-width:52px!important;
+  max-width:52px!important;
+  height:72px!important;
+  min-height:72px!important;
+  max-height:72px!important;
+  object-fit:cover!important;
+  border-radius:5px!important;
+}
+
+.starter-reveal-grid{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(105px,125px))!important;
+  justify-content:center!important;
+  align-items:start!important;
+  gap:14px!important;
+  width:100%!important;
+  max-width:1320px!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+}
+
+.starter-reveal-card{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:125px!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:2.5 / 3.5!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:visible!important;
+  background:transparent!important;
+}
+
+.starter-card-inner,
+.starter-card-back,
+.starter-card-front{
+  width:100%!important;
+  height:100%!important;
+  max-width:125px!important;
+  max-height:175px!important;
+}
+
+.starter-card-back img,
+.starter-card-front img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:125px!important;
+  max-height:175px!important;
+  object-fit:cover!important;
+  margin:0!important;
+}
+
+.starter-reveal-card.revealed:hover{
+  z-index:5;
+  transform:translateY(-4px) scale(1.04);
+}
+
+@media(max-width:760px){
+  .starter-reveal-grid{
+    grid-template-columns:repeat(auto-fit,minmax(82px,100px))!important;
+    gap:9px!important;
+  }
+
+  .starter-reveal-card,
+  .starter-card-inner,
+  .starter-card-back,
+  .starter-card-front,
+  .starter-card-back img,
+  .starter-card-front img{
+    max-width:100px!important;
+    max-height:140px!important;
+  }
+}

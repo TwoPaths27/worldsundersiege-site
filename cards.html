@@ -478,22 +478,40 @@
         grid-template-columns: 1fr;
       }
     }
+  
+    .collection-compact-header .topbar-inner {
+      min-height: 66px;
+      padding-top: 7px;
+      padding-bottom: 7px;
+    }
+
+    .collection-compact-header .top-logo {
+      display: block;
+      width: 145px;
+      max-width: 145px;
+      max-height: 52px;
+      object-fit: contain;
+    }
+
+    .collection-compact-header .nav {
+      margin-left: auto;
+    }
+
+    .collection-compact-header .nav a {
+      min-width: 88px;
+      text-align: center;
+    }
   </style>
 </head>
 
 <body>
-  <header class="topbar">
+  <header class="topbar collection-compact-header">
     <div class="topbar-inner">
-      <a href="index.html"><img src="logo.png" alt="Worlds Under Siege" class="top-logo"></a>
-
-      <nav class="nav">
+      <a href="index.html" aria-label="Worlds Under Siege Home">
+        <img src="logo.png" alt="Worlds Under Siege" class="top-logo">
+      </a>
+      <nav class="nav" aria-label="Collection navigation">
         <a href="index.html">Home</a>
-        <a href="cards.html">Cards</a>
-        <a href="deck-builder.html">Deck Builder</a>
-        <a href="play-online.html">Play Online</a>
-        <a href="rules.html">Rules</a>
-        <a href="news.html">News</a>
-        <a href="open-packs.html">Open Packs</a>
       </nav>
     </div>
   </header>
