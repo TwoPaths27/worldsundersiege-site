@@ -2,113 +2,135 @@
 <html lang="en" data-login-page="login.html" data-require-onboarding="complete">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Worlds Under Siege player hub.">
   <script>document.documentElement.classList.add("auth-checking");</script>
   <script type="module" src="auth-guard.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Worlds Under Siege is a strategic trading card game where history, legend and mythology collide.">
   <title>Worlds Under Siege</title>
-  <style>
-    :root{--bg:#080d18;--panel:#111827;--panel2:#172033;--text:#f8fafc;--muted:#b8c3d4;--green:#22c55e;--gold:#e4b95f;--line:rgba(255,255,255,.12)}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#15223b 0,#080d18 38%);color:var(--text)}
-    a{color:inherit} button{font:inherit}
-    .top-banner{min-height:430px;background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.72)),url("banner.jpg") center/cover no-repeat;position:relative;display:flex;flex-direction:column}
-    .account-bar{background:#000;padding:9px 5%;display:flex;justify-content:flex-end;gap:9px;font-size:14px}.account-bar a{text-decoration:none;color:#dbe5f4}.account-bar a:hover{color:#86efac}.account-link-button{border:0;background:none;color:#dbe5f4;padding:0;cursor:pointer;font:inherit}.account-link-button:hover{color:#86efac}.account-name{color:#86efac;font-weight:800}.auth-checking body{visibility:hidden}
-    .brand-row{flex:1;display:flex;align-items:center;justify-content:center;padding:30px}.hero-logo{width:min(330px,72vw);filter:drop-shadow(0 8px 18px #000)}
-    .main-nav{background:rgba(0,0,0,.88);display:flex;justify-content:center;gap:9px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid rgba(255,255,255,.14)}
-    .main-nav a{text-decoration:none;padding:10px 15px;border-radius:8px;font-weight:700;letter-spacing:.02em}.main-nav a:hover,.main-nav a.active{background:var(--green);color:#041208}
-    main{max-width:1240px;margin:auto;padding:54px 24px 70px}.section{margin-bottom:72px}.section-title{text-align:center;font-size:clamp(28px,4vw,42px);margin:0 0 10px}.section-subtitle{text-align:center;color:var(--muted);max-width:760px;margin:0 auto 28px;line-height:1.65}
-    .welcome{text-align:center;max-width:920px;margin:0 auto 72px}.welcome h1{font-size:clamp(34px,5vw,58px);margin:0 0 18px}.welcome p{font-size:19px;line-height:1.7;color:var(--muted)}
-    .cta-row{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-block;text-decoration:none;border:1px solid transparent;padding:13px 22px;border-radius:9px;font-weight:800;transition:.2s}.btn-primary{background:var(--green);color:#06130a}.btn-primary:hover{transform:translateY(-2px);background:#4ade80}.btn-secondary{background:rgba(255,255,255,.08);border-color:var(--line)}.btn-secondary:hover{background:rgba(255,255,255,.15)}.btn-gold{background:var(--gold);color:#211705}.btn-gold:hover{filter:brightness(1.08);transform:translateY(-2px)}
-    .feature-shell{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:14px}.slide-arrow{height:52px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:white;font-size:28px;cursor:pointer}.slide-arrow:hover{background:var(--green);color:#041208}
-    .feature-card{background:linear-gradient(135deg,#172033,#0d1526);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;grid-template-columns:minmax(220px,390px) 1fr;gap:32px;align-items:center;min-height:510px;box-shadow:0 22px 60px rgba(0,0,0,.28)}
-    .feature-image-wrap{text-align:center}.feature-image{width:100%;max-width:360px;max-height:520px;object-fit:contain;border-radius:14px;filter:drop-shadow(0 16px 22px rgba(0,0,0,.55));cursor:pointer}.feature-copy .eyebrow,.set-copy .eyebrow{color:#86efac;text-transform:uppercase;font-size:13px;font-weight:800;letter-spacing:.16em}.feature-copy h3{font-size:clamp(30px,4vw,50px);margin:10px 0}.feature-copy p{color:var(--muted);line-height:1.65}.dots{display:flex;justify-content:center;gap:7px;margin-top:18px}.dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:#64748b;cursor:pointer}.dot.active{background:var(--green);transform:scale(1.25)}
-    .news-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:24px}.news-main,.news-list,.set-showcase,.type-card{background:rgba(17,24,39,.92);border:1px solid var(--line);border-radius:16px}.news-main{padding:30px}.news-date{color:#86efac;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:.12em}.news-main h3{font-size:30px;margin:12px 0}.news-main p{color:var(--muted);line-height:1.65}.news-list{padding:12px}.news-item{padding:18px;border-bottom:1px solid var(--line)}.news-item:last-child{border-bottom:0}.news-item strong{display:block;margin-bottom:6px}.news-item span{font-size:13px;color:var(--muted)}
-    .set-showcase{display:grid;grid-template-columns:1fr 1fr;gap:38px;padding:38px;align-items:center;background:linear-gradient(135deg,#141d30,#271c12)}.set-art{min-height:360px;border:1px dashed rgba(228,185,95,.5);border-radius:16px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle,#3b2a16,#101827)}.set-art img{max-width:100%;max-height:390px;object-fit:contain}.set-placeholder{color:#d9c08b}.set-placeholder strong{display:block;font-size:26px;margin-bottom:8px}.set-copy h3{font-size:42px;margin:10px 0}.set-copy p{color:var(--muted);line-height:1.65}.set-stats{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}.stat-pill{background:rgba(255,255,255,.08);padding:10px 14px;border-radius:999px;font-weight:bold}
-    .types-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.type-card{text-decoration:none;overflow:hidden;transition:.2s}.type-card:hover{transform:translateY(-5px);border-color:#4ade80}.type-image{aspect-ratio:4/3;background:#0f172a;display:flex;align-items:center;justify-content:center;overflow:hidden}.type-image img{width:100%;height:100%;object-fit:cover;object-position:top}.type-label{padding:16px;text-align:center;font-weight:800;font-size:18px}.type-label small{display:block;color:var(--muted);font-size:12px;font-weight:normal;margin-top:5px}
-    footer{background:#02050b;border-top:1px solid var(--line);padding:34px 24px;text-align:center}.socials{display:flex;justify-content:center;gap:12px;margin-bottom:18px}.social{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#172033;text-decoration:none;font-weight:bold}.social:hover{background:var(--green);color:#051209}.footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;margin-bottom:18px}.footer-links a{text-decoration:none;color:#cbd5e1}.footer-links a:hover{color:#86efac}.copyright{font-size:13px;color:#7f8ca1;line-height:1.7}
-    @media(max-width:850px){.top-banner{min-height:340px}.feature-card,.set-showcase,.news-grid{grid-template-columns:1fr}.feature-card{text-align:center;min-height:0}.types-grid{grid-template-columns:repeat(2,1fr)}.feature-shell{grid-template-columns:40px minmax(0,1fr) 40px}.set-art{min-height:280px}}
-    @media(max-width:540px){main{padding:40px 14px 55px}.main-nav{gap:4px;padding:10px}.main-nav a{padding:9px 10px;font-size:13px}.account-bar{justify-content:center}.feature-shell{display:block}.slide-arrow{position:absolute;z-index:2;margin-top:220px;width:42px}.slide-arrow.next{right:18px}.slide-arrow.prev{left:18px}.feature-card{padding:18px}.types-grid{grid-template-columns:1fr 1fr}.set-showcase{padding:24px}.welcome p{font-size:17px}}
-  </style>
+  <link rel="stylesheet" href="hub.css">
 </head>
 <body>
-  <header class="top-banner">
-    <div class="account-bar" data-account-bar><span>Loading account…</span></div>
-    <div class="brand-row"><img src="logo.png" alt="Worlds Under Siege" class="hero-logo"></div>
-    <nav class="main-nav" aria-label="Main navigation">
-      <a class="active" href="index.html">Home</a><a href="cards.html">Cards</a><a href="deck-builder.html">Deck Builder</a><a href="game/">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a href="open-packs.html">Open Packs</a>
-    </nav>
-  </header>
-
-  <main>
-    <section class="welcome">
-      <h1>Welcome to Worlds Under Siege</h1>
-      <p>Command heroes from history, champions of legend, fearsome creatures and mighty armies in a strategic trading card game where different ages and worlds collide.</p>
-      <div class="cta-row"><a class="btn btn-primary" href="cards.html">View Cards</a><a class="btn btn-secondary" href="rules.html">Learn the Rules</a><a class="btn btn-gold" href="game/">Play Online</a></div>
-    </section>
-
-    <section class="section" aria-labelledby="featured-title">
-      <h2 class="section-title" id="featured-title">Featured Cards</h2>
-      <p class="section-subtitle">Explore twelve iconic cards from the Battle of Ages set. Select a card to open it in the full card gallery.</p>
-      <div class="feature-shell" id="featureShell">
-        <button class="slide-arrow prev" id="prevCard" aria-label="Previous featured card">‹</button>
-        <article class="feature-card">
-          <div class="feature-image-wrap"><img id="featureImage" class="feature-image" alt="Featured card"></div>
-          <div class="feature-copy"><div class="eyebrow">Battle of Ages Spotlight</div><h3 id="featureName"></h3><p id="featureMeta"></p><p>Click the card to view its complete entry, including card details and available lore.</p><a id="featureLink" class="btn btn-primary" href="cards.html">View Card</a></div>
-        </article>
-        <button class="slide-arrow next" id="nextCard" aria-label="Next featured card">›</button>
+  <main class="hub-shell">
+    <section class="game-hub" aria-labelledby="hubTitle">
+      <div class="hub-logo-wrap">
+        <img src="logo.png" class="hub-logo" alt="Worlds Under Siege">
       </div>
-      <div class="dots" id="featureDots" aria-label="Featured card selection"></div>
-    </section>
 
-    <section class="section" aria-labelledby="news-title">
-      <h2 class="section-title" id="news-title">Latest News</h2>
-      <p class="section-subtitle">Follow the development of the official website and the road toward online play.</p>
-      <div class="news-grid">
-        <article class="news-main"><div class="news-date">Website Update</div><h3>The official homepage is here</h3><p>The Worlds Under Siege website now has a complete home for cards, lore, rules, news and the future online game. More features will be added as development continues.</p><a class="btn btn-secondary" href="news.html">Read All News</a></article>
-        <aside class="news-list"><div class="news-item"><strong>Card lore expansion underway</strong><span>Encyclopedia-style histories are being added across the Battle of Ages set.</span></div><div class="news-item"><strong>Deck Builder planned</strong><span>Players will eventually be able to build and save decks online.</span></div><div class="news-item"><strong>Play Online in development</strong><span>The future browser game will include collections, packs and online matches.</span></div></aside>
-      </div>
-    </section>
+      <section class="player-panel" aria-label="Player account">
+        <button class="player-identity" id="profileButton" type="button"
+                aria-haspopup="dialog" aria-controls="profileModal">
+          <span class="portrait-frame">
+            <img id="profilePortrait" src="logo.png" alt="Selected profile portrait">
+          </span>
+          <span class="player-copy">
+            <span class="player-label">Commander</span>
+            <strong id="playerUsername">Loading…</strong>
+          </span>
+        </button>
 
-    <section class="section" aria-labelledby="set-title">
-      <h2 class="section-title" id="set-title">Latest Set</h2>
-      <div class="set-showcase">
-        <div class="set-art"><img src="battle-of-ages-set.png" alt="Worlds Under Siege: Battle of Ages booster display"></div>
-        <div class="set-copy"><div class="eyebrow">Current Card Set</div><h3>Battle of Ages</h3><p>The inaugural set of <em>Worlds Under Siege</em>, featuring legendary heroes, mythical creatures, historical figures, monsters, and ancient civilizations.</p><div class="set-stats"><span class="stat-pill">225 Cards</span><span class="stat-pill">Set Code: BOA</span></div><a class="btn btn-gold" href="cards.html?set=BOA">View Battle of Ages Cards</a></div>
-      </div>
-    </section>
+        <div class="gold-display" aria-label="Current Gold">
+          <span class="gold-coin" aria-hidden="true">◆</span>
+          <span>
+            <small>Current Gold</small>
+            <strong id="playerGold">0</strong>
+          </span>
+        </div>
+      </section>
 
-    <section class="section" aria-labelledby="types-title">
-      <h2 class="section-title" id="types-title">Explore Card Types</h2>
-      <p class="section-subtitle">Choose a card type to open the gallery with that filter already selected.</p>
-      <div class="types-grid" id="typesGrid"></div>
+
+
+
+      <section class="hub-content">
+        <nav class="main-actions" aria-label="Game menu">
+          <div class="play-menu-wrap">
+            <button id="playMenuButton" class="hub-button primary-hub-button"
+                    type="button" aria-expanded="false" aria-controls="playMenu">
+              Play
+            </button>
+
+            <div id="playMenu" class="play-submenu" hidden>
+              <a href="game/" class="submenu-button">Play Online</a>
+              <a href="play-online.html?mode=private" class="submenu-button">Play Private Game</a>
+              <a href="play-online.html?mode=campaign" class="submenu-button">
+                Play Campaign
+                <small>Coming Soon</small>
+              </a>
+            </div>
+          </div>
+
+          <a class="hub-button" href="deck-builder.html">Deck Builder</a>
+          <a class="hub-button" href="open-packs.html">Open Packs</a>
+          <button id="settingsButton" class="hub-button" type="button">Settings</button>
+          <button id="logoutButton" class="hub-button logout-button" type="button">Log Out</button>
+        </nav>
+
+        <aside class="news-panel" aria-labelledby="newsHeading">
+          <div class="news-heading-row">
+            <div>
+              <span class="panel-eyebrow">Dispatches</span>
+              <h1 id="newsHeading">Latest News</h1>
+            </div>
+            <div class="news-controls">
+              <button id="previousNews" type="button" aria-label="Previous article">‹</button>
+              <button id="nextNews" type="button" aria-label="Next article">›</button>
+            </div>
+          </div>
+
+          <article class="news-feature" aria-live="polite">
+            <span id="newsCategory" class="news-category"></span>
+            <h2 id="newsTitle"></h2>
+            <p id="newsSummary"></p>
+          </article>
+
+          <div id="newsDots" class="news-dots" aria-label="Choose news article"></div>
+          <a class="all-news-link" href="news.html">See All News →</a>
+        </aside>
+      </section>
+      <section id="developerPanel" class="developer-panel" hidden aria-labelledby="developerHeading">
+        <div>
+          <span class="panel-eyebrow">Developer Mode</span>
+          <h2 id="developerHeading">Testing Shortcuts</h2>
+        </div>
+        <div class="developer-actions">
+          <a href="onboarding.html">Start Onboarding</a>
+          <a href="index.html">Main Hub</a>
+          <a href="deck-builder.html">Deck Builder</a>
+          <a href="open-packs.html">Open Packs</a>
+        </div>
+      </section>
     </section>
   </main>
 
-  <footer>
-    <div class="socials" aria-label="Social links"><a class="social" href="#" aria-label="Discord">D</a><a class="social" href="#" aria-label="Facebook">f</a><a class="social" href="#" aria-label="YouTube">▶</a><a class="social" href="#" aria-label="Instagram">◎</a><a class="social" href="#" aria-label="X">X</a></div>
-    <div class="footer-links"><a href="contact.html">Contact</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a></div>
-    <div class="copyright">© 2026 Worlds Under Siege. All rights reserved.<br>Worlds Under Siege Website v1.0</div>
-  </footer>
+  <div id="profileModal" class="hub-modal" hidden role="dialog" aria-modal="true"
+       aria-labelledby="profileModalTitle">
+    <section class="modal-card">
+      <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
+      <span class="panel-eyebrow">Commander Profile</span>
+      <h2 id="profileModalTitle">Your Profile</h2>
+      <div class="profile-preview">
+        <span class="portrait-frame portrait-frame-large">
+          <img id="profileModalPortrait" src="logo.png" alt="Current profile portrait">
+        </span>
+        <strong id="profileModalUsername">Player</strong>
+      </div>
+      <p>Your profile portrait will be selectable from card tiles you have unlocked by owning those cards.</p>
+      <p class="modal-note">The tile selector will be connected when collections move from browser storage to the player account.</p>
+      <button class="modal-main-button" type="button" data-close-modal>Close</button>
+    </section>
+  </div>
 
-  <script src="cards.js"></script>
-  <script>
-    const featuredIds=["BOA-001","BOA-020","BOA-045","BOA-050","BOA-073","BOA-077","BOA-086","BOA-090","BOA-092","BOA-105","BOA-194","BOA-200"];
-    const featured=featuredIds.map(id=>cards.find(card=>card.id===id)).filter(Boolean);
-    let featureIndex=0, featureTimer;
-    const featureImage=document.getElementById('featureImage'),featureName=document.getElementById('featureName'),featureMeta=document.getElementById('featureMeta'),featureLink=document.getElementById('featureLink'),featureDots=document.getElementById('featureDots');
-    function cardType(card){return Array.isArray(card.type)?card.type.join(' • '):card.type}
-    function renderFeature(){const card=featured[featureIndex];if(!card)return;featureImage.src=encodeURI(card.image);featureImage.alt=card.name;featureName.textContent=card.name;featureMeta.textContent=`${card.id} • ${cardType(card)} • ${card.set}`;featureLink.href=`cards.html?card=${encodeURIComponent(card.id)}`;featureImage.onclick=()=>location.href=featureLink.href;[...featureDots.children].forEach((dot,i)=>dot.classList.toggle('active',i===featureIndex));}
-    function moveFeature(step){featureIndex=(featureIndex+step+featured.length)%featured.length;renderFeature();restartTimer()}
-    function restartTimer(){clearInterval(featureTimer);featureTimer=setInterval(()=>moveFeature(1),5000)}
-    featured.forEach((_,i)=>{const dot=document.createElement('button');dot.className='dot';dot.ariaLabel=`Show featured card ${i+1}`;dot.onclick=()=>{featureIndex=i;renderFeature();restartTimer()};featureDots.appendChild(dot)});
-    document.getElementById('prevCard').onclick=()=>moveFeature(-1);document.getElementById('nextCard').onclick=()=>moveFeature(1);
-    document.getElementById('featureShell').addEventListener('mouseenter',()=>clearInterval(featureTimer));document.getElementById('featureShell').addEventListener('mouseleave',restartTimer);
-    renderFeature();restartTimer();
+  <div id="settingsModal" class="hub-modal" hidden role="dialog" aria-modal="true"
+       aria-labelledby="settingsModalTitle">
+    <section class="modal-card">
+      <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
+      <span class="panel-eyebrow">Game Options</span>
+      <h2 id="settingsModalTitle">Settings</h2>
+      <p>Account, audio, display, and gameplay settings will be added here as those systems are connected.</p>
+      <button class="modal-main-button" type="button" data-close-modal>Close</button>
+    </section>
+  </div>
 
-    const typeConfig=[['Character','BOA-085'],['Animal','BOA-091'],['Action','BOA-130'],['Item','BOA-166'],['Construct','BOA-183'],['Army','BOA-193'],['Event','BOA-202'],['Stronghold','BOA-212']];
-    const typesGrid=document.getElementById('typesGrid');
-    typeConfig.forEach(([type,id])=>{let card=cards.find(c=>c.id===id);if(!card)card=cards.find(c=>Array.isArray(c.type)?c.type.includes(type):c.type===type);const link=document.createElement('a');link.className='type-card';link.href=`cards.html?type=${encodeURIComponent(type)}`;link.innerHTML=`<div class="type-image">${card?`<img src="${encodeURI(card.image)}" alt="${type} card" loading="lazy">`:''}</div><div class="type-label">${type}<small>View ${type} cards →</small></div>`;typesGrid.appendChild(link)});
-  </script>
-  <script type="module" src="auth-nav.js"></script>
+  <script src="collection-store.js"></script>
+  <script type="module" src="hub.js"></script>
 </body>
 </html>
