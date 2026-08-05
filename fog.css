@@ -1,0 +1,118 @@
+/* Worlds Under Siege — shared slow fog background
+   This layer is decorative only and always stays behind page content. */
+
+#wus-fog-layer{
+  position:fixed;
+  inset:-12vh -18vw;
+  z-index:-1;
+  overflow:hidden;
+  pointer-events:none;
+  opacity:.78;
+  contain:strict;
+}
+
+#wus-fog-layer .wus-fog{
+  position:absolute;
+  inset:0;
+  width:170%;
+  height:130%;
+  left:-35%;
+  top:-15%;
+  will-change:transform,opacity;
+  filter:blur(30px);
+  mix-blend-mode:screen;
+  transform:translate3d(0,0,0);
+}
+
+#wus-fog-layer .wus-fog::before,
+#wus-fog-layer .wus-fog::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-repeat:repeat;
+  background-size:780px 420px;
+}
+
+#wus-fog-layer .wus-fog-one{
+  opacity:.20;
+  animation:wusFogDriftOne 145s linear infinite;
+}
+
+#wus-fog-layer .wus-fog-one::before{
+  background-image:
+    radial-gradient(ellipse at 15% 58%,rgba(205,214,220,.35) 0 12%,transparent 42%),
+    radial-gradient(ellipse at 48% 30%,rgba(165,178,187,.28) 0 10%,transparent 38%),
+    radial-gradient(ellipse at 82% 62%,rgba(214,221,224,.30) 0 11%,transparent 40%);
+}
+
+#wus-fog-layer .wus-fog-two{
+  opacity:.14;
+  animation:wusFogDriftTwo 205s linear infinite;
+}
+
+#wus-fog-layer .wus-fog-two::before{
+  background-size:980px 520px;
+  background-image:
+    radial-gradient(ellipse at 12% 35%,rgba(151,163,171,.30) 0 13%,transparent 45%),
+    radial-gradient(ellipse at 55% 70%,rgba(202,210,214,.26) 0 12%,transparent 42%),
+    radial-gradient(ellipse at 90% 25%,rgba(178,188,194,.24) 0 10%,transparent 38%);
+}
+
+#wus-fog-layer .wus-fog-three{
+  opacity:.10;
+  animation:wusFogDriftThree 260s linear infinite;
+}
+
+#wus-fog-layer .wus-fog-three::before{
+  background-size:1180px 620px;
+  background-image:
+    radial-gradient(ellipse at 20% 75%,rgba(188,198,203,.24) 0 10%,transparent 40%),
+    radial-gradient(ellipse at 62% 38%,rgba(224,229,231,.18) 0 11%,transparent 43%),
+    radial-gradient(ellipse at 88% 72%,rgba(160,171,178,.22) 0 10%,transparent 39%);
+}
+
+@keyframes wusFogDriftOne{
+  0%   {transform:translate3d(-6%,2%,0) scale(1.02)}
+  50%  {transform:translate3d(10%,-2%,0) scale(1.08)}
+  100% {transform:translate3d(28%,2%,0) scale(1.02)}
+}
+
+@keyframes wusFogDriftTwo{
+  0%   {transform:translate3d(24%,-1%,0) scale(1.08)}
+  50%  {transform:translate3d(6%,3%,0) scale(1.02)}
+  100% {transform:translate3d(-20%,-1%,0) scale(1.08)}
+}
+
+@keyframes wusFogDriftThree{
+  0%   {transform:translate3d(-14%,4%,0) scale(1)}
+  50%  {transform:translate3d(8%,-4%,0) scale(1.10)}
+  100% {transform:translate3d(24%,4%,0) scale(1)}
+}
+
+/* Keep the fog behind all regular content without blocking interaction. */
+html{
+  min-height:100%;
+  background:#050403;
+}
+
+body{
+  position:relative;
+  isolation:isolate;
+}
+
+@media (prefers-reduced-motion:reduce){
+  #wus-fog-layer .wus-fog{
+    animation:none!important;
+    transform:none!important;
+  }
+}
+
+@media(max-width:700px){
+  #wus-fog-layer{
+    opacity:.58;
+  }
+
+  #wus-fog-layer .wus-fog{
+    filter:blur(24px);
+  }
+}

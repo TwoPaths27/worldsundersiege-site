@@ -6,12 +6,20 @@
   <title>Deck Builder - Worlds Under Siege</title>
   <link rel="stylesheet" href="page-template.css">
   <link rel="stylesheet" href="deck-builder.css">
+  <link rel="stylesheet" href="fog.css">
+  <link rel="stylesheet" href="deck-builder-header-update.css">
 </head>
 <body>
-<header class="topbar"><div class="topbar-inner">
-  <a href="index.html"><img src="logo.png" class="top-logo" alt="Worlds Under Siege"></a>
-  <nav class="nav"><a href="index.html">Home</a><a href="cards.html">Cards</a><a class="active" href="deck-builder.html">Deck Builder</a><a href="play-online.html">Play Online</a><a href="rules.html">Rules</a><a href="news.html">News</a><a href="open-packs.html">Open Packs</a></nav>
-</div></header>
+<header class="site-header deck-builder-header">
+  <div class="deck-builder-header-inner">
+    <a class="deck-builder-logo-link" href="index.html" aria-label="Worlds Under Siege Home">
+      <img src="logo.png" alt="Worlds Under Siege" class="deck-builder-header-logo">
+    </a>
+    <nav class="deck-builder-header-nav" aria-label="Deck Builder navigation">
+      <a href="index.html" class="deck-builder-home-link">Home</a>
+    </nav>
+  </div>
+</header>
 <main class="builder-page">
   <section class="builder-toolbar">
     <div><span class="eyebrow">Battle of Ages</span><h1>Deck Builder</h1></div>
@@ -167,4 +175,6 @@
 <script src="asset-manifest.js"></script>
 <script type="module" src="deck-cloud.js"></script>
 <script src="deck-builder.js?v=cloud-decks-1"></script>
+  <script src="fog.js"></script>
+  <script src="global-click-sound.js"></script>
 </body></html>

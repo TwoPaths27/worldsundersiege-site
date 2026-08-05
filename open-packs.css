@@ -713,3 +713,71 @@ body.asset-locked { overflow: hidden; }
     gap:6px;
   }
 }
+
+
+/* Starter reveal fix: keep revealed fronts visible and enlarge on click */
+.starter-reveal-card.revealed .starter-card-inner,
+.starter-reveal-card.revealed:hover .starter-card-inner,
+.starter-reveal-card.revealed:focus .starter-card-inner,
+.starter-reveal-card.revealed:focus-visible .starter-card-inner{
+  transform:rotateY(180deg)!important;
+}
+
+.starter-reveal-card.revealed{
+  cursor:zoom-in;
+}
+
+.starter-reveal-card.revealed:hover{
+  transform:translateY(-3px) scale(1.02);
+  z-index:3;
+}
+
+.starter-reveal-card.revealed:hover .starter-card-front{
+  border-color:#e2b850;
+  box-shadow:
+    0 0 18px rgba(226,184,80,.34),
+    0 10px 24px rgba(0,0,0,.58);
+}
+
+/* Owned starter decks are permanently unavailable */
+.starter-deck-product.is-owned{
+  filter:grayscale(.9) brightness(.48);
+  opacity:.76;
+}
+
+.starter-deck-product.is-owned:hover{
+  transform:none!important;
+  filter:grayscale(.9) brightness(.48);
+}
+
+.starter-deck-product.is-owned .starter-buy-button,
+.starter-deck-product.is-owned button[disabled]{
+  color:#d5cab4!important;
+  border-color:#5f574a!important;
+  background:linear-gradient(180deg,#4c4841,#25231f)!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+}
+
+
+/* Starter deck stock count */
+.starter-stock-status{
+  margin:10px 0 8px;
+  color:#f1d28b;
+  font-size:14px;
+  font-weight:900;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.starter-stock-status.sold-out{
+  color:#c9c0ae;
+}
+
+.starter-deck-product.is-sold-out{
+  filter:grayscale(.92) brightness(.48);
+  opacity:.72;
+}

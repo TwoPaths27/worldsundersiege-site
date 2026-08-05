@@ -6,7 +6,7 @@ const state = {
   userId: null,
   gold: 0,
   cards: {},
-  ownedDeckIds: new Set(),
+  purchaseCounts: {},
   portraitCardIds: new Set()
 };
 
@@ -45,7 +45,7 @@ async function loadCloudState() {
         .eq("user_id", state.userId),
       supabase
         .from("player_starter_decks")
-        .select("starter_deck_id")
+        .select("starter_deck_id, purchase_count")
         .eq("user_id", state.userId),
       supabase
         .from("portrait_unlocks")
@@ -66,8 +66,11 @@ async function loadCloudState() {
     state.cards = Object.fromEntries(
       (cardsResponse.data || []).map(row => [row.card_id, Number(row.quantity || 0)])
     );
-    state.ownedDeckIds = new Set(
-      (decksResponse.data || []).map(row => row.starter_deck_id)
+    state.purchaseCounts = Object.fromEntries(
+      (decksResponse.data || []).map(row => [
+        row.starter_deck_id,
+        Number(row.purchase_count || 0)
+      ])
     );
     state.portraitCardIds = new Set(
       (portraitsResponse.data || []).map(row => row.card_id)
@@ -94,7 +97,7 @@ function mirrorIntoLocalStore() {
 
   localStorage.setItem(
     "wus-owned-starter-decks-v1",
-    JSON.stringify([...state.ownedDeckIds])
+    JSON.stringify(state.purchaseCounts)
   );
   localStorage.setItem(
     "wus-unlocked-profile-portraits-v1",
@@ -107,7 +110,7 @@ async function syncLocalMirror() {
   window.dispatchEvent(new CustomEvent("wus-cloud-starter-changed", {
     detail: {
       gold: state.gold,
-      ownedDeckIds: [...state.ownedDeckIds]
+      purchaseCounts: { ...state.purchaseCounts }
     }
   }));
 }
@@ -145,7 +148,7 @@ async function purchase(starterDeckId) {
 window.WUSCloudStarters = Object.freeze({
   isAvailable: () => state.available,
   isLoaded: () => state.loaded,
-  getOwnedDeckIds: () => [...state.ownedDeckIds],
+  getPurchaseCounts: () => ({ ...state.purchaseCounts }),
   getPortraitCardIds: () => [...state.portraitCardIds],
   getGold: () => state.gold,
   purchase,
@@ -157,7 +160,7 @@ loadCloudState().finally(() => {
     detail: {
       available: state.available,
       gold: state.gold,
-      ownedDeckIds: [...state.ownedDeckIds]
+      purchaseCounts: { ...state.purchaseCounts }
     }
   }));
 });

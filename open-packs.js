@@ -269,20 +269,60 @@
 
   preloadSounds();
 
-  function loadOwnedStarterDecks() {
-    const cloudOwned = window.WUSCloudStarters?.getOwnedDeckIds?.();
-    if (cloudOwned) return new Set(cloudOwned);
+  function loadStarterDeckPurchaseCounts() {
+    const counts = {};
 
     try {
-      return new Set(JSON.parse(localStorage.getItem(STARTER_OWNERSHIP_KEY) || "[]"));
-    } catch {
-      return new Set();
-    }
+      const raw = JSON.parse(
+        localStorage.getItem(STARTER_OWNERSHIP_KEY) || "{}"
+      );
+
+      if (Array.isArray(raw)) {
+        raw.forEach(id => {
+          counts[id] = Math.max(1, Number(counts[id] || 0));
+        });
+      } else if (raw && typeof raw === "object") {
+        Object.entries(raw).forEach(([id, count]) => {
+          counts[id] = Math.max(0, Math.min(3, Number(count) || 0));
+        });
+      }
+    } catch {}
+
+    const cloudCounts =
+      window.WUSCloudStarters?.getPurchaseCounts?.() || {};
+
+    Object.entries(cloudCounts).forEach(([id, count]) => {
+      counts[id] = Math.max(
+        Number(counts[id] || 0),
+        Math.max(0, Math.min(3, Number(count) || 0))
+      );
+    });
+
+    return counts;
   }
 
-  function saveOwnedStarterDecks(owned) {
-    localStorage.setItem(STARTER_OWNERSHIP_KEY, JSON.stringify([...owned]));
+  function saveStarterDeckPurchaseCounts(counts) {
+    const normalized = Object.fromEntries(
+      Object.entries(counts || {}).map(([id, count]) => [
+        id,
+        Math.max(0, Math.min(3, Number(count) || 0))
+      ])
+    );
+
+    localStorage.setItem(
+      STARTER_OWNERSHIP_KEY,
+      JSON.stringify(normalized)
+    );
   }
+
+  function getStarterDeckPurchaseCount(deckId) {
+    return Number(loadStarterDeckPurchaseCounts()[deckId] || 0);
+  }
+
+  function getStarterDeckRemaining(deckId) {
+    return Math.max(0, 3 - getStarterDeckPurchaseCount(deckId));
+  }
+
 
   function starterCardObjects(deck) {
     return deck.cardIds.map(id => siteCardsById.get(id) || packCards.find(card => card.id === id) || {
@@ -298,8 +338,8 @@
   async function purchaseStarterDeck(deck) {
     if (!window.WUSCollection) return;
 
-    const owned = loadOwnedStarterDecks();
-    if (owned.has(deck.id)) return;
+    const purchasedCount = getStarterDeckPurchaseCount(deck.id);
+    if (purchasedCount >= 3) return;
 
     const button = starterArmory?.querySelector(
       `.starter-deck-product[data-deck-id="${deck.id}"] .starter-buy-button`
@@ -318,8 +358,8 @@
         if (!cloudResult.ok) {
           const message = cloudResult.reason === "insufficient-gold"
             ? `Not enough Gold. ${deck.name} costs 1,000 Gold and you currently have ${Number(cloudResult.gold || 0).toLocaleString()}.`
-            : cloudResult.reason === "already-owned"
-              ? `${deck.name} is already owned by this account.`
+            : cloudResult.reason === "sold-out"
+              ? `${deck.name} is sold out for this account.`
               : cloudResult.message || "The starter deck purchase could not be completed.";
 
           showStarterMessage(message, true);
@@ -336,8 +376,16 @@
           goldEarned: Number(cloudResult.gold_earned || 0)
         };
 
+        const counts = loadStarterDeckPurchaseCounts();
+        counts[deck.id] = Math.max(
+          Number(counts[deck.id] || 0),
+          Number(cloudResult.purchase_count || purchasedCount + 1)
+        );
+        saveStarterDeckPurchaseCounts(counts);
+
         playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
         showGoldSpendAnimation(STARTER_DECK_PRICE);
+
         await window.WUSCloudStarters.syncLocalMirror();
         refreshGold();
         renderStarterArmory();
@@ -345,7 +393,7 @@
         return;
       }
 
-      // Local fallback for offline testing or before the Supabase SQL is installed.
+      // Local fallback for offline testing.
       const spend = WUSCollection.spendGold(STARTER_DECK_PRICE);
       if (!spend.ok) {
         showStarterMessage(
@@ -359,8 +407,9 @@
       const cardsToGrant = starterCardObjects(deck);
       const result = WUSCollection.addCards(cardsToGrant);
 
-      owned.add(deck.id);
-      saveOwnedStarterDecks(owned);
+      const counts = loadStarterDeckPurchaseCounts();
+      counts[deck.id] = Math.min(3, purchasedCount + 1);
+      saveStarterDeckPurchaseCounts(counts);
       unlockStarterPortrait(deck);
 
       playSound(soundPaths.purchase, PURCHASE_SOUND_VOLUME);
@@ -374,6 +423,7 @@
         "The purchase could not be completed. Check your connection and try again.",
         true
       );
+
       if (button) {
         button.disabled = false;
         button.textContent = originalLabel;
@@ -381,162 +431,16 @@
     }
   }
 
-  function unlockStarterPortrait(deck) {
-    let unlocked = [];
-
-    try {
-      unlocked = JSON.parse(localStorage.getItem(PORTRAIT_UNLOCKS_KEY) || "[]");
-      if (!Array.isArray(unlocked)) unlocked = [];
-    } catch {
-      unlocked = [];
-    }
-
-    if (!unlocked.includes(deck.commanderId)) {
-      unlocked.push(deck.commanderId);
-      localStorage.setItem(PORTRAIT_UNLOCKS_KEY, JSON.stringify(unlocked));
-      window.dispatchEvent(new CustomEvent("wus-portrait-unlocked", {
-        detail: {
-          cardId: deck.commanderId,
-          name: deck.commanderName,
-          image: deck.commanderImage
-        }
-      }));
-    }
-  }
-
-  function beginStarterDeckReveal(deck, cards, result) {
-    activeStarterRevealDeck = deck;
-    starterRevealCards = cards;
-    starterRevealCount = 0;
-
-    starterRevealTitle.textContent = deck.name;
-    starterRevealSubtitle.textContent =
-      `${cards.length} cards were added to your collection. Reveal them to inspect your new army.`;
-    starterCommanderName.textContent = deck.commanderName;
-    starterCommanderId.textContent = deck.commanderId;
-    starterCommanderImage.src = deck.commanderImage;
-    starterCommanderImage.alt = deck.commanderName;
-
-    starterRevealAllButton.hidden = false;
-    starterRevealAllButton.disabled = false;
-    starterRevealContinueButton.hidden = true;
-    starterRevealResult.hidden = true;
-    starterRevealResult.textContent = "";
-
-    starterRevealGrid.replaceChildren(
-      ...cards.map((card, index) => createStarterRevealCard(card, index, deck))
-    );
-
-    starterRevealResult.dataset.added = String(result.added || 0);
-    starterRevealResult.dataset.converted = String(result.converted || 0);
-    starterRevealResult.dataset.goldEarned = String(result.goldEarned || 0);
-
-    showStage(stages.starterReveal);
-  }
-
-  function createStarterRevealCard(card, index, deck) {
-    const button = document.createElement("button");
-    const isCommander = card.id === deck.commanderId;
-
-    button.type = "button";
-    button.className = `starter-reveal-card${isCommander ? " is-commander" : ""}`;
-    button.dataset.index = String(index);
-    button.dataset.revealed = "false";
-    button.setAttribute("aria-label", `Reveal card ${index + 1}`);
-    button.innerHTML = `
-      <span class="starter-card-inner">
-        <span class="starter-card-back">
-          <img src="card-back.png" alt="">
-          ${isCommander ? '<span class="commander-seal">Commander</span>' : ""}
-        </span>
-        <span class="starter-card-front">
-          <img src="${card.image}" alt="${card.name || card.id}">
-          ${isCommander ? '<span class="commander-glow" aria-hidden="true"></span>' : ""}
-        </span>
-      </span>
-    `;
-
-    button.addEventListener("click", () => revealStarterCard(button, card, isCommander));
-    return button;
-  }
-
-  function revealStarterCard(button, card, isCommander) {
-    if (button.dataset.revealed === "true") {
-      openCardZoomFromStarter(card);
-      return;
-    }
-
-    button.dataset.revealed = "true";
-    button.classList.add("revealed");
-    starterRevealCount += 1;
-
-    if (isCommander) {
-      playRaritySound(card.rarity || "Ultra Rare");
-      button.classList.add("commander-revealed");
-    } else {
-      playSound(soundPaths.cardFlip, SOUND_VOLUME, .98 + Math.random() * .04);
-    }
-
-    if (starterRevealCount >= starterRevealCards.length) {
-      finishStarterReveal();
-    }
-  }
-
-  function revealAllStarterCards() {
-    starterRevealAllButton.disabled = true;
-
-    const unrevealed = [...starterRevealGrid.querySelectorAll(".starter-reveal-card")]
-      .filter(card => card.dataset.revealed !== "true");
-
-    unrevealed.forEach((button, index) => {
-      window.setTimeout(() => {
-        const card = starterRevealCards[Number(button.dataset.index)];
-        revealStarterCard(
-          button,
-          card,
-          card.id === activeStarterRevealDeck?.commanderId
-        );
-      }, Math.min(index * 45, 2200));
-    });
-  }
-
-  function finishStarterReveal() {
-    starterRevealAllButton.hidden = true;
-    starterRevealContinueButton.hidden = false;
-
-    const added = Number(starterRevealResult.dataset.added || 0);
-    const converted = Number(starterRevealResult.dataset.converted || 0);
-    const goldEarned = Number(starterRevealResult.dataset.goldEarned || 0);
-
-    starterRevealResult.innerHTML = `
-      <strong>${activeStarterRevealDeck.name} is ready!</strong>
-      <span>${added} cards added to your collection.</span>
-      ${converted
-        ? `<span>${converted} extra cards became ${goldEarned.toLocaleString()} Gold.</span>`
-        : ""}
-      <span>${activeStarterRevealDeck.commanderName} is now unlocked as a profile portrait.</span>
-    `;
-    starterRevealResult.hidden = false;
-  }
-
-  function openCardZoomFromStarter(card) {
-    if (!cardZoomModal || !cardZoomImage) return;
-
-    zoomCards = starterRevealCards.filter(Boolean);
-    zoomIndex = Math.max(0, zoomCards.findIndex(item => item.id === card.id));
-    updateCardZoom();
-    cardZoomModal.hidden = false;
-    document.body.classList.add("card-zoom-open");
-  }
-
   function renderStarterArmory() {
     if (!starterArmory) return;
-    const owned = loadOwnedStarterDecks();
+    const purchaseCounts = loadStarterDeckPurchaseCounts();
     const gold = window.WUSCollection?.load?.().gold || 0;
     starterArmory.replaceChildren(...STARTER_DECKS.map(deck => {
-      const isOwned = owned.has(deck.id);
+      const purchaseCount = Number(purchaseCounts[deck.id] || 0);
+      const remaining = Math.max(0, 3 - purchaseCount);
+      const isSoldOut = remaining === 0;
       const article = document.createElement("article");
-      article.className = `starter-deck-product${isOwned ? " is-owned" : ""}`;
+      article.className = `starter-deck-product${isSoldOut ? " is-owned is-sold-out" : ""}`;
       article.dataset.deckId = deck.id;
       article.innerHTML = `
         <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">OWNED</span></div>

@@ -439,24 +439,21 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="fog.css">
+  <link rel="stylesheet" href="collection-header-update.css">
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a href="index.html"><img src="logo.png" alt="Worlds Under Siege" class="top-logo"></a>
-
-      <nav class="nav">
-        <a href="index.html">Home</a>
-        <a href="cards.html">Cards</a>
-        <a href="deck-builder.html">Deck Builder</a>
-        <a href="play-online.html">Play Online</a>
-        <a href="rules.html">Rules</a>
-        <a href="news.html">News</a>
-        <a href="open-packs.html">Open Packs</a>
-      </nav>
-    </div>
-  </header>
+  <header class="site-header collection-header">
+  <div class="collection-header-inner">
+    <a class="collection-logo-link" href="index.html" aria-label="Worlds Under Siege Home">
+      <img src="logo.png" alt="Worlds Under Siege" class="collection-header-logo">
+    </a>
+    <nav class="collection-header-nav" aria-label="Collection navigation">
+      <a href="index.html" class="collection-home-link">Home</a>
+    </nav>
+  </div>
+</header>
 
   <section class="page-header">
     <h1>Card Library</h1>
@@ -749,5 +746,7 @@
       if (selectedCard) openModal(selectedCard);
     }
   </script>
+  <script src="fog.js"></script>
+  <script src="global-click-sound.js"></script>
 </body>
 </html>

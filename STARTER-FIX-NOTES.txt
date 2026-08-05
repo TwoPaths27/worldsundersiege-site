@@ -1,0 +1,13 @@
+STARTER DECK REVEAL / SOLD OUT FIX
+
+CHANGES
+- Revealed starter cards stay face-up when hovered.
+- Clicking a revealed card opens the existing enlarged card viewer.
+- Owned starter decks now display SOLD OUT.
+- Owned starter decks remain grayed out and disabled.
+- Local and cloud starter ownership are merged.
+- Successful cloud purchases are immediately written to local ownership too.
+
+FILES CHANGED
+- open-packs.js
+- open-packs.css
