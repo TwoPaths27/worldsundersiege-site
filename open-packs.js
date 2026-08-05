@@ -1,3 +1,4 @@
+window.WUS_UI_CLICKS_ENABLED = false;
 (() => {
   "use strict";
 
@@ -118,7 +119,6 @@
   const GOD_PACK_CHANCE = .002; // 0.2% = 1 in 500 packs
 
   const soundPaths = Object.freeze({
-    click: "sounds/mouse-click.mp3",
     purchase: "sounds/drop-coin.mp3",
     boxSummary: "sounds/box-summary.mp3",
     packRip: "sounds/pack-rip.mp3",
@@ -313,13 +313,6 @@
       article.querySelector('.starter-buy-button').addEventListener('click', () => purchaseStarterDeck(deck));
       return article;
     }));
-  }
-
-  function installGlobalClickSound() {
-    document.addEventListener("click", event => {
-      if (!event.target.closest("button, a, [role='button'], .pack-card, .summary-card")) return;
-      playSound(soundPaths.click, .28, .98 + Math.random() * .04);
-    }, true);
   }
 
   function createEmptyBoxSession() {
@@ -1250,10 +1243,7 @@
     showStage(stages.store);
     refreshGold();
   });
-
-
-  installGlobalClickSound();
-  renderStarterArmory();
+renderStarterArmory();
   refreshGold();
   window.addEventListener("wus-player-data-changed", () => { refreshGold(); renderStarterArmory(); });
   refreshAssetStatus();
@@ -1349,15 +1339,3 @@ if (__zoomModal) {
     if (event.key === "Escape") __closeZoom();
   });
 }
-
-
-
-// Batch2 hooks
-window.WUS_BATCH2=true;
-document.addEventListener('click',e=>{
- try{
-  const a=new Audio('sounds/mouse-click.mp3');
-  a.volume=.3;
-  a.play().catch(()=>{});
- }catch(e){}
-});

@@ -4,11 +4,17 @@
 
   // Open Packs has its own complete sound design. The generic UI click is
   // disabled for the entire page after navigating there.
+  window.WUS_UI_CLICKS_ENABLED =
+    window.WUS_UI_CLICKS_ENABLED !== false;
+
   const isOpenPacksPage =
     /(^|\/)open-packs\.html$/i.test(window.location.pathname) ||
     document.body?.classList.contains("open-packs-page");
 
-  if (isOpenPacksPage) return;
+  if (isOpenPacksPage) {
+    window.WUS_UI_CLICKS_ENABLED = false;
+    return;
+  }
 
   let audioContext = null;
   let clickBuffer = null;
@@ -84,6 +90,8 @@
   }
 
   async function playClick() {
+    if (window.WUS_UI_CLICKS_ENABLED === false) return;
+
     const volume = getVolume();
     if (volume <= 0) return;
 

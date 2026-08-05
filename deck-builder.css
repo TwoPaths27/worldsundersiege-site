@@ -756,3 +756,51 @@ body:not(.builder-locked){
     grid-column:auto;
   }
 }
+
+
+/* Final Deck Builder logo size safeguard */
+.deck-builder-site-header{
+  min-height:68px!important;
+  height:68px!important;
+}
+
+.deck-builder-site-header-inner{
+  min-height:68px!important;
+  height:68px!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
+}
+
+.deck-builder-logo-link{
+  width:145px!important;
+  max-width:145px!important;
+  height:54px!important;
+  max-height:54px!important;
+  flex:0 0 145px!important;
+  overflow:hidden!important;
+}
+
+.deck-builder-site-logo{
+  display:block!important;
+  width:145px!important;
+  min-width:145px!important;
+  max-width:145px!important;
+  height:auto!important;
+  max-height:54px!important;
+  object-fit:contain!important;
+}
+
+@media(max-width:700px){
+  .deck-builder-logo-link{
+    width:125px!important;
+    max-width:125px!important;
+    flex-basis:125px!important;
+  }
+
+  .deck-builder-site-logo{
+    width:125px!important;
+    min-width:125px!important;
+    max-width:125px!important;
+    max-height:46px!important;
+  }
+}
