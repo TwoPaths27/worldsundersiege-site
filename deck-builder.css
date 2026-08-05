@@ -804,3 +804,54 @@ body:not(.builder-locked){
     max-height:46px!important;
   }
 }
+
+
+/* Deck Builder card browser: fixed viewport with internal scrolling */
+.browser-panel{
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+
+.card-browser{
+  display:grid!important;
+  height:560px!important;
+  min-height:360px!important;
+  max-height:560px!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  align-content:start;
+  padding-right:8px;
+}
+
+.card-browser::-webkit-scrollbar{
+  width:11px;
+}
+
+.card-browser::-webkit-scrollbar-track{
+  border-radius:10px;
+  background:rgba(4,8,14,.7);
+}
+
+.card-browser::-webkit-scrollbar-thumb{
+  border:2px solid rgba(4,8,14,.7);
+  border-radius:10px;
+  background:linear-gradient(#d2a747,#80561d);
+}
+
+@media(max-width:1250px){
+  .card-browser{
+    height:480px!important;
+    max-height:480px!important;
+  }
+}
+
+@media(max-width:800px){
+  .card-browser{
+    height:520px!important;
+    max-height:520px!important;
+  }
+}

@@ -595,3 +595,210 @@ body.starter-modal-open{
     grid-template-columns:1fr;
   }
 }
+
+
+/* Restored Starter Deck card reveal screen */
+.starter-reveal-stage{
+  width:min(1500px,100%);
+  margin:0 auto;
+  padding:24px;
+}
+
+.starter-reveal-panel{
+  padding:26px;
+  overflow:hidden;
+}
+
+.starter-reveal-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:18px;
+}
+
+.starter-reveal-heading h1{
+  margin:4px 0 8px;
+}
+
+.starter-commander-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  min-height:116px;
+  margin:0 0 22px;
+  padding:15px 18px;
+  border:1px solid rgba(232,185,79,.52);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 85% 50%,rgba(232,185,79,.22),transparent 32%),
+    linear-gradient(135deg,rgba(46,26,12,.98),rgba(12,9,7,.98));
+}
+
+.starter-commander-banner > div{
+  display:grid;
+  gap:5px;
+}
+
+.starter-commander-banner span,
+.starter-commander-banner small{
+  color:#c7ae78;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+
+.starter-commander-banner strong{
+  color:#ffe3a0;
+  font-size:clamp(24px,4vw,38px);
+}
+
+.starter-commander-banner img{
+  width:82px;
+  aspect-ratio:2.5/3.5;
+  object-fit:cover;
+  border:2px solid #e2b94f;
+  border-radius:7px;
+  box-shadow:0 0 18px rgba(232,185,79,.45);
+}
+
+.starter-reveal-grid{
+  display:grid;
+  grid-template-columns:repeat(10,minmax(0,1fr));
+  gap:10px;
+  perspective:1100px;
+}
+
+.starter-reveal-card{
+  position:relative;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  aspect-ratio:2.5/3.5;
+  cursor:pointer;
+  perspective:900px;
+}
+
+.starter-card-inner{
+  position:absolute;
+  inset:0;
+  display:block;
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.2,.75,.2,1);
+}
+
+.starter-reveal-card.revealed .starter-card-inner,
+.starter-reveal-card.revealed:hover .starter-card-inner,
+.starter-reveal-card.revealed:focus .starter-card-inner{
+  transform:rotateY(180deg)!important;
+}
+
+.starter-card-back,
+.starter-card-front{
+  position:absolute;
+  inset:0;
+  display:block;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:7px;
+  backface-visibility:hidden;
+  box-shadow:0 8px 18px rgba(0,0,0,.45);
+}
+
+.starter-card-front{
+  transform:rotateY(180deg);
+}
+
+.starter-card-back img,
+.starter-card-front img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+.starter-reveal-card.revealed{
+  cursor:zoom-in;
+}
+
+.starter-reveal-card.is-commander .starter-card-back,
+.starter-reveal-card.commander-revealed .starter-card-front{
+  border-color:#ffd65e;
+  box-shadow:0 0 25px rgba(255,211,87,.72);
+}
+
+.commander-seal{
+  position:absolute;
+  left:50%;
+  bottom:8px;
+  transform:translateX(-50%);
+  padding:4px 8px;
+  border:1px solid #ffe28b;
+  border-radius:999px;
+  color:#241301;
+  background:linear-gradient(#ffe08a,#bc7f1d);
+  font-size:9px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+.commander-glow{
+  position:absolute;
+  inset:-40%;
+  pointer-events:none;
+  background:conic-gradient(
+    transparent,
+    rgba(255,228,125,.55),
+    transparent 28%,
+    rgba(255,196,56,.36),
+    transparent 62%
+  );
+  animation:starterCommanderSpin 4s linear infinite;
+  mix-blend-mode:screen;
+}
+
+.starter-reveal-actions{
+  display:flex;
+  justify-content:center;
+  margin-top:22px;
+}
+
+.starter-reveal-result{
+  margin-top:20px;
+}
+
+.starter-reveal-result span{
+  display:block;
+  margin-top:4px;
+}
+
+@keyframes starterCommanderSpin{
+  to{transform:rotate(360deg)}
+}
+
+@media(max-width:1100px){
+  .starter-reveal-grid{
+    grid-template-columns:repeat(8,minmax(0,1fr));
+  }
+}
+
+@media(max-width:760px){
+  .starter-reveal-stage{
+    padding:10px;
+  }
+
+  .starter-reveal-panel{
+    padding:14px;
+  }
+
+  .starter-reveal-heading{
+    flex-direction:column;
+  }
+
+  .starter-reveal-grid{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:7px;
+  }
+}

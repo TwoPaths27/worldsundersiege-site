@@ -26,6 +26,7 @@ window.WUS_UI_CLICKS_ENABLED = false;
   const stages = {
     store: document.getElementById("storeStage"),
     starterDecks: document.getElementById("starterDeckStage"),
+    starterReveal: document.getElementById("starterRevealStage"),
     intro: document.getElementById("introStage"),
     booster: document.getElementById("boosterStage"),
     boxPacks: document.getElementById("boxPacksStage"),
@@ -39,14 +40,15 @@ window.WUS_UI_CLICKS_ENABLED = false;
   const setBackButton = document.getElementById("setBackButton");
   const starterArmory = document.getElementById("starterArmory");
   const starterPurchaseMessage = document.getElementById("starterPurchaseMessage");
-  const starterPurchaseModal = document.getElementById("starterPurchaseModal");
-  const starterPurchaseModalClose = document.getElementById("starterPurchaseModalClose");
-  const starterPurchaseModalContinue = document.getElementById("starterPurchaseModalContinue");
-  const starterPurchaseModalTitle = document.getElementById("starterPurchaseModalTitle");
-  const starterPurchaseModalImage = document.getElementById("starterPurchaseModalImage");
-  const starterPurchaseModalText = document.getElementById("starterPurchaseModalText");
-  const starterPurchaseCardsAdded = document.getElementById("starterPurchaseCardsAdded");
-  const starterPurchaseCopiesRemaining = document.getElementById("starterPurchaseCopiesRemaining");
+  const starterRevealTitle = document.getElementById("starterRevealTitle");
+  const starterRevealSubtitle = document.getElementById("starterRevealSubtitle");
+  const starterCommanderName = document.getElementById("starterCommanderName");
+  const starterCommanderId = document.getElementById("starterCommanderId");
+  const starterCommanderImage = document.getElementById("starterCommanderImage");
+  const starterRevealGrid = document.getElementById("starterRevealGrid");
+  const starterRevealAllButton = document.getElementById("starterRevealAllButton");
+  const starterRevealContinueButton = document.getElementById("starterRevealContinueButton");
+  const starterRevealResult = document.getElementById("starterRevealResult");
   const beginButton = document.getElementById("beginButton");
   const beginBoxButton = document.getElementById("beginBoxButton");
   const boosterButton = document.getElementById("boosterButton");
@@ -123,6 +125,9 @@ window.WUS_UI_CLICKS_ENABLED = false;
   let currentPackSaved = false;
   let openingAllPacks = false;
   let currentPackIsGodPack = false;
+  let activeStarterRevealDeck = null;
+  let starterRevealCards = [];
+  let starterRevealCount = 0;
 
   const GOD_PACK_CHANCE = .002; // 0.2% = 1 in 500 packs
 
@@ -313,29 +318,142 @@ window.WUS_UI_CLICKS_ENABLED = false;
     starterPurchaseMessage.classList.toggle("economy-error", isError);
   }
 
-  function showStarterPurchaseModal(deck, result, remaining) {
-    if (!starterPurchaseModal) return;
+  function beginStarterDeckReveal(deck, cards, result, remaining) {
+    activeStarterRevealDeck = deck;
+    starterRevealCards = cards;
+    starterRevealCount = 0;
 
-    starterPurchaseModalTitle.textContent = `${deck.name} Added`;
-    starterPurchaseModalImage.src = deck.image;
-    starterPurchaseModalImage.alt = `${deck.name} Starter Deck`;
-    starterPurchaseModalText.textContent =
-      `${deck.commanderName} and the complete ${deck.name} deck were added to your collection.`;
+    starterRevealTitle.textContent = deck.name;
+    starterRevealSubtitle.textContent =
+      `${cards.length} cards were added to your collection. Click each card or use Reveal All.`;
 
-    starterPurchaseCardsAdded.textContent =
-      Number(result.added || 0).toLocaleString();
-    starterPurchaseCopiesRemaining.textContent =
-      Number(remaining).toLocaleString();
+    starterCommanderName.textContent = deck.commanderName;
+    starterCommanderId.textContent = deck.commanderId;
+    starterCommanderImage.src = deck.commanderImage;
+    starterCommanderImage.alt = deck.commanderName;
 
-    starterPurchaseModal.hidden = false;
-    document.body.classList.add("starter-modal-open");
+    starterRevealAllButton.hidden = false;
+    starterRevealAllButton.disabled = false;
+    starterRevealContinueButton.hidden = true;
+    starterRevealResult.hidden = true;
+    starterRevealResult.textContent = "";
+
+    starterRevealResult.dataset.added = String(result.added || 0);
+    starterRevealResult.dataset.converted = String(result.converted || 0);
+    starterRevealResult.dataset.goldEarned = String(result.goldEarned || 0);
+    starterRevealResult.dataset.remaining = String(remaining);
+
+    starterRevealGrid.replaceChildren(
+      ...cards.map((card, index) =>
+        createStarterRevealCard(card, index, deck)
+      )
+    );
+
+    showStage(stages.starterReveal);
   }
 
-  function closeStarterPurchaseModal() {
-    if (!starterPurchaseModal) return;
-    starterPurchaseModal.hidden = true;
-    document.body.classList.remove("starter-modal-open");
+  function createStarterRevealCard(card, index, deck) {
+    const button = document.createElement("button");
+    const isCommander = card.id === deck.commanderId;
+
+    button.type = "button";
+    button.className =
+      `starter-reveal-card${isCommander ? " is-commander" : ""}`;
+    button.dataset.index = String(index);
+    button.dataset.revealed = "false";
+    button.setAttribute("aria-label", `Reveal card ${index + 1}`);
+
+    button.innerHTML = `
+      <span class="starter-card-inner">
+        <span class="starter-card-back">
+          <img src="card-back.png" alt="">
+          ${isCommander
+            ? '<span class="commander-seal">Commander</span>'
+            : ""}
+        </span>
+        <span class="starter-card-front">
+          <img src="${card.image}" alt="${card.name || card.id}">
+          ${isCommander
+            ? '<span class="commander-glow" aria-hidden="true"></span>'
+            : ""}
+        </span>
+      </span>
+    `;
+
+    button.addEventListener("click", () => {
+      if (button.dataset.revealed === "true") {
+        const image = button.querySelector(".starter-card-front img");
+        image?.click();
+        return;
+      }
+
+      button.dataset.revealed = "true";
+      button.classList.add("revealed");
+      button.setAttribute(
+        "aria-label",
+        `Enlarge ${card.name || card.id}`
+      );
+
+      starterRevealCount += 1;
+
+      if (isCommander) {
+        playRaritySound(card.rarity || "Ultra Rare");
+        button.classList.add("commander-revealed");
+      } else {
+        playSound(
+          soundPaths.cardFlip,
+          SOUND_VOLUME,
+          .98 + Math.random() * .04
+        );
+      }
+
+      if (starterRevealCount >= starterRevealCards.length) {
+        finishStarterDeckReveal();
+      }
+    });
+
+    return button;
   }
+
+  function revealAllStarterDeckCards() {
+    starterRevealAllButton.disabled = true;
+
+    const unrevealed = [
+      ...starterRevealGrid.querySelectorAll(".starter-reveal-card")
+    ].filter(card => card.dataset.revealed !== "true");
+
+    unrevealed.forEach((button, index) => {
+      window.setTimeout(
+        () => button.click(),
+        Math.min(index * 45, 2300)
+      );
+    });
+  }
+
+  function finishStarterDeckReveal() {
+    starterRevealAllButton.hidden = true;
+    starterRevealContinueButton.hidden = false;
+
+    const added = Number(starterRevealResult.dataset.added || 0);
+    const converted =
+      Number(starterRevealResult.dataset.converted || 0);
+    const goldEarned =
+      Number(starterRevealResult.dataset.goldEarned || 0);
+    const remaining =
+      Number(starterRevealResult.dataset.remaining || 0);
+
+    starterRevealResult.innerHTML = `
+      <strong>${activeStarterRevealDeck.name} is ready!</strong>
+      <span>${added} cards added to your collection.</span>
+      ${converted
+        ? `<span>${converted} extras became ${goldEarned.toLocaleString()} Gold.</span>`
+        : ""}
+      <span>${remaining > 0 ? `${remaining} copies remain in the Armory.` : "This Starter Deck is now SOLD OUT."}</span>
+    `;
+
+    starterRevealResult.hidden = false;
+  }
+
 
   function purchaseStarterDeck(deck) {
     if (!window.WUSCollection) {
@@ -383,7 +501,7 @@ window.WUS_UI_CLICKS_ENABLED = false;
 
     refreshGold();
     renderStarterArmory();
-    showStarterPurchaseModal(deck, result, remaining);
+    beginStarterDeckReveal(deck, cards, result, remaining);
   }
 
   function renderStarterArmory() {
@@ -1270,27 +1388,19 @@ window.WUS_UI_CLICKS_ENABLED = false;
     await refreshAssetStatus();
   }
 
-  if (starterPurchaseModalClose) {
-    starterPurchaseModalClose.addEventListener(
-      "click",
-      closeStarterPurchaseModal
-    );
-  }
 
-  if (starterPurchaseModalContinue) {
-    starterPurchaseModalContinue.addEventListener(
-      "click",
-      closeStarterPurchaseModal
-    );
-  }
+  starterRevealAllButton.addEventListener(
+    "click",
+    revealAllStarterDeckCards
+  );
 
-  if (starterPurchaseModal) {
-    starterPurchaseModal.addEventListener("click", event => {
-      if (event.target.matches("[data-close-starter-modal]")) {
-        closeStarterPurchaseModal();
-      }
-    });
-  }
+  starterRevealContinueButton.addEventListener("click", () => {
+    activeStarterRevealDeck = null;
+    starterRevealCards = [];
+    starterRevealCount = 0;
+    renderStarterArmory();
+    showStage(stages.starterDecks);
+  });
 
   chooseStarterDecks.addEventListener("click", () => {
     renderStarterArmory();
@@ -1475,7 +1585,7 @@ if (__zoomModal) {
 
   document.addEventListener("click", event => {
     const image = event.target.closest(
-      ".card-grid .pack-card.revealed img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
+      ".card-grid .pack-card.revealed img, #starterRevealGrid .starter-reveal-card.revealed .starter-card-front img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
     );
     if (!image) return;
     __openZoom(image);
