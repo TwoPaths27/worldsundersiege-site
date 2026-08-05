@@ -1,12 +1,25 @@
 (() => {
   const SOUND_PATH = "sounds/mouse-click.mp3";
-  const CLICK_VOLUME = 0.45;
+  const SOUND_EFFECTS_VOLUME_KEY = "wus-sfx-volume";
+
+  function getClickVolume() {
+    const stored = Number(localStorage.getItem(SOUND_EFFECTS_VOLUME_KEY));
+    const percent = Number.isFinite(stored)
+      ? Math.max(0, Math.min(100, stored))
+      : 100;
+
+    return percent / 100;
+  }
 
   let audioContext = null;
   let audioBuffer = null;
   let htmlAudioFallback = null;
   let loadingPromise = null;
   let unlocked = false;
+
+  if (localStorage.getItem(SOUND_EFFECTS_VOLUME_KEY) === null) {
+    localStorage.setItem(SOUND_EFFECTS_VOLUME_KEY, "100");
+  }
 
   function isValidClick(event) {
     if (event.defaultPrevented) return false;
@@ -82,7 +95,7 @@
     if (!htmlAudioFallback) {
       htmlAudioFallback = new Audio(SOUND_PATH);
       htmlAudioFallback.preload = "auto";
-      htmlAudioFallback.volume = CLICK_VOLUME;
+      htmlAudioFallback.volume = getClickVolume();
     }
 
     return htmlAudioFallback;
@@ -117,7 +130,7 @@
     const gain = context.createGain();
 
     source.buffer = buffer;
-    gain.gain.value = CLICK_VOLUME;
+    gain.gain.value = getClickVolume();
 
     source.connect(gain);
     gain.connect(context.destination);
@@ -132,7 +145,7 @@
     try {
       audio.pause();
       audio.currentTime = 0;
-      audio.volume = CLICK_VOLUME;
+      audio.volume = getClickVolume();
       await audio.play();
       return true;
     } catch {

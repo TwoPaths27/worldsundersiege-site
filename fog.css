@@ -4,7 +4,7 @@
 #wus-fog-layer{
   position:fixed;
   inset:-12vh -18vw;
-  z-index:-1;
+  z-index:0;
   overflow:hidden;
   pointer-events:none;
   opacity:.78;
@@ -98,6 +98,51 @@ html{
 body{
   position:relative;
   isolation:isolate;
+}
+
+body::before{
+  z-index:1;
+}
+
+body > :not(#wus-fog-layer):not(script){
+  position:relative;
+  z-index:2;
+}
+
+#wus-fog-layer .wus-embers{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  opacity:.45;
+}
+
+#wus-fog-layer .wus-ember{
+  --ember-size:3px;
+  position:absolute;
+  left:var(--ember-left);
+  bottom:-8vh;
+  width:var(--ember-size);
+  height:var(--ember-size);
+  border-radius:50%;
+  background:rgba(255,143,45,.95);
+  box-shadow:
+    0 0 5px rgba(255,126,29,.9),
+    0 0 12px rgba(255,87,12,.55);
+  animation:wusEmberRise var(--ember-duration) linear infinite;
+  animation-delay:var(--ember-delay);
+}
+
+@keyframes wusEmberRise{
+  0%{
+    transform:translate3d(0,0,0) scale(.55);
+    opacity:0;
+  }
+  12%{opacity:.75}
+  72%{opacity:.48}
+  100%{
+    transform:translate3d(var(--ember-drift),-115vh,0) scale(1.15);
+    opacity:0;
+  }
 }
 
 @media (prefers-reduced-motion:reduce){

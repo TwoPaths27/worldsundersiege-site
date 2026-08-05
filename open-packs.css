@@ -781,3 +781,19 @@ body.asset-locked { overflow: hidden; }
   filter:grayscale(.92) brightness(.48);
   opacity:.72;
 }
+
+
+/* Open Pack repair */
+.pack-actions #returnToPacksButton{
+  min-width:190px;
+}
+
+.starter-reveal-card.revealed .starter-card-inner,
+.starter-reveal-card.revealed:hover .starter-card-inner,
+.starter-reveal-card.revealed:focus .starter-card-inner{
+  transform:rotateY(180deg)!important;
+}
+
+.starter-reveal-card.revealed{
+  cursor:zoom-in;
+}

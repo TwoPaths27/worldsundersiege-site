@@ -53,6 +53,8 @@ const elements = {
   musicEnabled: document.getElementById("musicEnabled"),
   musicVolume: document.getElementById("musicVolume"),
   musicVolumeValue: document.getElementById("musicVolumeValue"),
+  soundEffectsVolume: document.getElementById("soundEffectsVolume"),
+  soundEffectsVolumeValue: document.getElementById("soundEffectsVolumeValue"),
   newsCategory: document.getElementById("newsCategory"),
   newsTitle: document.getElementById("newsTitle"),
   newsSummary: document.getElementById("newsSummary"),
@@ -74,7 +76,8 @@ let cloudProfileAvailable = false;
 
 const MENU_MUSIC_ENABLED_KEY = "wus-menu-music-enabled";
 const MENU_MUSIC_VOLUME_KEY = "wus-menu-music-volume";
-const DEFAULT_MUSIC_VOLUME = 0.22;
+const DEFAULT_MUSIC_VOLUME = 0.17;
+const SOUND_EFFECTS_VOLUME_KEY = "wus-sfx-volume";
 
 const menuMusic = new Audio("sounds/menu.mp3");
 menuMusic.loop = true;
@@ -90,6 +93,7 @@ async function initialize() {
   await loadPlayer();
   await loadGold();
   initializeMenuMusic();
+  initializeSoundEffectsSettings();
   buildNewsDots();
   showNews(0);
   startNewsRotation();
@@ -273,7 +277,10 @@ function bindEvents() {
   });
 
   elements.musicVolume.addEventListener("input", () => {
-    const value = Number(elements.musicVolume.value);
+    const value = Math.max(
+      0,
+      Math.min(100, Number(elements.musicVolume.value) || 0)
+    );
     localStorage.setItem(MENU_MUSIC_VOLUME_KEY, String(value));
     elements.musicVolumeValue.textContent = `${value}%`;
 
@@ -281,6 +288,21 @@ function bindEvents() {
       fadeMenuMusicTo(value / 100, 120);
     }
   });
+
+  elements.soundEffectsVolume.addEventListener("input", () => {
+    const value = Math.max(
+      0,
+      Math.min(100, Number(elements.soundEffectsVolume.value) || 0)
+    );
+
+    localStorage.setItem(SOUND_EFFECTS_VOLUME_KEY, String(value));
+    elements.soundEffectsVolumeValue.textContent = `${value}%`;
+
+    window.dispatchEvent(new CustomEvent("wus-sfx-volume-changed", {
+      detail: { value }
+    }));
+  });
+
 
   document.querySelectorAll("[data-close-modal]").forEach(button => {
     button.addEventListener("click", closeAllModals);
@@ -353,18 +375,22 @@ function readLocalPortraitUnlocks() {
 function portraitCandidates(card) {
   if (!card) return ["logo.png"];
 
-  const imageFile = String(card.image || "")
-    .replace(/\\/g, "/")
-    .split("/")
-    .pop();
+  const manifest = new Set(window.WUSTileManifest || []);
+  const explicitCommanderTiles = {
+    "SD1-001": "BOA-226 King Arthur.jpg",
+    "SD1-002": "BOA-227 Dracula.jpg"
+  };
 
-  const base = imageFile.replace(/\.[^.]+$/, "");
+  const exactCandidates = [
+    explicitCommanderTiles[card.id],
+    `${card.id} ${card.name}.jpg`,
+    `${card.id} ${card.name}.png`
+  ].filter(Boolean);
+
+  const existingTile = exactCandidates.find(file => manifest.has(file));
 
   return [
-    `tiles/${base}.png`,
-    `Tiles/${base}.png`,
-    `unit-tiles/${base}.png`,
-    `Unit Tiles/${base}.png`,
+    ...(existingTile ? [`tile/${encodeURIComponent(existingTile)}`] : []),
     card.image,
     "logo.png"
   ];
@@ -495,8 +521,34 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function initializeSoundEffectsSettings() {
+  const storedValue = Number(localStorage.getItem(SOUND_EFFECTS_VOLUME_KEY));
+  const value = Number.isFinite(storedValue)
+    ? Math.max(0, Math.min(100, storedValue))
+    : 100;
+
+  localStorage.setItem(SOUND_EFFECTS_VOLUME_KEY, String(value));
+  elements.soundEffectsVolume.value = String(value);
+  elements.soundEffectsVolumeValue.textContent = `${value}%`;
+}
+
 function initializeMenuMusic() {
   const storedEnabled = localStorage.getItem(MENU_MUSIC_ENABLED_KEY);
+  const MUSIC_REDUCTION_MIGRATION_KEY = "wus-menu-volume-reduced-v1";
+
+  if (!localStorage.getItem(MUSIC_REDUCTION_MIGRATION_KEY)) {
+    const previousVolume = Number(localStorage.getItem(MENU_MUSIC_VOLUME_KEY));
+    const reducedVolume = Number.isFinite(previousVolume)
+      ? Math.round(previousVolume * 0.75)
+      : Math.round(DEFAULT_MUSIC_VOLUME * 100);
+
+    localStorage.setItem(
+      MENU_MUSIC_VOLUME_KEY,
+      String(Math.max(0, Math.min(100, reducedVolume)))
+    );
+    localStorage.setItem(MUSIC_REDUCTION_MIGRATION_KEY, "true");
+  }
+
   const storedVolume = Number(localStorage.getItem(MENU_MUSIC_VOLUME_KEY));
 
   const enabled = storedEnabled === null ? true : storedEnabled === "true";
@@ -556,7 +608,10 @@ function fadeMenuMusicTo(target, duration = 600, onComplete = null) {
 
   const step = now => {
     const progress = duration <= 0 ? 1 : Math.min(1, (now - startTime) / duration);
-    menuMusic.volume = startVolume + (clampedTarget - startVolume) * progress;
+    menuMusic.volume = Math.max(
+      0,
+      Math.min(1, startVolume + (clampedTarget - startVolume) * progress)
+    );
 
     if (progress < 1) {
       musicFadeFrame = window.requestAnimationFrame(step);

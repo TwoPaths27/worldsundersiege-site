@@ -1,0 +1,1 @@
+window.WUSTileManifest = Object.freeze(["BOA-001 King Arthur.jpg", "BOA-002 Merlin.jpg", "BOA-003 Sir Lancelot.jpg", "BOA-004 Sir Yvain.jpg", "BOA-005 Sir Galahad.jpg", "BOA-006 Sir Kay.jpg", "BOA-007 Sir Lucan.jpg", "BOA-008 Sir Gawain.jpg", "BOA-009 Sir Bedivere.jpg", "BOA-010 Sir Sagremore.jpg", "BOA-226 King Arthur.jpg", "BOA-227 Dracula.jpg"]);

@@ -166,9 +166,16 @@
 
         <label class="audio-volume-row" for="musicVolume">
           <span>Music Volume</span>
-          <output id="musicVolumeValue" for="musicVolume">22%</output>
+          <output id="musicVolumeValue" for="musicVolume">17%</output>
         </label>
-        <input id="musicVolume" class="audio-range" type="range" min="0" max="100" step="1" value="22">
+        <input id="musicVolume" class="audio-range" type="range" min="0" max="100" step="1" value="17">
+
+        <label class="audio-volume-row" for="soundEffectsVolume">
+          <span>Sound Effects Volume</span>
+          <output id="soundEffectsVolumeValue" for="soundEffectsVolume">100%</output>
+        </label>
+        <input id="soundEffectsVolume" class="audio-range" type="range"
+               min="0" max="100" step="1" value="100">
       </section>
 
       <button class="modal-main-button" type="button" data-close-modal>Close</button>
@@ -176,6 +183,7 @@
   </div>
 
   <script src="cards.js"></script>
+  <script src="tile-manifest.js"></script>
   <script src="collection-store.js"></script>
   <script type="module" src="hub.js?v=cloud-profile-1"></script>
   <script src="fog.js"></script>

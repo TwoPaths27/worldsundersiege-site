@@ -431,6 +431,153 @@
     }
   }
 
+  function unlockStarterPortrait(deck) {
+    let unlocked = [];
+
+    try {
+      unlocked = JSON.parse(
+        localStorage.getItem(PORTRAIT_UNLOCKS_KEY) || "[]"
+      );
+      if (!Array.isArray(unlocked)) unlocked = [];
+    } catch {
+      unlocked = [];
+    }
+
+    if (!unlocked.includes(deck.commanderId)) {
+      unlocked.push(deck.commanderId);
+      localStorage.setItem(
+        PORTRAIT_UNLOCKS_KEY,
+        JSON.stringify(unlocked)
+      );
+    }
+  }
+
+  function beginStarterDeckReveal(deck, cards, result) {
+    activeStarterRevealDeck = deck;
+    starterRevealCards = cards;
+    starterRevealCount = 0;
+
+    starterRevealTitle.textContent = deck.name;
+    starterRevealSubtitle.textContent =
+      `${cards.length} cards were added to your collection. Reveal them to inspect your new army.`;
+
+    starterCommanderName.textContent = deck.commanderName;
+    starterCommanderId.textContent = deck.commanderId;
+    starterCommanderImage.src = deck.commanderImage;
+    starterCommanderImage.alt = deck.commanderName;
+
+    starterRevealAllButton.hidden = false;
+    starterRevealAllButton.disabled = false;
+    starterRevealContinueButton.hidden = true;
+    starterRevealResult.hidden = true;
+    starterRevealResult.textContent = "";
+
+    starterRevealResult.dataset.added = String(result.added || 0);
+    starterRevealResult.dataset.converted = String(result.converted || 0);
+    starterRevealResult.dataset.goldEarned = String(result.goldEarned || 0);
+
+    starterRevealGrid.replaceChildren(
+      ...cards.map((card, index) =>
+        createStarterRevealCard(card, index, deck)
+      )
+    );
+
+    showStage(stages.starterReveal);
+  }
+
+  function createStarterRevealCard(card, index, deck) {
+    const button = document.createElement("button");
+    const isCommander = card.id === deck.commanderId;
+
+    button.type = "button";
+    button.className =
+      `starter-reveal-card${isCommander ? " is-commander" : ""}`;
+    button.dataset.index = String(index);
+    button.dataset.revealed = "false";
+    button.setAttribute("aria-label", `Reveal card ${index + 1}`);
+
+    button.innerHTML = `
+      <span class="starter-card-inner">
+        <span class="starter-card-back">
+          <img src="card-back.png" alt="">
+          ${isCommander
+            ? '<span class="commander-seal">Commander</span>'
+            : ""}
+        </span>
+        <span class="starter-card-front">
+          <img src="${card.image}" alt="${card.name || card.id}">
+          ${isCommander
+            ? '<span class="commander-glow" aria-hidden="true"></span>'
+            : ""}
+        </span>
+      </span>
+    `;
+
+    button.addEventListener("click", () => {
+      if (button.dataset.revealed === "true") return;
+
+      button.dataset.revealed = "true";
+      button.classList.add("revealed");
+      button.setAttribute(
+        "aria-label",
+        `Enlarge ${card.name || card.id}`
+      );
+
+      starterRevealCount += 1;
+
+      if (isCommander) {
+        playRaritySound(card.rarity || "Ultra Rare");
+        button.classList.add("commander-revealed");
+      } else {
+        playSound(
+          soundPaths.cardFlip,
+          SOUND_VOLUME,
+          .98 + Math.random() * .04
+        );
+      }
+
+      if (starterRevealCount >= starterRevealCards.length) {
+        finishStarterReveal();
+      }
+    });
+
+    return button;
+  }
+
+  function revealAllStarterCards() {
+    starterRevealAllButton.disabled = true;
+
+    const unrevealed = [
+      ...starterRevealGrid.querySelectorAll(".starter-reveal-card")
+    ].filter(card => card.dataset.revealed !== "true");
+
+    unrevealed.forEach((button, index) => {
+      window.setTimeout(() => button.click(), Math.min(index * 45, 2200));
+    });
+  }
+
+  function finishStarterReveal() {
+    starterRevealAllButton.hidden = true;
+    starterRevealContinueButton.hidden = false;
+
+    const added = Number(starterRevealResult.dataset.added || 0);
+    const converted =
+      Number(starterRevealResult.dataset.converted || 0);
+    const goldEarned =
+      Number(starterRevealResult.dataset.goldEarned || 0);
+
+    starterRevealResult.innerHTML = `
+      <strong>${activeStarterRevealDeck.name} is ready!</strong>
+      <span>${added} cards added to your collection.</span>
+      ${converted
+        ? `<span>${converted} extra cards became ${goldEarned.toLocaleString()} Gold.</span>`
+        : ""}
+      <span>${activeStarterRevealDeck.commanderName} is unlocked as a profile portrait.</span>
+    `;
+
+    starterRevealResult.hidden = false;
+  }
+
   function renderStarterArmory() {
     if (!starterArmory) return;
     const purchaseCounts = loadStarterDeckPurchaseCounts();
@@ -443,11 +590,17 @@
       article.className = `starter-deck-product${isSoldOut ? " is-owned is-sold-out" : ""}`;
       article.dataset.deckId = deck.id;
       article.innerHTML = `
-        <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">OWNED</span></div>
+        <div class="starter-package-wrap"><img class="starter-package" src="${deck.image}" alt="${deck.name} Starter Deck"><span class="starter-owned-ribbon">${isSoldOut ? "SOLD OUT" : `${remaining} LEFT`}</span></div>
         <div class="starter-product-copy">
           <p class="eyebrow">Starter Deck</p><h2>${deck.name}</h2><p>${deck.description}</p>
           <div class="commander-showcase"><img src="${deck.commanderImage}" alt="${deck.commanderName}"><div><small>Showcase Card</small><strong>${deck.commanderName}</strong><span>${deck.commanderId}</span></div></div>
-          <button class="primary-button starter-buy-button purchase-shimmer" type="button" ${isOwned || gold < STARTER_DECK_PRICE ? "disabled" : ""}>${isOwned ? "Owned" : "Buy Starter Deck · 1,000 Gold"}</button>
+          <div class="starter-stock-status ${isSoldOut ? "sold-out" : ""}">
+            ${isSoldOut ? "SOLD OUT" : `${remaining} remaining`}
+          </div>
+          <button class="primary-button starter-buy-button purchase-shimmer" type="button"
+                  ${isSoldOut || gold < STARTER_DECK_PRICE ? "disabled" : ""}>
+            ${isSoldOut ? "SOLD OUT" : "Buy Starter Deck · 1,000 Gold"}
+          </button>
         </div>`;
       article.querySelector('.starter-buy-button').addEventListener('click', () => purchaseStarterDeck(deck));
       return article;
@@ -1100,7 +1253,10 @@
       } else {
         anotherButton.hidden = false;
         anotherButton.textContent = "Open Another Pack · 200 Gold";
-        if (returnToPacksButton) returnToPacksButton.hidden = true;
+        if (returnToPacksButton) {
+          returnToPacksButton.hidden = false;
+          returnToPacksButton.textContent = "Back to Pack Selector";
+        }
         if (openNextPackButton) openNextPackButton.hidden = true;
       }
     } else {
@@ -1364,9 +1520,16 @@
 
   if (returnToPacksButton) {
     returnToPacksButton.addEventListener("click", () => {
-      if (openingMode !== "box" || boxSession.openedPacks >= BOX_PACK_COUNT) return;
-      renderBoxPacks();
-      showStage(stages.boxPacks);
+      if (
+        openingMode === "box" &&
+        boxSession.openedPacks < BOX_PACK_COUNT
+      ) {
+        renderBoxPacks();
+        showStage(stages.boxPacks);
+        return;
+      }
+
+      showStage(stages.intro);
     });
   }
 
@@ -1439,8 +1602,24 @@ if (__zoomModal) {
     const summaryGroup = image?.closest("#bestPullCard, #boxPremiumGrid, #boxAllPulls");
     if (summaryGroup) return [...summaryGroup.querySelectorAll(".summary-card img")];
 
-    const revealed = [...document.querySelectorAll(".card-grid .pack-card.revealed img")];
-    return revealed.length ? revealed : [...document.querySelectorAll(".card-grid img")];
+    const starterGroup = image?.closest("#starterRevealGrid");
+    if (starterGroup) {
+      return [
+        ...starterGroup.querySelectorAll(
+          ".starter-reveal-card.revealed .starter-card-front img"
+        )
+      ];
+    }
+
+    const revealed = [
+      ...document.querySelectorAll(
+        ".card-grid .pack-card.revealed img"
+      )
+    ];
+
+    return revealed.length
+      ? revealed
+      : [...document.querySelectorAll(".card-grid img")];
   }
 
   function __showZoomCard(index) {
@@ -1470,7 +1649,7 @@ if (__zoomModal) {
 
   document.addEventListener("click", event => {
     const image = event.target.closest(
-      ".card-grid .pack-card.revealed img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
+      ".card-grid .pack-card.revealed img, #starterRevealGrid .starter-reveal-card.revealed .starter-card-front img, #bestPullCard .summary-card img, #boxPremiumGrid .summary-card img, #boxAllPulls .summary-card img"
     );
     if (!image) return;
     __openZoom(image);
