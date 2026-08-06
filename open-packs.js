@@ -90,6 +90,7 @@ window.WUS_UI_CLICKS_ENABLED = false;
   const boxRevealDetailsButton = document.getElementById("boxRevealDetailsButton");
   const openAnotherBoxButton = document.getElementById("openAnotherBoxButton");
   const backToSelectionButton = document.getElementById("backToSelectionButton");
+  const topBackToSelectionButton = document.getElementById("topBackToSelectionButton");
   const bestPullSection = document.getElementById("bestPullSection");
   const bestPullHeading = document.getElementById("bestPullHeading");
   const bestPullCard = document.getElementById("bestPullCard");
@@ -1517,14 +1518,33 @@ window.WUS_UI_CLICKS_ENABLED = false;
     if (opening?.mode === "box" && opening.openedPacks >= BOX_PACK_COUNT) WUSCollection.clearActiveOpening(opening.id);
     purchaseOpening("box");
   });
-  backToSelectionButton.addEventListener("click", () => {
+  function returnToPackSelectionFromSummary() {
     const opening = WUSCollection.getActiveOpening();
-    if (opening?.mode === "box" && opening.openedPacks >= BOX_PACK_COUNT) WUSCollection.clearActiveOpening(opening.id);
+
+    if (
+      opening?.mode === "box" &&
+      opening.openedPacks >= BOX_PACK_COUNT
+    ) {
+      WUSCollection.clearActiveOpening(opening.id);
+    }
+
     openingMode = "single";
     boxSession = createEmptyBoxSession();
     showStage(stages.store);
     refreshGold();
-  });
+  }
+
+  backToSelectionButton.addEventListener(
+    "click",
+    returnToPackSelectionFromSummary
+  );
+
+  if (topBackToSelectionButton) {
+    topBackToSelectionButton.addEventListener(
+      "click",
+      returnToPackSelectionFromSummary
+    );
+  }
 renderStarterArmory();
   refreshGold();
   window.addEventListener("wus-player-data-changed", () => { refreshGold(); renderStarterArmory(); });

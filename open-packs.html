@@ -179,9 +179,16 @@
 
     <section id="boxSummaryStage" class="stage box-summary-stage" hidden>
       <section class="box-summary-panel panel">
-        <p class="eyebrow">Battle of Ages Booster Box</p>
-        <h1>Box Complete!</h1>
-        <p class="lead">You opened 24 packs and revealed <strong id="boxTotalCards">288</strong> cards.</p>
+        <div class="box-summary-topbar">
+          <div>
+            <p class="eyebrow">Battle of Ages Booster Box</p>
+            <h1>Box Complete!</h1>
+            <p class="lead">You opened 24 packs and revealed <strong id="boxTotalCards">288</strong> cards.</p>
+          </div>
+          <button id="topBackToSelectionButton" class="secondary-button" type="button">
+            Back to Pack Selection
+          </button>
+        </div>
         <section id="bestPullSection" class="best-pull-section" hidden>
           <p id="bestPullHeading" class="eyebrow">Best Pulls</p>
           <div id="bestPullCard" class="best-pull-card"></div>
@@ -249,7 +256,7 @@
   <script src="asset-cache.js"></script>
   <script src="asset-manifest.js"></script>
   <script src="collection-store.js"></script>
-  <script src="open-packs.js?v=starter-reveal-restored-1"></script>
+  <script src="open-packs.js?v=box-top-return-1"></script>
   <script src="global-click-sound.js?v=no-open-packs-clicks-3"></script>
 </body>
 </html>

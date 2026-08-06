@@ -896,3 +896,38 @@ body.starter-modal-open{
     max-height:140px!important;
   }
 }
+
+
+/* Booster box summary: extra top-right return action */
+.box-summary-topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:12px;
+}
+
+.box-summary-topbar > div{
+  min-width:0;
+}
+
+.box-summary-topbar h1{
+  margin-top:8px;
+}
+
+#topBackToSelectionButton{
+  flex:none;
+  min-width:210px;
+  margin-top:4px;
+}
+
+@media(max-width:760px){
+  .box-summary-topbar{
+    flex-direction:column;
+  }
+
+  #topBackToSelectionButton{
+    width:100%;
+    min-width:0;
+  }
+}
